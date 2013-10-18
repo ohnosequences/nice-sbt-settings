@@ -1,12 +1,14 @@
 import sbtrelease._
-import ReleaseStateTransformations._
-import ReleasePlugin._
-import ReleaseKeys._
+
+releaseSettings
+
+
+sbtPlugin := true
 
 
 name := "era7-sbt-release"
 
-description := "era7-sbt-release project"
+description := "sbt plugin with common settings for all era7/ohnosequences releases"
 
 homepage := Some(url("https://github.com/ohnosequences/era7-sbt-release"))
 
@@ -36,9 +38,7 @@ publishTo <<= (isSnapshot, s3credentials) {
 
 resolvers ++= Seq ( 
     "Era7 Releases"  at "http://releases.era7.com.s3.amazonaws.com"
-//, "Era7 Snapshots" at "http://snapshots.era7.com.s3.amazonaws.com"
-  , Resolver.url("Era7 ivy releases", url("http://releases.era7.com.s3.amazonaws.com"))(Resolver.ivyStylePatterns)
-//, Resolver.url("Era7 ivy snapshots", url("http://snapshots.era7.com.s3.amazonaws.com"))(Resolver.ivyStylePatterns)
+  // , "Era7 Snapshots" at "http://snapshots.era7.com.s3.amazonaws.com"
   )
 
 
@@ -52,20 +52,6 @@ scalacOptions ++= Seq(
   )
 
 
-// sbt-release settings
-releaseSettings
+addSbtPlugin("ohnosequences" % "sbt-s3-resolver" % "0.7.0")
 
-releaseProcess <<= thisProjectRef apply { ref =>
-  Seq[ReleaseStep](
-    checkSnapshotDependencies
-  , inquireVersions
-  , runTest
-  , setReleaseVersion
-  , commitReleaseVersion
-  , tagRelease
-  , publishArtifacts
-  , setNextVersion
-  , commitNextVersion
-  , pushChanges
-  )
-}
+addSbtPlugin("com.github.gseitz" % "sbt-release" % "0.8")
