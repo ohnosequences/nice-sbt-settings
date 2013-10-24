@@ -22,4 +22,27 @@ This plugin includes [sbt-s3-resolver](https://github.com/ohnosequences/sbt-s3-r
 | `publishBucketSuffix` | String        |    Amazon S3 bucket suffix for the `publishTo` default resolver   | 
 | `publishS3Resolver`   |  S3Resolver   |       S3Resolver which will be used in `publishTo`                |
 
+Also, the plugin provides several sets of predefined settings:
 
+* `Era7.resolversSettings`
+  + `bucketSuffix := {organization.value + ".com"}`
+  + adds resolvers for maven and ivy snapshots/releases buckets with this suffix
+* `Era7.publishingSettings`
+  + `isPrivate := false`
+  + `publishMavenStyle := true`
+  + `publishBucketSuffix := bucketSuffix.value`
+  + sets `publishS3Resolver` to something like `<privacy prefix><releases/snapshots prefix>.publishBucketSuffix`
+  + sets `publishTo` to this `S3Resolver`, if there are credentials
+* `Era7.releaseSettings`
+  + sets version bumping strategy is to increase the major version number
+* `Era7.allSettings` is a combination of these three sets
+
+So normally, you should use this plugin by putting the following lines _in the beginning_ of the `build.sbt` file:
+
+```scala
+import ohnosequences.sbt._
+
+Era7.allSettings
+```
+
+after that you can customize any settings for your needs (usually it will be the buckets suffixes). The reason, why the order is important, is that if you first set `bucketSuffix` and then add `Era7.resolversSettings`, then it will be overridden.
