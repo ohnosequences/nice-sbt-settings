@@ -52,6 +52,12 @@ object Era7SettingsPlugin extends sbt.Plugin {
           , "-deprecation"
           , "-unchecked"
           )
+
+      , javacOptions ++= Seq(
+          "-source", "1.7"
+        , "-target", "1.7"
+        , "-encoding", "UTF-8"
+        )
       )
 
     lazy val javaSettings: Seq[Setting[_]] = Seq(
@@ -92,6 +98,9 @@ object Era7SettingsPlugin extends sbt.Plugin {
           )
         }
       , publishTo := {s3credentials.value map publishS3Resolver.value.toSbtResolver}
+
+      // disable publishing docs
+      , publishArtifact in (Compile, packageDoc) := false
       )
 
     lazy val fatArtifactSettings: Seq[Setting[_]] =
