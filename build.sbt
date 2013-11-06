@@ -6,11 +6,11 @@ Era7.allSettings
 sbtPlugin := true
 
 
-name := "era7-sbt-release"
+name := "era7-sbt-settings"
 
 description := "sbt plugin with common settings for all era7/ohnosequences releases"
 
-homepage := Some(url("https://github.com/ohnosequences/era7-sbt-release"))
+homepage := Some(url("https://github.com/ohnosequences/era7-sbt-settings"))
 
 organization := "ohnosequences"
 

@@ -9,7 +9,7 @@ To start using this plugin add the following to the `project/plugins.sbt`:
 ```scala
 resolvers += "Era7 maven releases" at "http://releases.era7.com.s3.amazonaws.com"
 
-addSbtPlugin("ohnosequences" % "era7-sbt-release" % "0.2.0")
+addSbtPlugin("ohnosequences" % "era7-sbt-settings" % "0.2.0")
 ```
 
 This plugin includes [sbt-s3-resolver](https://github.com/ohnosequences/sbt-s3-resolver) and [sbt-release](https://github.com/sbt/sbt-release) plugins and adds the following sbt settings:
