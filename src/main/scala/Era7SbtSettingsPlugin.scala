@@ -10,6 +10,10 @@ import ReleaseKeys._
 
 import ohnosequences.sbt.SbtS3Resolver._
 
+import sbtassembly._
+import sbtassembly.Plugin._
+import AssemblyKeys._
+
 object Era7SettingsPlugin extends sbt.Plugin {
 
   // Setting keys:
@@ -17,6 +21,7 @@ object Era7SettingsPlugin extends sbt.Plugin {
   lazy val bucketSuffix = settingKey[String]("Amazon S3 bucket suffix for resolvers")
   lazy val publishBucketSuffix = settingKey[String]("Amazon S3 bucket suffix for publish-to resolver")
   lazy val publishS3Resolver = settingKey[S3Resolver]("S3Resolver which will be used in publishTo")
+  lazy val fatArtifactClassifier = settingKey[String]("Classifier of the fat jar artifact")
 
   // Just some aliases for the patterns
   val mvn = Resolver.mavenStylePatterns
@@ -87,6 +92,18 @@ object Era7SettingsPlugin extends sbt.Plugin {
           )
         }
       , publishTo := {s3credentials.value map publishS3Resolver.value.toSbtResolver}
+      )
+
+    lazy val fatArtifactSettings: Seq[Setting[_]] =
+      (assemblySettings: Seq[Setting[_]]) ++ 
+      addArtifact(artifact in (Compile, assembly), assembly) ++ Seq(
+      // publishing also a fat artifact:
+        fatArtifactClassifier := "fat"
+      ,  artifact in (Compile, assembly) :=
+        (artifact in (Compile, assembly)).value.copy(
+           `classifier` = Some(fatArtifactClassifier.value)
+        )
+      , test in assembly := {}
       )
 
     lazy val releaseSettings: Seq[Setting[_]] = 

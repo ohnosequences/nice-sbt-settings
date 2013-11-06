@@ -26,6 +26,7 @@ This plugin includes [sbt-s3-resolver](https://github.com/ohnosequences/sbt-s3-r
 `bucketSuffix`         | String        | Amazon S3 bucket suffix for resolvers
 `publishBucketSuffix`  | String        | Amazon S3 bucket suffix for the `publishTo` default resolver
 `publishS3Resolver`    | S3Resolver    | S3Resolver which will be used in `publishTo`
+`fatArtifactClassifier`| String        | Classifier (suffix) of the fat jar artifact
 
 
 ### Predefined configurations
@@ -68,3 +69,16 @@ Era7.scalaProject
 ```
 
 See [era7bio/scala-2.10.g8](https://github.com/era7bio/scala-2.10.g8) template for example.
+
+
+#### Optional fat jar artifact
+
+If you want to use [sbt-assembly](https://github.com/sbt/sbt-assembly) for generating and publishing a fat jar artifact together with the normal one, you can _add_ to your configuration:
+
+```
+Era7.fatArtifactSettings
+
+fatArtifactClassifier := "chubby"   // optional
+```
+
+by default `fatArtifactClassifier` is just `"fat"`.
