@@ -7,9 +7,9 @@ This is an SBT plugin, aimed to standardaze and simplify the release process for
 To start using this plugin add the following to the `project/plugins.sbt`:
 
 ```scala
-resolvers += "Era7 maven releases"  at "http://releases.era7.com.s3.amazonaws.com"
+resolvers += "Era7 maven releases" at "http://releases.era7.com.s3.amazonaws.com"
 
-addSbtPlugin("ohnosequences" % "era7-sbt-release" % "0.1.0")
+addSbtPlugin("ohnosequences" % "era7-sbt-settings" % "0.2.0")
 ```
 
 This plugin includes [sbt-s3-resolver](https://github.com/ohnosequences/sbt-s3-resolver) and [sbt-release](https://github.com/sbt/sbt-release) plugins and adds the following sbt settings:
@@ -43,6 +43,8 @@ So normally, you should use this plugin by putting the following lines _in the b
 import ohnosequences.sbt._
 
 Era7.allSettings
+
+// here your custom settings
 ```
 
 after that you can customize any settings for your needs (usually it will be the buckets suffixes). The reason, why the order is important, is that if you first set `bucketSuffix` and then add `Era7.resolversSettings`, then it will be overridden.

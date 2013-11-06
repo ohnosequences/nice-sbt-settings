@@ -1,46 +1,28 @@
-import sbtrelease._
+import ohnosequences.sbt._
 
-releaseSettings
+Era7.allSettings
 
 
 sbtPlugin := true
 
 
-name := "era7-sbt-release"
+name := "era7-sbt-settings"
 
 description := "sbt plugin with common settings for all era7/ohnosequences releases"
 
-homepage := Some(url("https://github.com/ohnosequences/era7-sbt-release"))
+homepage := Some(url("https://github.com/ohnosequences/era7-sbt-settings"))
 
 organization := "ohnosequences"
 
 organizationHomepage := Some(url("http://ohnosequences.com"))
 
-licenses := Seq("AGPLv3" -> url("http://www.gnu.org/licenses/agpl-3.0.txt"))
+licenses := Seq("AGPL-V3" -> url("http://www.gnu.org/licenses/agpl-3.0.txt"))
+
+
+bucketSuffix := "era7.com"
 
 
 scalaVersion := "2.10.3"
-
-
-publishMavenStyle := true
-
-// for publishing you need to set `s3credentials`
-publishTo <<= (isSnapshot, s3credentials) { 
-                (snapshot,   credentials) => 
-  val prefix = if (snapshot) "snapshots" else "releases"
-  credentials map S3Resolver(
-      "Era7 "+prefix+" S3 bucket"
-    , "s3://"+prefix+".era7.com"
-    , Resolver.mavenStylePatterns
-    ).toSbtResolver
-}
-
-
-resolvers ++= Seq ( 
-    "Era7 Releases"  at "http://releases.era7.com.s3.amazonaws.com"
-  // , "Era7 Snapshots" at "http://snapshots.era7.com.s3.amazonaws.com"
-  )
-
 
 scalacOptions ++= Seq(
     "-feature"
