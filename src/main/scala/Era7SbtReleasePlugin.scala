@@ -30,6 +30,24 @@ object Era7SbtRelease extends sbt.Plugin {
       publishingSettings ++
       releaseSettings
 
+    lazy val scalaSettings = Seq(
+      // this doesn't allow any conflicts in dependencies:
+        conflictManager := ConflictManager.strict
+
+      , scalaVersion := "2.10.3"
+      // 2.10.x are compatible and we want to use the latest _for everything_:
+      , dependencyOverrides += "org.scala-lang" % "scala-library" % "2.10.3"
+
+      , scalacOptions ++= Seq(
+            "-feature"
+          , "-language:higherKinds"
+          , "-language:implicitConversions"
+          , "-language:postfixOps"
+          , "-deprecation"
+          , "-unchecked"
+          )
+    )
+
     lazy val resolversSettings = Seq(
         bucketSuffix := {organization.value + ".com"}
       , resolvers ++= Seq ( 
