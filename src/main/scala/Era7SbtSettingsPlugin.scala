@@ -22,6 +22,18 @@ object Era7 extends sbt.Plugin {
   val mvn = Resolver.mavenStylePatterns
   val ivy = Resolver.ivyStylePatterns
 
+  // Global combinations of settings:
+  lazy val scalaProject =
+    metainfo +
+    scalaSettings +
+    resolversSettings +
+    publishingSettings +
+    releaseSettings
+
+  lazy val javaSettings =
+    scalsProject +
+    javaSettings
+
   // Sets of settings:
   lazy val metainfo = Seq(
       homepage := Some(url("https://github.com/"+organization.value+"/"+name.value))
@@ -46,6 +58,13 @@ object Era7 extends sbt.Plugin {
         , "-unchecked"
         )
   )
+
+  lazy val javaSettings = Seq(
+    // to omit _2.10 suffixes:
+      crossPaths := false
+    // to omit scala library dependency
+    , autoScalaLibrary := false
+    )
 
   lazy val resolversSettings = Seq(
       bucketSuffix := {organization.value + ".com"}
