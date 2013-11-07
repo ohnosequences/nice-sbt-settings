@@ -1,4 +1,4 @@
-## Era7 sbt settings plugin
+## Nice sbt settings plugin
 
 This is an SBT plugin, aimed to standardize and simplify configuration of all era7/ohnosequences sbt-based projects.
 
@@ -10,7 +10,7 @@ To start using this plugin add the following to the `project/plugins.sbt`:
 ```scala
 resolvers += "Era7 maven releases" at "http://releases.era7.com.s3.amazonaws.com"
 
-addSbtPlugin("ohnosequences" % "era7-sbt-settings" % "0.2.0")
+addSbtPlugin("ohnosequences" % "nice-sbt-settings" % "0.2.0")
 ```
 
 > **Note**: you should use sbt `v0.13`.
@@ -33,28 +33,28 @@ This plugin includes [sbt-s3-resolver](https://github.com/ohnosequences/sbt-s3-r
 
 Also, the plugin provides a sets of predefined settings, combined as follows:
 
-1. `Era7.scalaProject`:
-   * `Era7.metainfoSettings`
+1. `Nice.scalaProject`:
+   * `Nice.metainfoSettings`
      + default homepage and organization homepage
      + AGPL-v3 license 
-   * `Era7.scalaSettings`
+   * `Nice.scalaSettings`
      + strict conflict manager
      + latest stable scala version
      + standard set of scalac options
-   * `Era7.resolversSettings`
+   * `Nice.resolversSettings`
      + default bucketSuffix
      + resolvers for maven and ivy snapshots/releases buckets with this suffix
-   * `Era7.publishingSettings`
+   * `Nice.publishingSettings`
      + default `isPrivate` is `false`
      + default `publishBucketSuffix` (same as `bucketSuffix`)
      + publish maven style
      + sets `publishS3Resolver` to something like `<privacy prefix><releases/snapshots prefix>.publishBucketSuffix`
      + sets `publishTo` to this `S3Resolver`, if there are credentials
-   * `Era7.releaseSettings`
+   * `Nice.releaseSettings`
      + sets version bumping strategy is to increase the major version number
-2. `Era7.javaProject`:
-   * `Era7.scalaProject`
-   * `Era7.javaSettings`
+2. `Nice.javaProject`:
+   * `Nice.scalaProject`
+   * `Nice.javaSettings`
      + excludes Scala library dependency
      + omits `_2.10` artifact suffix
 
@@ -63,7 +63,7 @@ See sources for the real definitions.
 So normally, you just put one line _in the beginning_ of the `build.sbt` file:
 
 ```scala
-Era7.scalaProject
+Nice.scalaProject
 
 // then your custom settings
 ```
@@ -76,7 +76,7 @@ See [era7bio/scala-2.10.g8](https://github.com/era7bio/scala-2.10.g8) template f
 If you want to use [sbt-assembly](https://github.com/sbt/sbt-assembly) for generating and publishing a fat jar artifact together with the normal one, you can _add_ to your configuration:
 
 ```
-Era7.fatArtifactSettings
+Nice.fatArtifactSettings
 
 fatArtifactClassifier := "chubby"   // optional
 ```

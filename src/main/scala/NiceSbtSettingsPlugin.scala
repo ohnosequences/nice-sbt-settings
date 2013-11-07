@@ -14,7 +14,7 @@ import sbtassembly._
 import sbtassembly.Plugin._
 import AssemblyKeys._
 
-object Era7SettingsPlugin extends sbt.Plugin {
+object NiceSettingsPlugin extends sbt.Plugin {
 
   // Setting keys:
   lazy val isPrivate = settingKey[Boolean]("If true, publish to private S3 bucket, else to public")
@@ -27,7 +27,7 @@ object Era7SettingsPlugin extends sbt.Plugin {
   val mvn = Resolver.mavenStylePatterns
   val ivy = Resolver.ivyStylePatterns
 
-  object Era7 {
+  object Nice {
 
     // Sets of settings:
     lazy val metainfoSettings: Seq[Setting[_]] = Seq(
@@ -52,13 +52,8 @@ object Era7SettingsPlugin extends sbt.Plugin {
           , "-language:postfixOps"
           , "-deprecation"
           , "-unchecked"
+          , "-target:jvm-1.7"
           )
-
-      , javacOptions ++= Seq(
-          "-source", "1.7"
-        , "-target", "1.7"
-        , "-encoding", "UTF-8"
-        )
       )
 
     lazy val javaSettings: Seq[Setting[_]] = Seq(
@@ -66,6 +61,12 @@ object Era7SettingsPlugin extends sbt.Plugin {
         crossPaths := false
       // to omit scala library dependency
       , autoScalaLibrary := false
+
+      , javacOptions ++= Seq(
+          "-source", "1.7"
+        , "-target", "1.7"
+        , "-encoding", "UTF-8"
+        )
       )
 
     lazy val resolversSettings: Seq[Setting[_]] = Seq(
