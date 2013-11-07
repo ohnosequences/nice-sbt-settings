@@ -40,7 +40,7 @@ Also, the plugin provides a sets of predefined settings, combined as follows:
    * `Nice.scalaSettings`
      + strict conflict manager
      + latest stable scala version
-     + standard set of scalac options
+     + standard set of scalac options (+ `jvm-1.7`)
    * `Nice.resolversSettings`
      + default bucketSuffix
      + resolvers for maven and ivy snapshots/releases buckets with this suffix
