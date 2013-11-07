@@ -1,0 +1,14 @@
+See #2:
+
+- renamed to `nice-sbt-settings`
+- added default project metainformation (homepages, license)
+- two types of projects:
+  - `scalaProject`
+  - `javaProject`
+- scala related:
+  - strict conflict manager
+  - optional sbt-assembly far jar
+  - `target:jvm-1.7`
+- java related (from [here](https://github.com/bio4j/bio4j-scala/pull/1#issuecomment-27865958)):
+  - `crossPaths := false` to omit `_2.10` suffixes
+  - `autoScala... := false` to omit scala dependency
