@@ -127,7 +127,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
         s.log.info("Generating documentation...")
 
         val errors = ohnosequences.tools.Literator.literateDir(
-                        sourceDirectory.value, docsOutputDir.value)
+                        sourceDirectory.value, Some(new File(docsOutputDir.value)))
         errors foreach { s.log.error(_) }
 
         if (errors.nonEmpty) sys.error("Couldn't generate documantation due to parsing errors")
