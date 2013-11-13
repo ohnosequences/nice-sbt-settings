@@ -23,6 +23,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
   lazy val publishS3Resolver = settingKey[S3Resolver]("S3Resolver which will be used in publishTo")
   lazy val fatArtifactClassifier = settingKey[String]("Classifier of the fat jar artifact")
 
+  lazy val docsInputDir = settingKey[String]("Directory with the documented sources")
   lazy val docsOutputDir = settingKey[String]("Output directory for the generated documentation")
   lazy val generateDocs = taskKey[Unit]("Generates markdown docs from code using litarator tool")
 
@@ -121,13 +122,14 @@ object NiceSettingsPlugin extends sbt.Plugin {
       )
 
     lazy val literatorSettings: Seq[Setting[_]] = Seq(
-      docsOutputDir := "docs/code/"
+      docsInputDir := sourceDirectory.value.toString
+    , docsOutputDir := "docs/src/"
     , generateDocs := {
         val s: TaskStreams = streams.value
         s.log.info("Generating documentation...")
 
         val errors = ohnosequences.tools.Literator.literateDir(
-                        sourceDirectory.value, Some(new File(docsOutputDir.value)))
+                      new File(docsInputDir.value), Some(new File(docsOutputDir.value)))
         errors foreach { s.log.error(_) }
 
         if (errors.nonEmpty) sys.error("Couldn't generate documantation due to parsing errors")
