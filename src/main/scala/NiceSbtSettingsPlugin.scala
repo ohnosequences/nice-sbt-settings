@@ -23,6 +23,10 @@ object NiceSettingsPlugin extends sbt.Plugin {
   lazy val publishS3Resolver = settingKey[S3Resolver]("S3Resolver which will be used in publishTo")
   lazy val fatArtifactClassifier = settingKey[String]("Classifier of the fat jar artifact")
 
+  lazy val docsInputDir = settingKey[String]("Directory with the documented sources")
+  lazy val docsOutputDir = settingKey[String]("Output directory for the generated documentation")
+  lazy val generateDocs = taskKey[Unit]("Generates markdown docs from code using literator tool")
+
   // Just some aliases for the patterns
   val mvn = Resolver.mavenStylePatterns
   val ivy = Resolver.ivyStylePatterns
@@ -52,6 +56,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
           , "-language:postfixOps"
           , "-deprecation"
           , "-unchecked"
+          , "-Xlint:unchecked"
           , "-target:jvm-1.7"
           )
       )
@@ -65,6 +70,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
       , javacOptions ++= Seq(
           "-source", "1.7"
         , "-target", "1.7"
+        , "-Xlint:unchecked"
         , "-encoding", "UTF-8"
         )
       )
@@ -117,6 +123,43 @@ object NiceSettingsPlugin extends sbt.Plugin {
       , test in assembly := {}
       )
 
+    lazy val literatorSettings: Seq[Setting[_]] = Seq(
+      docsInputDir := sourceDirectory.value.toString
+    , docsOutputDir := "docs/src/"
+    , generateDocs := {
+        val s: TaskStreams = streams.value
+        s.log.info("Generating documentation...")
+
+        val errors = ohnosequences.tools.Literator.literateDir(
+                      new File(docsInputDir.value), Some(new File(docsOutputDir.value)))
+        errors foreach { s.log.error(_) }
+
+        if (errors.nonEmpty) sys.error("Couldn't generate documantation due to parsing errors")
+        else s.log.info("Documentation is written to " + docsOutputDir.value)
+      }
+    )
+
+    lazy val checkReleaseNotes: ReleaseStep = { st: State =>
+      val extracted = Project.extract(st)
+      val v: String = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))._1.toString
+      val base: File = extracted.get(baseDirectory)
+      val note: File = base / "notes" / (v+".markdown")
+      lazy val err = sys.error("You forgot to write release notes for "+v+" version")
+      if (!note.exists) { st.log.error("File "+note+" doesn't exist"); err }
+      else {
+        val text: String = IO.read(note)
+        if (text.isEmpty) { st.log.warn("File "+note+" is empty"); err }
+        else {
+          st.log.info("Release notes for v"+v+":\n------\n"+text+"\n------")
+          SimpleReader.readLine("Do you want to stop release and edit these notes (y/n)? [n] ") match {
+            case Some("y" | "Y") => sys.error("Aborting release. Go write better release notes.")
+            case _ => // nothing happens;
+          }
+        }
+      }
+      st
+    }
+
     lazy val releaseSettings: Seq[Setting[_]] = 
       ReleasePlugin.releaseSettings ++ Seq(
         versionBump := Version.Bump.Minor
@@ -124,7 +167,9 @@ object NiceSettingsPlugin extends sbt.Plugin {
       , releaseProcess <<= thisProjectRef apply { ref =>
           Seq[ReleaseStep](
             checkSnapshotDependencies
+          , ReleaseStep({st => Project.extract(st).runTask(generateDocs, st)._1 })
           , inquireVersions
+          , checkReleaseNotes
           , runTest
           , setReleaseVersion
           , commitReleaseVersion
@@ -139,6 +184,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
     // Global combinations of settings:
     lazy val scalaProject: Seq[Setting[_]] =
       metainfoSettings ++
+      literatorSettings ++
       scalaSettings ++
       resolversSettings ++
       publishingSettings ++
