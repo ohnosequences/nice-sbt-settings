@@ -1,41 +1,21 @@
-import ohnosequences.sbt._
-
-Era7.allSettings
-
+Nice.scalaProject
 
 sbtPlugin := true
 
-
 name := "nice-sbt-settings"
 
-description := "sbt plugin with common settings for all era7/ohnosequences releases"
-
-homepage := Some(url("https://github.com/ohnosequences/nice-sbt-settings"))
+description := "sbt plugin accumulating some useful and nice sbt settings"
 
 organization := "ohnosequences"
 
-organizationHomepage := Some(url("http://ohnosequences.com"))
-
-licenses := Seq("AGPL-V3" -> url("http://www.gnu.org/licenses/agpl-3.0.txt"))
-
-
 bucketSuffix := "era7.com"
 
-
-scalaVersion := "2.10.3"
-
-scalacOptions ++= Seq(
-    "-feature"
-  , "-language:higherKinds"
-  , "-language:implicitConversions"
-  , "-language:postfixOps"
-  , "-deprecation"
-  , "-unchecked"
-  )
-
+dependencyOverrides += "org.apache.ivy" % "ivy" % "2.3.0"
 
 addSbtPlugin("ohnosequences" % "sbt-s3-resolver" % "0.7.0")
 
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "0.8")
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.10.1")
+
+libraryDependencies += "ohnosequences" %% "literator" % "0.3.0"

@@ -1,0 +1,7 @@
+* Added literator integration for generating gocs: 
+  + Key for docs input directory (sources): `docsInputDir`; 
+  + Key for docs output directory: `docsOutputDir`; 
+  + Task for docs generation: `generateDocs`; 
+  + Corresponding release step;
+* Compiler flags: add more unchecked warnings
+* Added a simple check for release notes
