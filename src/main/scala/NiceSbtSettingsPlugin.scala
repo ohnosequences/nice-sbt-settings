@@ -25,7 +25,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
 
   lazy val docsInputDir = settingKey[String]("Directory with the documented sources")
   lazy val docsOutputDir = settingKey[String]("Output directory for the generated documentation")
-  lazy val generateDocs = taskKey[Unit]("Generates markdown docs from code using litarator tool")
+  lazy val generateDocs = taskKey[Unit]("Generates markdown docs from code using literator tool")
 
   // Just some aliases for the patterns
   val mvn = Resolver.mavenStylePatterns
