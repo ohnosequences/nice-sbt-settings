@@ -56,7 +56,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
           , "-language:postfixOps"
           , "-deprecation"
           , "-unchecked"
-          , "-Xlint:unchecked"
+          , "-Xlint"
           , "-target:jvm-1.7"
           )
       )
