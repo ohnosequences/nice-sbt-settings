@@ -160,16 +160,19 @@ object NiceSettingsPlugin extends sbt.Plugin {
       st
     }
 
+    lazy val genDocsForRelease: ReleaseStep = 
+      ReleaseStep({st => Project.extract(st).runTask(generateDocs, st)._1 })
+
     lazy val releaseSettings: Seq[Setting[_]] = 
       ReleasePlugin.releaseSettings ++ Seq(
         versionBump := Version.Bump.Minor
       , tagComment  := {name.value + " v" + (version in ThisBuild).value}
-      , releaseProcess <<= thisProjectRef apply { ref =>
+      , releaseProcess := // use thisProjectRef.value if needed
           Seq[ReleaseStep](
-            checkSnapshotDependencies
-          , ReleaseStep({st => Project.extract(st).runTask(generateDocs, st)._1 })
+            genDocsForRelease // <--
+          , checkSnapshotDependencies
           , inquireVersions
-          , checkReleaseNotes
+          , checkReleaseNotes  // <--
           , runTest
           , setReleaseVersion
           , commitReleaseVersion
