@@ -10,6 +10,8 @@ import ReleaseKeys._
 
 import ohnosequences.sbt.SbtS3Resolver._
 
+import ohnosequences.literator.plugin.LiteratorPlugin._
+
 import sbtassembly._
 import sbtassembly.Plugin._
 import AssemblyKeys._
@@ -22,10 +24,6 @@ object NiceSettingsPlugin extends sbt.Plugin {
   lazy val publishBucketSuffix = settingKey[String]("Amazon S3 bucket suffix for publish-to resolver")
   lazy val publishS3Resolver = settingKey[S3Resolver]("S3Resolver which will be used in publishTo")
   lazy val fatArtifactClassifier = settingKey[String]("Classifier of the fat jar artifact")
-
-  lazy val docsInputDir = settingKey[String]("Directory with the documented sources")
-  lazy val docsOutputDir = settingKey[String]("Output directory for the generated documentation")
-  lazy val generateDocs = taskKey[Unit]("Generates markdown docs from code using literator tool")
 
   // Just some aliases for the patterns
   val mvn = Resolver.mavenStylePatterns
@@ -106,7 +104,6 @@ object NiceSettingsPlugin extends sbt.Plugin {
           )
         }
       , publishTo := {s3credentials.value map publishS3Resolver.value.toSbtResolver}
-
       // disable publishing docs
       , publishArtifact in (Compile, packageDoc) := false
       )
@@ -122,22 +119,6 @@ object NiceSettingsPlugin extends sbt.Plugin {
         )
       , test in assembly := {}
       )
-
-    lazy val literatorSettings: Seq[Setting[_]] = Seq(
-      docsInputDir := sourceDirectory.value.toString
-    , docsOutputDir := "docs/src/"
-    , generateDocs := {
-        val s: TaskStreams = streams.value
-        s.log.info("Generating documentation...")
-
-        val errors = ohnosequences.tools.Literator.literateDir(
-                      new File(docsInputDir.value), Some(new File(docsOutputDir.value)))
-        errors foreach { s.log.error(_) }
-
-        if (errors.nonEmpty) sys.error("Couldn't generate documantation due to parsing errors")
-        else s.log.info("Documentation is written to " + docsOutputDir.value)
-      }
-    )
 
     lazy val checkReleaseNotes: ReleaseStep = { st: State =>
       val extracted = Project.extract(st)
@@ -181,7 +162,6 @@ object NiceSettingsPlugin extends sbt.Plugin {
           , setNextVersion
           , pushChanges
           )
-        }
       )
 
     // Global combinations of settings:
