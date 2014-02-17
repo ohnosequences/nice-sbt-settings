@@ -138,40 +138,37 @@ object NiceSettingsPlugin extends sbt.Plugin {
       )
     }
 
-    lazy val checkReleaseNotes: ReleaseStep = { st: State =>
-      val extracted = Project.extract(st)
-      val v: String = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))._1.toString
-      val base: File = extracted.get(baseDirectory)
-      val note: File = base / "notes" / (v+".markdown")
-      lazy val err = sys.error("You forgot to write release notes for "+v+" version")
-      if (!note.exists) { st.log.error("File "+note+" doesn't exist"); err }
-      else {
-        val text: String = IO.read(note)
-        if (text.isEmpty) { st.log.warn("File "+note+" is empty"); err }
-        else {
-          st.log.info("Release notes for v"+v+":\n------\n"+text+"\n------")
-          SimpleReader.readLine("Do you want to stop release and edit these notes (y/n)? [n] ") match {
-            case Some("y" | "Y") => sys.error("Aborting release. Go write better release notes.")
-            case _ => // nothing happens;
-          }
-        }
-      }
-      st
-    }
-
     lazy val genDocsForRelease: ReleaseStep = 
       ReleaseStep({st => Project.extract(st).runTask(Literator.generateDocs, st)._1 })
 
     lazy val releaseSettings: Seq[Setting[_]] = 
       ReleasePlugin.releaseSettings ++ Seq(
         versionBump := Version.Bump.Minor
-      , tagComment  := {name.value + " v" + (version in ThisBuild).value}
+      , tagComment  := {organization.value +"/"+ name.value +" v"+ (version in ThisBuild).value}
+      // checking release notes and adding them to the commit message
+      , commitMessage := {
+          val log = streams.value.log
+          val v = (version in ThisBuild).value
+          val note: File = baseDirectory.value / "notes" / (v+".markdown")
+          if (!note.exists) sys.error("Release notes file "+note+" doesn't exist")
+          else {
+            val text: String = IO.read(note)
+            if (text.isEmpty) sys.error("Release notes file "+note+" is empty")
+            else {
+              val msg = "Setting version to " +v+ ":\n\n"+ text
+              log.info(msg)
+              SimpleReader.readLine("Do you want to proceed with these release notes (y/n)? [y] ") match {
+                case Some("n" | "N") => sys.error("Aborting release. Go write better release notes.")
+                case _ => msg
+              }
+            }
+          }
+        }
       , releaseProcess := // use thisProjectRef.value if needed
           Seq[ReleaseStep](
             genDocsForRelease // <--
           , checkSnapshotDependencies
           , inquireVersions
-          , checkReleaseNotes  // <--
           , runTest
           , setReleaseVersion
           , commitReleaseVersion
