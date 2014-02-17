@@ -10,7 +10,7 @@ To start using this plugin add the following to the `project/plugins.sbt`:
 ```scala
 resolvers += "Era7 maven releases" at "http://releases.era7.com.s3.amazonaws.com"
 
-addSbtPlugin("ohnosequences" % "nice-sbt-settings" % "0.3.1")
+addSbtPlugin("ohnosequences" % "nice-sbt-settings" % "0.4.0")
 ```
 
 > **Note**: you should use sbt `v0.13`.
@@ -27,10 +27,6 @@ This plugin includes [sbt-s3-resolver](https://github.com/ohnosequences/sbt-s3-r
 `publishBucketSuffix`  | String        | Amazon S3 bucket suffix for the `publishTo` default resolver
 `publishS3Resolver`    | S3Resolver    | S3Resolver which will be used in `publishTo`
 `fatArtifactClassifier`| String        | Classifier (suffix) of the fat jar artifact
-`docsInputDir`         | String        | Directory with the documented sources
-`docsOutputDir`        | String        | Output directory for the generated documentation
-`generateDocs`         |               | Task that generates markdown docs from code using literator tool
-
 
 
 ### Predefined configurations
@@ -41,6 +37,7 @@ Also, the plugin provides a sets of predefined settings, combined as follows:
    * `Nice.metainfoSettings`
      + default homepage and organization homepage
      + AGPL-v3 license 
+   * [`Literator.settings`](https://github.com/laughedelic/literator)
    * `Nice.scalaSettings`
      + strict conflict manager
      + latest stable scala version
@@ -54,9 +51,6 @@ Also, the plugin provides a sets of predefined settings, combined as follows:
      + publish maven style
      + sets `publishS3Resolver` to something like `<privacy prefix><releases/snapshots prefix>.publishBucketSuffix`
      + sets `publishTo` to this `S3Resolver`, if there are credentials
-   * `Nice.literatorSettings`
-     + default `docsInputDir` is `sourceDirectory` (normally just `src/`)
-     + default `docsOutputDir` is `docs/src/`
    * `Nice.releaseSettings`
      + sets version bumping strategy is to increase the major version number
      + adds step for generating docs
