@@ -16,6 +16,8 @@ import sbtassembly._
 import sbtassembly.Plugin._
 import AssemblyKeys._
 
+import com.markatta.sbttaglist._
+
 object NiceSettingsPlugin extends sbt.Plugin {
 
   // Setting keys:
@@ -120,6 +122,21 @@ object NiceSettingsPlugin extends sbt.Plugin {
         )
       , test in assembly := {}
       )
+
+    lazy val tagListSettings: Seq[Setting[_]] = {
+      import TagListPlugin._
+      TagListPlugin.tagListSettings ++ Seq(
+        TagListKeys.tags := Set(
+          Tag("note", TagListPlugin.Info),
+          Tag("todo", TagListPlugin.Warn), 
+          Tag("fixme", TagListPlugin.Warn)
+        ),
+        compile := {
+          val _ = TagListKeys.tagList.value
+          (compile in Compile).value
+        }
+      )
+    }
 
     lazy val checkReleaseNotes: ReleaseStep = { st: State =>
       val extracted = Project.extract(st)
