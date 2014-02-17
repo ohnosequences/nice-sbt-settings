@@ -60,6 +60,11 @@ object NiceSettingsPlugin extends sbt.Plugin {
           , "-Xlint"
           , "-target:jvm-1.7"
           )
+
+      , cleanFiles ++= Seq(
+          baseDirectory.value / "project/target"
+        , baseDirectory.value / "project/project"
+        )
       )
 
     lazy val javaSettings: Seq[Setting[_]] = Seq(
@@ -123,6 +128,11 @@ object NiceSettingsPlugin extends sbt.Plugin {
       , test in assembly := {}
       )
 
+    lazy val literatorSettings = 
+      Literator.settings ++ Seq[Setting[_]](
+        cleanFiles ++= Literator.docsOutputDirs.value
+      )
+
     lazy val tagListSettings: Seq[Setting[_]] = {
       import TagListPlugin._
       TagListPlugin.tagListSettings ++ Seq(
@@ -182,10 +192,10 @@ object NiceSettingsPlugin extends sbt.Plugin {
     // Global combinations of settings:
     lazy val scalaProject: Seq[Setting[_]] =
       metainfoSettings ++
-      Literator.settings ++
       scalaSettings ++
       resolversSettings ++
       publishingSettings ++
+      literatorSettings ++
       releaseSettings ++
       tagListSettings
 
