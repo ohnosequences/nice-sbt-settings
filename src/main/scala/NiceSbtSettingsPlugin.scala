@@ -203,21 +203,21 @@ object NiceSettingsPlugin extends sbt.Plugin {
         }
       , releaseProcess := // use thisProjectRef.value if needed
           Seq[ReleaseStep](
-            checkSnapshotDependencies
-          , checkGHCreds
-          , checkPackaging
-          , genDocsAndCommit
-          , runTest
-          , inquireVersions
-          , tempSetVersion
-          , publishArtifacts
-          , setReleaseVersion
-          , commitReleaseVersion
-          , tagRelease
-          , releaseOnGHStep
-          , setNextVersion
-          , commitNextVersion
-          , pushChanges
+          checkSnapshotDependencies // no snapshot deps in release
+          , checkGHCreds            // check that we can publish Github release
+          , checkPackaging          // try to package the artifacts
+          , genDocsAndCommit        // generate literator docs and commit if needed
+          , runTest                 // compile and test
+          , inquireVersions         // ask about release version and the next one
+          , tempSetVersion          // set the chosed version for publishing
+          , publishArtifacts        // try to publish artifacts
+          , setReleaseVersion       // if it was ok, set the version finally
+          , commitReleaseVersion    // and commit it
+          , tagRelease              // and make a tag
+          , releaseOnGHStep         // and publish notes on github
+          , setNextVersion          // bump the version
+          , commitNextVersion       // commit it
+          , pushChanges             // and push everything to github
           )
       )
 
