@@ -1,5 +1,3 @@
-import com.markatta.sbttaglist._
-
 Nice.scalaProject
 
 sbtPlugin := true

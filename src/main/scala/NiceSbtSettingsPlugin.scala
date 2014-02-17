@@ -189,7 +189,8 @@ object NiceSettingsPlugin extends sbt.Plugin {
       scalaSettings ++
       resolversSettings ++
       publishingSettings ++
-      releaseSettings
+      releaseSettings ++
+      tagListSettings
 
     lazy val javaProject: Seq[Setting[_]] =
       scalaProject ++
