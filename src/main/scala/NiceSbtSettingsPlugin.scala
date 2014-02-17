@@ -10,7 +10,7 @@ import ReleaseKeys._
 
 import ohnosequences.sbt.SbtS3Resolver._
 
-import ohnosequences.literator.plugin.LiteratorPlugin._
+import laughedelic.literator.plugin.LiteratorPlugin._
 
 import sbtassembly._
 import sbtassembly.Plugin._
@@ -143,7 +143,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
     }
 
     lazy val genDocsForRelease: ReleaseStep = 
-      ReleaseStep({st => Project.extract(st).runTask(generateDocs, st)._1 })
+      ReleaseStep({st => Project.extract(st).runTask(Literator.generateDocs, st)._1 })
 
     lazy val releaseSettings: Seq[Setting[_]] = 
       ReleasePlugin.releaseSettings ++ Seq(
@@ -168,7 +168,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
     // Global combinations of settings:
     lazy val scalaProject: Seq[Setting[_]] =
       metainfoSettings ++
-      literatorSettings ++
+      Literator.settings ++
       scalaSettings ++
       resolversSettings ++
       publishingSettings ++
