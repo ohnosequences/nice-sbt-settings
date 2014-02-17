@@ -16,9 +16,15 @@ resolvers ++= Seq(
   Resolver.url("laughedelic sbt-plugins", url("http://dl.bintray.com/laughedelic/sbt-plugins"))(Resolver.ivyStylePatterns)
 )
 
-dependencyOverrides += "org.apache.ivy" % "ivy" % "2.3.0"
+dependencyOverrides ++= Set(
+  "org.apache.ivy" % "ivy" % "2.3.0",
+  "commons-codec" % "commons-codec" % "1.7",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.2.3"
+)
 
 addSbtPlugin("ohnosequences" % "sbt-s3-resolver" % "0.8.0")
+
+addSbtPlugin("ohnosequences" % "sbt-github-release" % "0.1.0")
 
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "0.8.2")
 
