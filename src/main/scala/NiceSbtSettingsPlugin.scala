@@ -10,7 +10,7 @@ import ReleaseKeys._
 
 import ohnosequences.sbt.SbtS3Resolver._
 
-import ohnosequences.literator.plugin.LiteratorPlugin._
+import laughedelic.literator.plugin.LiteratorPlugin._
 
 import sbtassembly._
 import sbtassembly.Plugin._
