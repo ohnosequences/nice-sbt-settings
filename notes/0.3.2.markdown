@@ -1,0 +1,2 @@
+* Upgraded to [sbt-release](https://github.com/sbt/sbt-release) [`0.8.2`](http://notes.implicit.ly/post/76357095731/sbt-release-0-8-2)
+* Upgraded to [literator `v0.4.1`](https://github.com/laughedelic/literator/releases/tag/v0.4.1)
