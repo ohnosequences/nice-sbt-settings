@@ -151,11 +151,22 @@ object NiceSettingsPlugin extends sbt.Plugin {
     lazy val genDocsForRelease: ReleaseStep = 
       ReleaseStep({st => Project.extract(st).runTask(Literator.generateDocs, st)._1 })
 
-    // lazy val checkDependencyUpdates: ReleaseStep = {
-    //   import com.timushev.sbt.updates._
-    //   // import UpdatesKeys._
-    //   ReleaseStep({st => Project.extract(st).runTask(UpdatesPluginTasks.dependencyUpdatesTask, st)._1 })
-    // }
+    lazy val checkDependencyUpdates: ReleaseStep = { st: State => 
+      import com.timushev.sbt.updates._
+
+      import UpdatesKeys._
+      Project.extract(st).runAggregated(dependencyUpdates, st)
+
+      // val map = com.timushev.sbt.updates.Reporter.dependencyUpdatesData(
+      //   projectID.value, 
+      //   libraryDependencies.value, 
+      //   externalResolvers.value, 
+      //   scalaVersion.value, 
+      //   scalaBinaryVersion.value
+      // )
+      // println(map)
+      // st
+    }
 
     lazy val releaseSettings: Seq[Setting[_]] = 
       ReleasePlugin.releaseSettings ++ Seq(
