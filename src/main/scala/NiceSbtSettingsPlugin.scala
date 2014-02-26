@@ -225,7 +225,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
           releaseTask(Keys.`package`),                       // try to package the artifacts
           genMarkdownDocsForRelease,                         // generate literator docs and commit if needed
           genApiDocsForRelease,                              // generate javadocs or scaladocs and push it to the gh-pages branch
-          publishArtifacts,                                  // try to publish artifacts
+          releaseTask(publish),                                  // try to publish artifacts
           setReleaseVersion,                                 // if it was ok, set the version finally
           commitReleaseVersion,                              // and commit it
           tagRelease,                                        // and make a tag
