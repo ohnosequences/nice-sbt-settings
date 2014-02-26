@@ -1,0 +1,1 @@
+Index.PACKAGES = {"ohnosequences" : [], "ohnosequences.sbt" : [{"object" : "ohnosequences\/sbt\/ApiDocsGeneration$.html", "name" : "ohnosequences.sbt.ApiDocsGeneration"}, {"object" : "ohnosequences\/sbt\/NiceSettingsPlugin$.html", "name" : "ohnosequences.sbt.NiceSettingsPlugin"}], "sbt" : []};
