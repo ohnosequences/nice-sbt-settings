@@ -28,6 +28,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
   lazy val publishBucketSuffix = settingKey[String]("Amazon S3 bucket suffix for publish-to resolver")
   lazy val publishS3Resolver = settingKey[S3Resolver]("S3Resolver which will be used in publishTo")
   lazy val fatArtifactClassifier = settingKey[String]("Classifier of the fat jar artifact")
+  lazy val publishOrFail = taskKey[Unit]("Same as publish")
 
   // Just some aliases for the patterns
   val mvn = Resolver.mavenStylePatterns
@@ -161,7 +162,11 @@ object NiceSettingsPlugin extends sbt.Plugin {
     def releaseTask[T](key: TaskKey[T]): ReleaseStep = { st: State =>
       val extracted = Project.extract(st)
       val ref = extracted.get(thisProjectRef)
-      extracted.runAggregated(key in ref, st)
+      try { 
+        extracted.runAggregated(key in ref, st)
+      } catch {
+        case e: java.lang.Error => sys.error(e.toString)
+      }
     }
 
     import ApiDocsGeneration._
