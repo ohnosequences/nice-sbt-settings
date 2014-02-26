@@ -169,7 +169,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
     lazy val tempSetVersion: ReleaseStep = { st: State =>
       val v = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))._1
       st.log.info("Setting version to " + v)
-      reapply(Seq(
+      ReleaseStateTransformations.reapply(Seq(
         version in ThisBuild := v
       ), st)
     }
