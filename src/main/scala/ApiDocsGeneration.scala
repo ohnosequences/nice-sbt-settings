@@ -46,9 +46,9 @@ object ApiDocsGeneration {
           val lastSt = extracted.runAggregated(doc in Compile in ref, newSt)
 
           val ghpages = Git.mkVcs(ghpagesDir)
-          ghpages.add("docs").!
-          ghpages.commit("Updated API docs for sources commit: " + vcs.currentHash).!
-          ghpages.cmd("push").!
+          ghpages.add("docs") ! lastSt.log
+          ghpages.commit("Updated API docs for sources commit: " + vcs.currentHash) ! lastSt.log
+          ghpages.cmd("push") ! lastSt.log
 
           lastSt
         }
