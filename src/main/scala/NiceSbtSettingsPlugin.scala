@@ -249,6 +249,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
       resolversSettings ++
       publishingSettings ++
       literatorSettings ++
+      GithubRelease.defaults ++
       releaseSettings ++
       tagListSettings
 
