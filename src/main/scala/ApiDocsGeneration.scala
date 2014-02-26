@@ -45,7 +45,16 @@ object ApiDocsGeneration {
             ), st)
           val lastSt = Project.extract(newSt).runAggregated(doc in Compile in ref, newSt)
 
-          val ghpages = Git.mkVcs(ghpagesDir)
+          object ghpages extends Git(ghpagesDir) {
+            lazy val exec = {
+              val maybeOsName = sys.props.get("os.name").map(_.toLowerCase)
+              val maybeIsWindows = maybeOsName.filter(_.contains("windows"))
+              maybeIsWindows.map(_ => "git.exe").getOrElse("git")
+            }
+
+            override def cmd(args: Any*): ProcessBuilder = 
+              Process(exec +: args.map(_.toString), ghpagesDir)
+          }
           ghpages.add("docs") ! lastSt.log
           ghpages.commit("Updated API docs for sources commit: " + vcs.currentHash) ! lastSt.log
           ghpages.cmd("push") ! lastSt.log
