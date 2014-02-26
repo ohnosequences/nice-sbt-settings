@@ -63,9 +63,11 @@ object NiceSettingsPlugin extends sbt.Plugin {
           , "-target:jvm-1.7"
           )
 
+      // ful cleaning
       , cleanFiles ++= Seq(
           baseDirectory.value / "project/target"
         , baseDirectory.value / "project/project"
+        , (target in (Compile, doc)).value
         )
       )
 
@@ -81,8 +83,8 @@ object NiceSettingsPlugin extends sbt.Plugin {
         , "-Xlint:unchecked"
         , "-encoding", "UTF-8"
         )
+      // javadoc doesn't know about source/target 1.7
       , javacOptions in (Compile, doc) := Seq()
-      , cleanFiles += (target in (Compile, doc)).value
       )
 
     lazy val resolversSettings: Seq[Setting[_]] = Seq(
