@@ -1,3 +1,5 @@
+
+```scala
 package ohnosequences.sbt
 
 import sbt._
@@ -260,3 +262,19 @@ object NiceSettingsPlugin extends sbt.Plugin {
   }
 
 }
+
+```
+
+
+------
+
+### Index
+
++ src
+  + main
+    + scala
+      + [ApiDocsGeneration.scala][main/scala/ApiDocsGeneration.scala]
+      + [NiceSbtSettingsPlugin.scala][main/scala/NiceSbtSettingsPlugin.scala]
+
+[main/scala/ApiDocsGeneration.scala]: ApiDocsGeneration.scala.md
+[main/scala/NiceSbtSettingsPlugin.scala]: NiceSbtSettingsPlugin.scala.md

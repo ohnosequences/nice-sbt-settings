@@ -1,0 +1,14 @@
+* Upgrades:
+    - [x] upgrade to [sbt-release](https://github.com/sbt/sbt-release) [`0.8.2`](http://notes.implicit.ly/post/76357095731/sbt-release-0-8-2)
+    - [x] upgrade to [sbt-s3-resolver `0.8.0`](https://github.com/ohnosequences/sbt-s3-resolver/releases/tag/v0.8.0)
+    - [x] upgrade to [literator `v0.5.0`](https://github.com/laughedelic/literator/releases/tag/v0.5.0)
+
+* New integrations:
+    - [x] [sbt-taglist](https://github.com/johanandren/sbt-taglist): for warnings about `TODO` and `FIXME` tags
+    - [x] [sbt-github-release](https://github.com/ohnosequences/sbt-github-release): for automated release notes and artifacts on Github
+    - [x] javadocs/scaladocs API docs generation as a release process step (#15)
+
+* Improvements:
+    - [x] improve release process (#12)
+    - [x] adding release notes to the version setting commit message
+    - [x] `clean` cleans `project/` folder from sbt-stuff and cleans all generated docs
