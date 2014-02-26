@@ -143,8 +143,8 @@ object NiceSettingsPlugin extends sbt.Plugin {
       import TagListPlugin._
       TagListPlugin.tagListSettings ++ Seq(
         TagListKeys.tags := Set(
-          Tag("note", TagListPlugin.Info),
-          Tag("todo", TagListPlugin.Warn), 
+          // Tag("note", TagListPlugin.Info),
+          Tag("todo", TagListPlugin.Info), 
           Tag("fixme", TagListPlugin.Warn)
         ),
         compile := {

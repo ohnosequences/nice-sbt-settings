@@ -6,8 +6,6 @@
 * New integrations:
     - [x] [sbt-taglist](https://github.com/johanandren/sbt-taglist): for warnings about `TODO` and `FIXME` tags
     - [x] [sbt-github-release](https://github.com/ohnosequences/sbt-github-release): for automated release notes and artifacts on Github
-    - [ ] [sbt-updates](https://github.com/rtimush/sbt-updates): for checking, that your deps are up to date (#10)
-      + using `0.1.4-SNAPSHOT` so far; waiting for a stable release
     - [x] javadocs/scaladocs API docs generation as a release process step (#15)
 
 * Improvements:
