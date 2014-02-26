@@ -168,10 +168,28 @@ object NiceSettingsPlugin extends sbt.Plugin {
 
     lazy val tempSetVersion: ReleaseStep = { st: State =>
       val v = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))._1
-      st.log.info("Setting version to " + v)
+      st.log.info("Setting version temporarily to '" + v + "'")
       ReleaseStateTransformations.reapply(Seq(
         version in ThisBuild := v
       ), st)
+    }
+
+    // almost the same as the standard release step, but it doesn't use our modified commitMessage task
+    lazy val commitNextReleaseVersion: ReleaseStep = { st: State =>
+      val extracted = Project.extract(st)
+      val v = st.get(versions).
+        getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))._2
+      val file = Project.extract(st).get(versionFile)
+
+      val vcs = extracted.get(versionControlSystem).getOrElse(sys.error("No version control system is set!"))
+      if (vcs.status.!!.trim.nonEmpty) {
+        val base = vcs.baseDir
+        val relativePath = IO.relativize(base, file).
+          getOrElse("Version file [%s] is outside of this VCS repository with base directory [%s]!" format(file, base))
+        vcs.add(relativePath) !! st.log
+        vcs.commit("Setting version to '" +v+ "'") ! st.log
+      }
+      st
     }
 
     lazy val releaseSettings: Seq[Setting[_]] = 
@@ -201,19 +219,19 @@ object NiceSettingsPlugin extends sbt.Plugin {
 
           checkSnapshotDependencies,                         // no snapshot deps in release
           releaseTask(GithubRelease.checkGithubCredentials), // check that we can publish Github release
+          inquireVersions,                                   // ask about release version and the next one
+          tempSetVersion,                                    // set the chosed version for publishing
+          runTest,                                           // compile and test
           releaseTask(Keys.`package`),                       // try to package the artifacts
           genMarkdownDocsForRelease,                         // generate literator docs and commit if needed
           genApiDocsForRelease,                              // generate javadocs or scaladocs and push it to the gh-pages branch
-          runTest,                                           // compile and test
-          inquireVersions,                                   // ask about release version and the next one
-          tempSetVersion,                                    // set the chosed version for publishing
           publishArtifacts,                                  // try to publish artifacts
           setReleaseVersion,                                 // if it was ok, set the version finally
           commitReleaseVersion,                              // and commit it
           tagRelease,                                        // and make a tag
           releaseTask(GithubRelease.releaseOnGithub),        // and publish notes on github
           setNextVersion,                                    // bump the version
-          commitNextVersion,                                 // commit it
+          commitNextReleaseVersion,                          // commit it
           pushChanges                                        // and push everything to github
 
         )
