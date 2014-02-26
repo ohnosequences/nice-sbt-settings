@@ -1,3 +1,5 @@
+
+```scala
 package ohnosequences.sbt
 
 import sbt._
@@ -197,23 +199,6 @@ object NiceSettingsPlugin extends sbt.Plugin {
       st
     }
 
-    lazy val checkDependencyUpdates: ReleaseStep = { st: State => 
-      import com.timushev.sbt.updates._
-
-      import UpdatesKeys._
-      Project.extract(st).runAggregated(dependencyUpdates, st)
-
-      // val map = com.timushev.sbt.updates.Reporter.dependencyUpdatesData(
-      //   projectID.value, 
-      //   libraryDependencies.value, 
-      //   externalResolvers.value, 
-      //   scalaVersion.value, 
-      //   scalaBinaryVersion.value
-      // )
-      // println(map)
-      // st
-    }
-
     lazy val releaseSettings: Seq[Setting[_]] = 
       ReleasePlugin.releaseSettings ++ Seq(
         versionBump := Version.Bump.Minor
@@ -277,3 +262,19 @@ object NiceSettingsPlugin extends sbt.Plugin {
   }
 
 }
+
+```
+
+
+------
+
+### Index
+
++ src
+  + main
+    + scala
+      + [ApiDocsGeneration.scala][main/scala/ApiDocsGeneration.scala]
+      + [NiceSbtSettingsPlugin.scala][main/scala/NiceSbtSettingsPlugin.scala]
+
+[main/scala/ApiDocsGeneration.scala]: ApiDocsGeneration.scala.md
+[main/scala/NiceSbtSettingsPlugin.scala]: NiceSbtSettingsPlugin.scala.md
