@@ -63,7 +63,9 @@ object NiceSettingsPlugin extends sbt.Plugin {
           , "-target:jvm-1.7"
           )
 
-      // ful cleaning
+      , target in (Compile, doc) := baseDirectory.value / "gh-pages" / "docs" / "api" / version.value.stripSuffix("-SNAPSHOT")
+
+      // full cleaning
       , cleanFiles ++= Seq(
           baseDirectory.value / "project/target"
         , baseDirectory.value / "project/project"
@@ -85,6 +87,8 @@ object NiceSettingsPlugin extends sbt.Plugin {
         )
       // javadoc doesn't know about source/target 1.7
       , javacOptions in (Compile, doc) := Seq()
+
+      , target in (Compile, doc) := baseDirectory.value / "gh-pages" / "docs" / "api" / version.value.stripSuffix("-SNAPSHOT")
       )
 
     lazy val resolversSettings: Seq[Setting[_]] = Seq(
