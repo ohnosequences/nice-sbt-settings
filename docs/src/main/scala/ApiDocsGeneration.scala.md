@@ -42,7 +42,7 @@ object ApiDocsGeneration {
           sys.error("Couldn't generate API docs, because this repo doesn't have gh-pages branch")
         else {
           val ghpagesDir = extracted.get(baseDirectory) / "target" / "gh-pages"
-          val newSt = reapply(Seq(
+          val newSt = ReleaseStateTransformations.reapply(Seq(
               target in (Compile, doc) := ghpagesDir / "docs" / "api" / extracted.get(version).stripSuffix("-SNAPSHOT")
             ), st)
           val lastSt = extracted.runAggregated(doc in Compile in ref, newSt)
