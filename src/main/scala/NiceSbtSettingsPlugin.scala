@@ -18,6 +18,8 @@ import sbtassembly._
 import sbtassembly.Plugin._
 import AssemblyKeys._
 
+import com.timushev.sbt.updates.UpdatesKeys
+
 import com.markatta.sbttaglist._
 
 object NiceSettingsPlugin extends sbt.Plugin {
@@ -197,22 +199,6 @@ object NiceSettingsPlugin extends sbt.Plugin {
       st
     }
 
-    lazy val checkDependencyUpdates: ReleaseStep = { st: State => 
-      import com.timushev.sbt.updates._
-
-      import UpdatesKeys._
-      Project.extract(st).runAggregated(dependencyUpdates, st)
-
-      // val map = com.timushev.sbt.updates.Reporter.dependencyUpdatesData(
-      //   projectID.value, 
-      //   libraryDependencies.value, 
-      //   externalResolvers.value, 
-      //   scalaVersion.value, 
-      //   scalaBinaryVersion.value
-      // )
-      // println(map)
-      // st
-    }
 
     lazy val releaseSettings: Seq[Setting[_]] = 
       ReleasePlugin.releaseSettings ++ Seq(
@@ -240,6 +226,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
       , releaseProcess := Seq[ReleaseStep](
 
           checkSnapshotDependencies,                         // no snapshot deps in release
+          releaseTask(UpdatesKeys.dependencyUpdates),        // check that we don't have oudated dependencies
           releaseTask(GithubRelease.checkGithubCredentials), // check that we can publish Github release
           inquireVersions,                                   // ask about release version and the next one
           tempSetVersion,                                    // set the chosed version for publishing
@@ -247,7 +234,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
           releaseTask(Keys.`package`),                       // try to package the artifacts
           genMarkdownDocsForRelease,                         // generate literator docs and commit if needed
           genApiDocsForRelease,                              // generate javadocs or scaladocs and push it to the gh-pages branch
-          releaseTask(publish),                                  // try to publish artifacts
+          releaseTask(publish),                              // try to publish artifacts
           setReleaseVersion,                                 // if it was ok, set the version finally
           commitReleaseVersion,                              // and commit it
           tagRelease,                                        // and make a tag

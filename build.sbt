@@ -30,6 +30,7 @@ addSbtPlugin("com.github.gseitz" % "sbt-release" % "0.8.2")
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.10.1")
 
+// FIXME: remove this, once sbt-updates 0.1.4 is released
 resolvers += Resolver.url("sbt-plugin-snapshots", url("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-snapshots"))(Resolver.ivyStylePatterns)
 
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.4-SNAPSHOT")
@@ -37,5 +38,3 @@ addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.4-SNAPSHOT")
 addSbtPlugin("laughedelic" % "literator-plugin" % "0.5.0")
 
 addSbtPlugin("com.markatta" % "taglist-plugin" % "1.3")
-
-// lazy val p = project in file(".") dependsOn RootProject(uri("git://github.com/rtimush/sbt-updates.git"))
