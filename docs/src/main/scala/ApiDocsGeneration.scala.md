@@ -45,7 +45,7 @@ object ApiDocsGeneration {
           val newSt = ReleaseStateTransformations.reapply(Seq(
               target in (Compile, doc) := ghpagesDir / "docs" / "api" / extracted.get(version).stripSuffix("-SNAPSHOT")
             ), st)
-          val lastSt = extracted.runAggregated(doc in Compile in ref, newSt)
+          val lastSt = Project.extract(newSt).runAggregated(doc in Compile in ref, newSt)
 
           val ghpages = Git.mkVcs(ghpagesDir)
           ghpages.add("docs") ! lastSt.log
