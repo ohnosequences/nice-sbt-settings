@@ -28,6 +28,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
   lazy val publishBucketSuffix = settingKey[String]("Amazon S3 bucket suffix for publish-to resolver")
   lazy val publishS3Resolver = settingKey[S3Resolver]("S3Resolver which will be used in publishTo")
   lazy val fatArtifactClassifier = settingKey[String]("Classifier of the fat jar artifact")
+  lazy val releaseStepByStep = settingKey[Boolean]("Defines whether release process will wait for confirmation after each step")
   
   // Just some aliases for the patterns
   val mvn = Resolver.mavenStylePatterns
@@ -194,9 +195,22 @@ object NiceSettingsPlugin extends sbt.Plugin {
       st
     }
 
+    def shout(what: String, dontStop: Boolean = false): ReleaseStep = { st: State =>
+      val extracted = Project.extract(st)
+      st.log.info("\n"+what+"\n")
+      if (extracted.get(releaseStepByStep) && !dontStop) {
+        SimpleReader.readLine("Do you want to continue (y/n)? [y] ") match {
+          case Some("n" | "N") => sys.error("Aborting release")
+          case _ => // go on
+        }
+      }
+      st
+    }
+
     lazy val releaseSettings: Seq[Setting[_]] = 
       ReleasePlugin.releaseSettings ++ Seq(
         versionBump := Version.Bump.Minor
+      , releaseStepByStep := true
       , tagComment  := {organization.value +"/"+ name.value +" v"+ (version in ThisBuild).value}
       // checking release notes and adding them to the commit message
       , commitMessage := {
@@ -219,21 +233,40 @@ object NiceSettingsPlugin extends sbt.Plugin {
         }
       , releaseProcess := Seq[ReleaseStep](
 
+          shout("[1/10] INITIAL CHECKS", dontStop = true),
           checkSnapshotDependencies,                         // no snapshot deps in release
           releaseTask(GithubRelease.checkGithubCredentials), // check that we can publish Github release
+
+          shout("[2/10] SETTING RELEASE VERSION", dontStop = true),
           inquireVersions,                                   // ask about release version and the next one
           tempSetVersion,                                    // set the chosed version for publishing
-          runTest,                                           // compile and test
+
+          shout("[3/10] PACKAGING AND RUNNING TESTS"),
           releaseTask(Keys.`package`),                       // try to package the artifacts
+          runTest,                                           // compile and test
+
+          shout("[4/10] GENERATING AND COMMITING MARKDOWN DOCUMENTATION"),
           genMarkdownDocsForRelease,                         // generate literator docs and commit if needed
+
+          shout("[5/10] GENERATING API DOCUMENTATION AND PUSHING TO GH-PAGES"),
           genApiDocsForRelease,                              // generate javadocs or scaladocs and push it to the gh-pages branch
-          releaseTask(publish),                                  // try to publish artifacts
+
+          shout("[6/10] PUBLISHING ARTIFACTS"),
+          releaseTask(publish),                              // try to publish artifacts
+
+          shout("[7/10] COMMITTING RELEASE VERSION AND TAGGING", dontStop = true),
           setReleaseVersion,                                 // if it was ok, set the version finally
           commitReleaseVersion,                              // and commit it
           tagRelease,                                        // and make a tag
+
+          shout("[8/10] PUBLISHING RELEASE ON GITHUB"),
           releaseTask(GithubRelease.releaseOnGithub),        // and publish notes on github
+
+          shout("[9/10] SETTING AND COMMITTING NEXT VERSION"),
           setNextVersion,                                    // bump the version
           commitNextReleaseVersion,                          // commit it
+
+          shout("[10/10] PUSHING COMMITS TO GITHUB", dontStop = true),
           pushChanges                                        // and push everything to github
 
         )
