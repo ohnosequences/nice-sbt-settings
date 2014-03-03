@@ -217,18 +217,19 @@ object NiceSettingsPlugin extends sbt.Plugin {
           val log = streams.value.log
           val v = (version in ThisBuild).value
           val note: File = baseDirectory.value / "notes" / (v+".markdown")
-          if (!note.exists) sys.error("Release notes file "+note+" doesn't exist")
-          else {
-            val text: String = IO.read(note)
-            if (text.isEmpty) sys.error("Release notes file "+note+" is empty")
-            else {
-              val msg = "Setting version to " +v+ ":\n\n"+ text
-              log.info(msg)
-              SimpleReader.readLine("Do you want to proceed with these release notes (y/n)? [y] ") match {
-                case Some("n" | "N") => sys.error("Aborting release. Go write better release notes.")
-                case _ => msg
-              }
+          while (!note.exists || IO.read(note).isEmpty) {
+            log.error("Release notes file "+note+"  doesn't exist or is empty!")
+            SimpleReader.readLine("You can write release notes now and continue the process. Ready (y/n)? [y] ") match {
+              case Some("n" | "N") => sys.error("Aborting release. No release notes.")
+              case _ => // go on
             }
+          }
+          val text: String = IO.read(note)
+          val msg = "Setting version to " +v+ ":\n\n"+ text
+          log.info(msg)
+          SimpleReader.readLine("Do you want to proceed with these release notes (y/n)? [y] ") match {
+            case Some("n" | "N") => sys.error("Aborting release. Go write better release notes.")
+            case _ => msg
           }
         }
       , releaseProcess := Seq[ReleaseStep](
