@@ -27,7 +27,7 @@ object ApiDocsGeneration {
     newSt
   }
 
-  lazy val genApiDocsForRelease: ReleaseStep = { st: State =>
+  def pushApiDocsToGHPages = Command.command("pushApiDocsToGHPages") { st: State =>
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
 
@@ -64,5 +64,7 @@ object ApiDocsGeneration {
       }
     }
   }
+
+  lazy val genApiDocsForRelease = ReleaseStep{ Command.process("pushApiDocsToGHPages", _) }
 
 }

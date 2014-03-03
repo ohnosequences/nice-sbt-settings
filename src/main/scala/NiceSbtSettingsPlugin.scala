@@ -28,8 +28,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
   lazy val publishBucketSuffix = settingKey[String]("Amazon S3 bucket suffix for publish-to resolver")
   lazy val publishS3Resolver = settingKey[S3Resolver]("S3Resolver which will be used in publishTo")
   lazy val fatArtifactClassifier = settingKey[String]("Classifier of the fat jar artifact")
-  lazy val publishOrFail = taskKey[Unit]("Same as publish")
-
+  
   // Just some aliases for the patterns
   val mvn = Resolver.mavenStylePatterns
   val ivy = Resolver.ivyStylePatterns
@@ -64,14 +63,14 @@ object NiceSettingsPlugin extends sbt.Plugin {
           , "-target:jvm-1.7"
           )
 
-      // , target in (Compile, doc) := (target in Compile).value / "gh-pages" / "docs" / "api" / version.value.stripSuffix("-SNAPSHOT")
-
       // full cleaning
       , cleanFiles ++= Seq(
           baseDirectory.value / "project/target"
         , baseDirectory.value / "project/project"
         , (target in (Compile, doc)).value
         )
+
+      , commands += ApiDocsGeneration.pushApiDocsToGHPages
       )
 
     lazy val javaSettings: Seq[Setting[_]] = Seq(
@@ -88,8 +87,6 @@ object NiceSettingsPlugin extends sbt.Plugin {
         )
       // javadoc doesn't know about source/target 1.7
       , javacOptions in (Compile, doc) := Seq()
-
-      // , target in (Compile, doc) := (target in Compile).value / "gh-pages" / "docs" / "api" / version.value.stripSuffix("-SNAPSHOT")
       )
 
     lazy val resolversSettings: Seq[Setting[_]] = Seq(

@@ -29,6 +29,44 @@ object ApiDocsGeneration {
     newSt
   }
 
+  def pushApiDocsToGHPages = Command.command("pushApiDocsToGHPages") { st: State =>
+    val extracted = Project.extract(st)
+    val ref = extracted.get(thisProjectRef)
+
+    extracted get versionControlSystem match {
+      case None => sys.error("No version control system is set!")
+      case Some(vcs) => {
+        lazy val remote: String = vcs.cmd("config", "branch.%s.remote" format vcs.currentBranch).!!.trim
+        lazy val url: String = vcs.cmd("ls-remote", "--get-url", remote).!!.trim
+        if (vcs.cmd("clone", "-b", "gh-pages", "--single-branch", url, "target/gh-pages").! != 0)
+          sys.error("Couldn't generate API docs, because this repo doesn't have gh-pages branch")
+        else {
+          val ghpagesDir = extracted.get(baseDirectory) / "target" / "gh-pages"
+          val newSt = ReleaseStateTransformations.reapply(Seq(
+              target in (Compile, doc) := ghpagesDir / "docs" / "api" / extracted.get(version).stripSuffix("-SNAPSHOT")
+            ), st)
+          val lastSt = Project.extract(newSt).runAggregated(doc in Compile in ref, newSt)
+
+          object ghpages extends Git(ghpagesDir) {
+            lazy val exec = {
+              val maybeOsName = sys.props.get("os.name").map(_.toLowerCase)
+              val maybeIsWindows = maybeOsName.filter(_.contains("windows"))
+              maybeIsWindows.map(_ => "git.exe").getOrElse("git")
+            }
+
+            override def cmd(args: Any*): ProcessBuilder = 
+              Process(exec +: args.map(_.toString), ghpagesDir)
+          }
+          ghpages.add("docs") ! lastSt.log
+          ghpages.commit("Updated API docs for sources commit: " + vcs.currentHash) ! lastSt.log
+          ghpages.cmd("push") ! lastSt.log
+
+          lastSt
+        }
+      }
+    }
+  }
+
   lazy val genApiDocsForRelease: ReleaseStep = { st: State =>
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
@@ -38,7 +76,7 @@ object ApiDocsGeneration {
       case Some(vcs) => {
         lazy val remote: String = vcs.cmd("config", "branch.%s.remote" format vcs.currentBranch).!!.trim
         lazy val url: String = vcs.cmd("ls-remote", "--get-url", remote).!!.trim
-        if (vcs.cmd("clone", "-b", "gh-pages", url, "target/gh-pages").! != 0)
+        if (vcs.cmd("clone", "-b", "gh-pages", "--single-branch", url, "target/gh-pages").! != 0)
           sys.error("Couldn't generate API docs, because this repo doesn't have gh-pages branch")
         else {
           val ghpagesDir = extracted.get(baseDirectory) / "target" / "gh-pages"
