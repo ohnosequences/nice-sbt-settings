@@ -1,0 +1,6 @@
+* Bugfix:
+    - When cloning the `gh-pages` branch for API docs, clone **only** it
+
+* Improvements:
+    - Separated API docs generation into a command: `pushApiDocsToGHPages`
+    - Added release steps logging and optional confirmation on every step: `releaseStepByStep` (`true` by default)
