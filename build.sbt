@@ -30,6 +30,6 @@ addSbtPlugin("com.github.gseitz" % "sbt-release" % "0.8.2")
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.10.1")
 
-addSbtPlugin("laughedelic" % "literator-plugin" % "0.5.0")
+addSbtPlugin("laughedelic" % "literator-plugin" % "0.5.1")
 
 addSbtPlugin("com.markatta" % "taglist-plugin" % "1.3")
