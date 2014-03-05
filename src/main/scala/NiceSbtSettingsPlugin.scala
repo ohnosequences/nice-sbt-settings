@@ -94,14 +94,14 @@ object NiceSettingsPlugin extends sbt.Plugin {
         bucketSuffix := {organization.value + ".com"}
       , resolvers ++= Seq ( 
           organization.value + " public maven releases"  at 
-            toHttp("s3://releases." + bucketSuffix.value)
+            s3("releases." + bucketSuffix.value).toHttp
         , organization.value + " public maven snapshots" at 
-            toHttp("s3://snapshots." + bucketSuffix.value)
+            s3("snapshots." + bucketSuffix.value).toHttp
         // ivy
         , Resolver.url(organization.value + " public ivy releases", 
-                       url(toHttp("s3://releases." + bucketSuffix.value)))(ivy)
+                       url(s3("releases." + bucketSuffix.value).toHttp))(ivy)
         , Resolver.url(organization.value + " public ivy snapshots", 
-                       url(toHttp("s3://snapshots." + bucketSuffix.value)))(ivy)
+                       url(s3("snapshots." + bucketSuffix.value).toHttp))(ivy)
         ) 
       )
 
@@ -113,14 +113,10 @@ object NiceSettingsPlugin extends sbt.Plugin {
           val privacy = if (isPrivate.value) "private." else ""
           val prefix = if (isSnapshot.value) "snapshots" else "releases"
           val address = privacy+prefix+"."+publishBucketSuffix.value 
-          S3Resolver( 
-            name = address+" S3 publishing bucket"
-          , url = "s3://"+address
-          , patterns = if(publishMavenStyle.value) mvn else ivy
-          , overwrite = isSnapshot.value
-          )
+          s3resolver.value(address+" S3 publishing bucket", s3(address)).
+            withPatterns(if(publishMavenStyle.value) mvn else ivy)
         }
-      , publishTo := {s3credentials.value map publishS3Resolver.value.toSbtResolver}
+      , publishTo := {Some(publishS3Resolver.value)}
       // disable publishing docs
       , publishArtifact in (Compile, packageDoc) := false
       )
@@ -277,6 +273,7 @@ object NiceSettingsPlugin extends sbt.Plugin {
     lazy val scalaProject: Seq[Setting[_]] =
       metainfoSettings ++
       scalaSettings ++
+      S3Resolver.settings ++
       resolversSettings ++
       publishingSettings ++
       literatorSettings ++
