@@ -67,7 +67,7 @@ Making paths relative to the base dir
 adding files
 
 ```scala
-    vcs.add(paths: _*) !! st.log
+    vcs.cmd((Seq("add", "--all") ++ paths): _*) !! st.log
 ```
 
 commiting _only_ them
@@ -164,7 +164,7 @@ Almost the same as the standard release step, but it doesn't use our modified co
         tempSetVersion,                                    // set the chosen version for publishing
         checkReleaseNotes,
 
-        shout("[3/10] PACKAGING AND RUNNING TESTS"),
+        shout("[3/10] PACKAGING AND RUNNING TESTS", dontStop = true),
         releaseTask(Keys.`package`),                       // try to package the artifacts
         runTest,                                           // compile and test
 
