@@ -1,4 +1,11 @@
-package ohnosequences.sbt
+/* ## Documentation settings 
+
+   This module takes care of producing two kinds of documentation:
+
+   - Converting sources to markdown with [literator](https://github.com/laughedelic/literator)
+   - Generating API docs (javadocs/scaladocs) and pushing it to the gh-pages branch
+*/
+package ohnosequences.sbt.nice
 
 import sbt._
 import Keys._
@@ -10,9 +17,22 @@ import ReleaseKeys._
 
 import laughedelic.literator.plugin.LiteratorPlugin._
 
-object ApiDocsGeneration {
+object DocumentationSettings extends sbt.Plugin {
 
-  lazy val genMarkdownDocsForRelease: ReleaseStep = { st: State =>
+  /* ### Settings */
+
+  lazy val literatorSettings = 
+    Literator.settings ++ Seq[Setting[_]](
+      cleanFiles ++= Literator.docsOutputDirs.value
+    )
+
+  /* ### Commands 
+
+     These two actions are commands instead of tasks, because they need to set other settings (i.e.
+     change `State`)
+  */
+
+  lazy val genMarkdownDocsAndCommit = Command.command("genMarkdownDocsAndCommit") { st: State =>
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
     val newSt = extracted.runAggregated(Literator.generateDocs in ref, st)
@@ -65,6 +85,9 @@ object ApiDocsGeneration {
     }
   }
 
-  lazy val genApiDocsForRelease = ReleaseStep{ Command.process("pushApiDocsToGHPages", _) }
+  /* ### Release steps */
+
+  lazy val genMarkdownDocsForRelease: ReleaseStep = { Command.process("genMarkdownDocsAndCommit", _: State) }
+  lazy val genApiDocsForRelease = ReleaseStep{ Command.process("pushApiDocsToGHPages", _: State) }
 
 }
