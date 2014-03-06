@@ -7,4 +7,4 @@ resolvers ++= Seq(
 )
 
 // addSbtPlugin("ohnosequences" % "nice-sbt-settings" % "0.4.0-M2")
-addSbtPlugin("ohnosequences" % "nice-sbt-settings" % "0.3.2")
+addSbtPlugin("ohnosequences" % "nice-sbt-settings" % "0.4.0-SNAPSHOT")
