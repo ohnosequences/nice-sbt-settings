@@ -78,6 +78,15 @@ object ReleaseSettings extends sbt.Plugin {
     commitFiles("Setting version to '" +v+ "'", extracted get versionFile)(st)
   }
 
+  lazy val checkReleaseNotes = ReleaseStep { st: State =>
+    val extracted = Project.extract(st)
+    val v = extracted get (version in ThisBuild)
+    val note: File = (extracted get baseDirectory) / "notes" / (v+".markdown")
+    if (!note.exists || IO.read(note).isEmpty)
+      sys.error("Release notes file "+note+"  doesn't exist or is empty! You forgot to write release notes.")
+    else st
+  }
+
   def shout(what: String, dontStop: Boolean = false): ReleaseStep = { st: State =>
     val extracted = Project.extract(st)
     st.log.info("\n"+what+"\n")
@@ -105,13 +114,6 @@ object ReleaseSettings extends sbt.Plugin {
         val log = streams.value.log
         val v = (version in ThisBuild).value
         val note: File = baseDirectory.value / "notes" / (v+".markdown")
-        while (!note.exists || IO.read(note).isEmpty) {
-          log.error("Release notes file "+note+"  doesn't exist or is empty!")
-          SimpleReader.readLine("You can write release notes now and continue the process. Ready (y/n)? [y] ") match {
-            case Some("n" | "N") => sys.error("Aborting release. No release notes.")
-            case _ => // go on
-          }
-        }
         val text: String = IO.read(note)
         val msg = "Setting version to " +v+ ":\n\n"+ text
         log.info(msg)
@@ -126,15 +128,14 @@ object ReleaseSettings extends sbt.Plugin {
       releaseProcess := Seq[ReleaseStep](
 
         shout("[1/10] INITIAL CHECKS", dontStop = true),
-        checkSnapshotDependencies,                         // no snapshot deps in release
-        releaseTask(GithubRelease.checkGithubCredentials), // check that we can publish Github release
+        checkSnapshotDependencies,
+        releaseTask(GithubRelease.checkGithubCredentials),
         releaseTask(TagListKeys.tagList),
-        // TODO: check release notes presence
-        // TODO: check dependencies updates
+        checkReleaseNotes,
 
         shout("[2/10] SETTING RELEASE VERSION", dontStop = true),
         inquireVersions,                                   // ask about release version and the next one
-        tempSetVersion,                                    // set the chosed version for publishing
+        tempSetVersion,                                    // set the chosen version for publishing
 
         shout("[3/10] PACKAGING AND RUNNING TESTS"),
         releaseTask(Keys.`package`),                       // try to package the artifacts
