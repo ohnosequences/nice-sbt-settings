@@ -6,7 +6,7 @@ Refactoring:
 Release process changes:
     * Moved api docs cloning/generation to a temp dir
     * Moved taglist task to the release initial checks
-    * Moved release notes check to the release initial checks
+    * Moved release notes check after the version setting step
     * Moved commiting to the end of release process
 
 Updates:
