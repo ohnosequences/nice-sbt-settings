@@ -21,11 +21,11 @@ object TagListSettings extends sbt.Plugin {
         // Tag("note", TagListPlugin.Info),
         Tag("todo", TagListPlugin.Info), 
         Tag("fixme", TagListPlugin.Warn)
-      ),
-      compile := {
-        val _ = TagListKeys.tagList.value
-        (compile in Compile).value
-      }
+      )//,
+      // compile := {
+      //   val _ = TagListKeys.tagList.value
+      //   (compile in Compile).value
+      // }
     )
   }
 
