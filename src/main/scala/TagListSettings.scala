@@ -19,13 +19,9 @@ object TagListSettings extends sbt.Plugin {
     TagListPlugin.tagListSettings ++ Seq(
       TagListKeys.tags := Set(
         // Tag("note", TagListPlugin.Info),
-        Tag("todo", TagListPlugin.Info), 
+        Tag("todo", TagListPlugin.Warn), 
         Tag("fixme", TagListPlugin.Warn)
-      )//,
-      // compile := {
-      //   val _ = TagListKeys.tagList.value
-      //   (compile in Compile).value
-      // }
+      )
     )
   }
 

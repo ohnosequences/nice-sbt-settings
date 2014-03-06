@@ -20,6 +20,9 @@ import ohnosequences.sbt.SbtGithubReleasePlugin._
 
 import laughedelic.literator.plugin.LiteratorPlugin._
 
+import com.markatta.sbttaglist._
+import TagListPlugin._
+
 object ReleaseSettings extends sbt.Plugin {
 
   /* ### Setting Keys */
@@ -125,7 +128,9 @@ object ReleaseSettings extends sbt.Plugin {
         shout("[1/10] INITIAL CHECKS", dontStop = true),
         checkSnapshotDependencies,                         // no snapshot deps in release
         releaseTask(GithubRelease.checkGithubCredentials), // check that we can publish Github release
+        releaseTask(TagListKeys.tagList),
         // TODO: check release notes presence
+        // TODO: check dependencies updates
 
         shout("[2/10] SETTING RELEASE VERSION", dontStop = true),
         inquireVersions,                                   // ask about release version and the next one

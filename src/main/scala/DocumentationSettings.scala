@@ -55,7 +55,7 @@ object DocumentationSettings extends sbt.Plugin {
         if (vcs.cmd("clone", "-b", "gh-pages", "--single-branch", url, "target/gh-pages").! != 0)
           sys.error("Couldn't generate API docs, because this repo doesn't have gh-pages branch")
         else {
-          val ghpagesDir = extracted.get(baseDirectory) / "target" / "gh-pages"
+          val ghpagesDir = IO.createTemporaryDirectory
           val newSt = ReleaseStateTransformations.reapply(Seq(
               target in (Compile, doc) := ghpagesDir / "docs" / "api" / extracted.get(version).stripSuffix("-SNAPSHOT")
             ), st)

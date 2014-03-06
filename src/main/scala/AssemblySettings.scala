@@ -23,20 +23,17 @@ object AssemblySettings extends sbt.Plugin {
   `Nice.fatArtifactSettings` line
   */
 
-  // TODO: check, that this doesn't cause any clashes with another Nice object
-  object Nice {
-    lazy val fatArtifactSettings: Seq[Setting[_]] =
-      (assemblySettings: Seq[Setting[_]]) ++ 
-      addArtifact(artifact in (Compile, assembly), assembly) ++ 
-      Seq(
-        // publishing also a fat artifact:
-        fatArtifactClassifier := "fat",
-        artifact in (Compile, assembly) :=
-          (artifact in (Compile, assembly)).value.copy(
-             `classifier` = Some(fatArtifactClassifier.value)
-          ),
-        test in assembly := {}
-      )
-  }
+  lazy val fatArtifactSettings: Seq[Setting[_]] =
+    (assemblySettings: Seq[Setting[_]]) ++ 
+    addArtifact(artifact in (Compile, assembly), assembly) ++ 
+    Seq(
+      // publishing also a fat artifact:
+      fatArtifactClassifier := "fat",
+      artifact in (Compile, assembly) :=
+        (artifact in (Compile, assembly)).value.copy(
+           `classifier` = Some(fatArtifactClassifier.value)
+        ),
+      test in assembly := {}
+    )
 
 }
