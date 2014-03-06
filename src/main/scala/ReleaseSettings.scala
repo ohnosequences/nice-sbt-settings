@@ -54,7 +54,7 @@ object ReleaseSettings extends sbt.Plugin {
       getOrElse(s"Version file [${f}] is outside of this VCS repository with base directory [${base}]!")
     }
     /* adding files */
-    vcs.add(paths: _*) !! st.log
+    vcs.cmd((Seq("add", "--all") ++ paths): _*) !! st.log
     /* commiting _only_ them */
     if (vcs.status.!!.trim.nonEmpty) {
       vcs.cmd((Seq("commit", "-m", msg) ++ paths): _*) !! st.log
@@ -140,7 +140,7 @@ object ReleaseSettings extends sbt.Plugin {
         tempSetVersion,                                    // set the chosen version for publishing
         checkReleaseNotes,
 
-        shout("[3/10] PACKAGING AND RUNNING TESTS"),
+        shout("[3/10] PACKAGING AND RUNNING TESTS", dontStop = true),
         releaseTask(Keys.`package`),                       // try to package the artifacts
         runTest,                                           // compile and test
 
