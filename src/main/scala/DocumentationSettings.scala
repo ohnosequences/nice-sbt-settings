@@ -52,10 +52,10 @@ object DocumentationSettings extends sbt.Plugin {
       case Some(vcs) => {
         lazy val remote: String = vcs.cmd("config", "branch.%s.remote" format vcs.currentBranch).!!.trim
         lazy val url: String = vcs.cmd("ls-remote", "--get-url", remote).!!.trim
-        if (vcs.cmd("clone", "-b", "gh-pages", "--single-branch", url, "target/gh-pages").! != 0)
+        val ghpagesDir = IO.createTemporaryDirectory
+        if (vcs.cmd("clone", "-b", "gh-pages", "--single-branch", url, ghpagesDir).! != 0)
           sys.error("Couldn't generate API docs, because this repo doesn't have gh-pages branch")
         else {
-          val ghpagesDir = IO.createTemporaryDirectory
           val newSt = ReleaseStateTransformations.reapply(Seq(
               target in (Compile, doc) := ghpagesDir / "docs" / "api" / extracted.get(version).stripSuffix("-SNAPSHOT")
             ), st)
