@@ -131,11 +131,13 @@ object ReleaseSettings extends sbt.Plugin {
         checkSnapshotDependencies,
         releaseTask(GithubRelease.checkGithubCredentials),
         releaseTask(TagListKeys.tagList),
+        // TODO: check the gh-pages branch if we're publishing api docs
 
         shout("[2/10] SETTING RELEASE VERSION", dontStop = true),
         inquireVersions,                                   // ask about release version and the next one
         tempSetVersion,                                    // set the chosen version for publishing
         checkReleaseNotes,
+        // TODO: show release notes here and ask confirmation
 
         shout("[3/10] PACKAGING AND RUNNING TESTS"),
         releaseTask(Keys.`package`),                       // try to package the artifacts
