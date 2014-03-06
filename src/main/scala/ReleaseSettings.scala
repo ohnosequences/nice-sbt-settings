@@ -84,7 +84,14 @@ object ReleaseSettings extends sbt.Plugin {
     val note: File = (extracted get baseDirectory) / "notes" / (v+".markdown")
     if (!note.exists || IO.read(note).isEmpty)
       sys.error("Release notes file "+note+"  doesn't exist or is empty! You forgot to write release notes.")
-    else st
+    else {
+      st.log.info(IO.read(note))
+      SimpleReader.readLine("Do you want to proceed with these release notes (y/n)? [y] ") match {
+        case Some("n" | "N") => sys.error("Aborting release. Go write better release notes.")
+        case _ => // go on
+      }
+      st
+    }
   }
 
   def shout(what: String, dontStop: Boolean = false): ReleaseStep = { st: State =>
@@ -115,12 +122,7 @@ object ReleaseSettings extends sbt.Plugin {
         val v = (version in ThisBuild).value
         val note: File = baseDirectory.value / "notes" / (v+".markdown")
         val text: String = IO.read(note)
-        val msg = "Setting version to " +v+ ":\n\n"+ text
-        log.info(msg)
-        SimpleReader.readLine("Do you want to proceed with these release notes (y/n)? [y] ") match {
-          case Some("n" | "N") => sys.error("Aborting release. Go write better release notes.")
-          case _ => msg
-        }
+        "Setting version to " +v+ ":\n\n"+ text
       },
 
     /* ### Release process */
@@ -137,7 +139,6 @@ object ReleaseSettings extends sbt.Plugin {
         inquireVersions,                                   // ask about release version and the next one
         tempSetVersion,                                    // set the chosen version for publishing
         checkReleaseNotes,
-        // TODO: show release notes here and ask confirmation
 
         shout("[3/10] PACKAGING AND RUNNING TESTS"),
         releaseTask(Keys.`package`),                       // try to package the artifacts
