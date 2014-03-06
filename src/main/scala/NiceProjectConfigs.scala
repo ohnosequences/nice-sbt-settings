@@ -31,7 +31,7 @@ object NiceProjectConfigs extends sbt.Plugin {
       metainfoSettings ++
       scalaSettings ++
       resolverSettings ++
-      literatorSettings ++
+      documentationSettings ++
       releaseSettings ++
       tagListSettings
 

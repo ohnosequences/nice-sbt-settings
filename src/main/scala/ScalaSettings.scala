@@ -43,11 +43,10 @@ object ScalaSettings extends sbt.Plugin {
     // full cleaning
     cleanFiles ++= Seq(
       baseDirectory.value / "project/target",
+      // NOTE: we assume here, that you don't have a super-meta-sbt-project
       baseDirectory.value / "project/project",
       (target in (Compile, doc)).value
-    ),
-
-    commands += pushApiDocsToGHPages
+    )
   )
 
 }
