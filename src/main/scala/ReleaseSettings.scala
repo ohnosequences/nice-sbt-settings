@@ -37,6 +37,26 @@ object ReleaseSettings extends sbt.Plugin {
     }
   }
 
+  // NOTE: With any VCS business I always think about Git and don't care much about other VCS systems 
+  // FIXME: I don't care about correct CWD here, so everybody should be awared of it
+  // See <https://github.com/sbt/sbt-release/pull/62>
+  def commitFiles(msg: String, files: File*)(st: State): State = {
+    val extracted = Project.extract(st)
+    val vcs = extracted.get(versionControlSystem).getOrElse(sys.error("No version control system is set!"))
+    val base = vcs.baseDir
+    /* Making paths relative to the base dir */
+    val paths = files map { f => IO.relativize(base, f).
+      getOrElse(s"Version file [${f}] is outside of this VCS repository with base directory [${base}]!")
+    }
+    /* adding files */
+    vcs.add(paths: _*) !! st.log
+    /* commiting _only_ them */
+    if (vcs.status.!!.trim.nonEmpty) {
+      vcs.cmd((Seq("commit", "-m", msg) ++ paths): _*) !! st.log
+    }
+    st
+  }
+
   lazy val tempSetVersion: ReleaseStep = { st: State =>
     val v = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))._1
     st.log.info("Setting version temporarily to '" + v + "'")
@@ -45,22 +65,12 @@ object ReleaseSettings extends sbt.Plugin {
     ), st)
   }
 
-  // almost the same as the standard release step, but it doesn't use our modified commitMessage task
+  /* Almost the same as the standard release step, but it doesn't use our modified commitMessage task */
   lazy val commitNextReleaseVersion: ReleaseStep = { st: State =>
     val extracted = Project.extract(st)
     val v = st.get(versions).
       getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))._2
-    val file = Project.extract(st).get(versionFile)
-
-    val vcs = extracted.get(versionControlSystem).getOrElse(sys.error("No version control system is set!"))
-    if (vcs.status.!!.trim.nonEmpty) {
-      val base = vcs.baseDir
-      val relativePath = IO.relativize(base, file).
-        getOrElse("Version file [%s] is outside of this VCS repository with base directory [%s]!" format(file, base))
-      vcs.add(relativePath) !! st.log
-      vcs.commit("Setting version to '" +v+ "'") ! st.log
-    }
-    st
+    commitFiles("Setting version to '" +v+ "'", extracted get versionFile)(st)
   }
 
   def shout(what: String, dontStop: Boolean = false): ReleaseStep = { st: State =>

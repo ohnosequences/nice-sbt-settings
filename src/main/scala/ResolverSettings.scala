@@ -27,7 +27,8 @@ object ResolverSettings extends sbt.Plugin {
   lazy val resolverSettings: Seq[Setting[_]] = 
     S3Resolver.settings ++ 
     Seq(
-      bucketSuffix := {organization.value + ".com"},
+      /* resolving */
+      bucketSuffix := organization.value + ".com",
       resolvers ++= Seq ( 
         organization.value + " public maven releases"  at s3("releases." + bucketSuffix.value).toHttp,
         organization.value + " public maven snapshots" at s3("snapshots." + bucketSuffix.value).toHttp,
@@ -35,7 +36,7 @@ object ResolverSettings extends sbt.Plugin {
         Resolver.url(organization.value + " public ivy snapshots", url(s3("snapshots." + bucketSuffix.value).toHttp))(ivy)
       ),
 
-      // publishing
+      /* publishing */
       isPrivate := false,
       publishMavenStyle := true,
       publishBucketSuffix := bucketSuffix.value,
