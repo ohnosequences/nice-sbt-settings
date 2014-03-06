@@ -85,6 +85,7 @@ object ReleaseSettings extends sbt.Plugin {
     if (!note.exists || IO.read(note).isEmpty)
       sys.error("Release notes file "+note+"  doesn't exist or is empty! You forgot to write release notes.")
     else {
+      st.log.info(s"\nTaking release notes from the [notes/${v}.markdown] file:\n")
       st.log.info(IO.read(note))
       SimpleReader.readLine("Do you want to proceed with these release notes (y/n)? [y] ") match {
         case Some("n" | "N") => sys.error("Aborting release. Go write better release notes.")
