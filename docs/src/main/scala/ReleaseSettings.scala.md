@@ -98,6 +98,23 @@ Almost the same as the standard release step, but it doesn't use our modified co
     commitFiles("Setting version to '" +v+ "'", extracted get versionFile)(st)
   }
 
+  lazy val checkReleaseNotes = ReleaseStep { st: State =>
+    val extracted = Project.extract(st)
+    val v = extracted get (version in ThisBuild)
+    val note: File = (extracted get baseDirectory) / "notes" / (v+".markdown")
+    if (!note.exists || IO.read(note).isEmpty)
+      sys.error("Release notes file "+note+"  doesn't exist or is empty! You forgot to write release notes.")
+    else {
+      st.log.info(s"\nTaking release notes from the [notes/${v}.markdown] file:\n")
+      st.log.info(IO.read(note))
+      SimpleReader.readLine("Do you want to proceed with these release notes (y/n)? [y] ") match {
+        case Some("n" | "N") => sys.error("Aborting release. Go write better release notes.")
+        case _ => // go on
+      }
+      st
+    }
+  }
+
   def shout(what: String, dontStop: Boolean = false): ReleaseStep = { st: State =>
     val extracted = Project.extract(st)
     st.log.info("\n"+what+"\n")
@@ -121,26 +138,13 @@ Almost the same as the standard release step, but it doesn't use our modified co
       versionBump := Version.Bump.Minor,
       releaseStepByStep := true,
       tagComment  := {organization.value +"/"+ name.value +" v"+ (version in ThisBuild).value},
-
-      // checking release notes and adding them to the commit message
+      // and adding release notes to the commit message
       commitMessage := {
         val log = streams.value.log
         val v = (version in ThisBuild).value
         val note: File = baseDirectory.value / "notes" / (v+".markdown")
-        while (!note.exists || IO.read(note).isEmpty) {
-          log.error("Release notes file "+note+"  doesn't exist or is empty!")
-          SimpleReader.readLine("You can write release notes now and continue the process. Ready (y/n)? [y] ") match {
-            case Some("n" | "N") => sys.error("Aborting release. No release notes.")
-            case _ => // go on
-          }
-        }
         val text: String = IO.read(note)
-        val msg = "Setting version to " +v+ ":\n\n"+ text
-        log.info(msg)
-        SimpleReader.readLine("Do you want to proceed with these release notes (y/n)? [y] ") match {
-          case Some("n" | "N") => sys.error("Aborting release. Go write better release notes.")
-          case _ => msg
-        }
+        "Setting version to " +v+ ":\n\n"+ text
       },
 ```
 
@@ -150,15 +154,15 @@ Almost the same as the standard release step, but it doesn't use our modified co
       releaseProcess := Seq[ReleaseStep](
 
         shout("[1/10] INITIAL CHECKS", dontStop = true),
-        checkSnapshotDependencies,                         // no snapshot deps in release
-        releaseTask(GithubRelease.checkGithubCredentials), // check that we can publish Github release
+        checkSnapshotDependencies,
+        releaseTask(GithubRelease.checkGithubCredentials),
         releaseTask(TagListKeys.tagList),
-        // TODO: check release notes presence
-        // TODO: check dependencies updates
+        // TODO: check the gh-pages branch if we're publishing api docs
 
         shout("[2/10] SETTING RELEASE VERSION", dontStop = true),
         inquireVersions,                                   // ask about release version and the next one
-        tempSetVersion,                                    // set the chosed version for publishing
+        tempSetVersion,                                    // set the chosen version for publishing
+        checkReleaseNotes,
 
         shout("[3/10] PACKAGING AND RUNNING TESTS"),
         releaseTask(Keys.`package`),                       // try to package the artifacts
