@@ -115,8 +115,7 @@ object ReleaseSettings extends sbt.Plugin {
       versionBump := Version.Bump.Minor,
       releaseStepByStep := true,
       tagComment  := {organization.value +"/"+ name.value +" v"+ (version in ThisBuild).value},
-
-      // checking release notes and adding them to the commit message
+      // and adding release notes to the commit message
       commitMessage := {
         val log = streams.value.log
         val v = (version in ThisBuild).value
@@ -125,7 +124,7 @@ object ReleaseSettings extends sbt.Plugin {
         "Setting version to " +v+ ":\n\n"+ text
       },
 
-    /* ### Release process */
+      /* ### Release process */
 
       releaseProcess := Seq[ReleaseStep](
 
