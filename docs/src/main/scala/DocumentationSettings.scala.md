@@ -22,33 +22,21 @@ import laughedelic.literator.plugin.LiteratorPlugin._
 object DocumentationSettings extends sbt.Plugin {
 ```
 
-### Settings
+### Actions 
 
-```scala
-  lazy val documentationSettings = 
-    Literator.settings ++ Seq[Setting[_]](
-      commands ++= Seq(
-        cleanAndGenerateDocs,
-        pushApiDocsToGHPages
-      )
-    )
-```
-
-### Commands 
-
-These two actions are commands instead of tasks, because they need to set other settings (i.e.
-change `State`)
+Actions (`State => State` functions) are nice because you can make from them commands and they
+can be directly used as release steps
 
 
 ```scala
-  lazy val cleanAndGenerateDocs = Command.command("cleanAndGenerateDocs") { st: State =>
+  lazy val cleanAndGenerateDocsAction = { st: State =>
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
     Defaults.doClean(extracted get Literator.docsOutputDirs, Seq())
     extracted.runAggregated(Literator.generateDocs in ref, st)
   }
 
-  def pushApiDocsToGHPages = Command.command("pushApiDocsToGHPages") { st: State =>
+  lazy val pushApiDocsToGHPagesAction = { st: State =>
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
 
@@ -66,7 +54,7 @@ change `State`)
             ), st)
           val lastSt = Project.extract(newSt).runAggregated(doc in Compile in ref, newSt)
 
-
+          // TODO: remove this once it's not needed
           // This is a workaround to set the sorrect CWD
           // See <https://github.com/sbt/sbt-release/pull/62>
           object ghpages extends Git(ghpagesDir) {
@@ -75,7 +63,6 @@ change `State`)
               val maybeIsWindows = maybeOsName.filter(_.contains("windows"))
               maybeIsWindows.map(_ => "git.exe").getOrElse("git")
             }
-
             override def cmd(args: Any*): ProcessBuilder = 
               Process(exec +: args.map(_.toString), ghpagesDir)
           }
@@ -90,11 +77,26 @@ change `State`)
   }
 ```
 
-### Release steps
+### Commands 
+
+Commands are added for convenience of invoking these actions manually from sbt repl
+
 
 ```scala
-  lazy val cleanAndGenerateDocsStep = ReleaseStep{ Command.process("cleanAndGenerateDocs", _: State) }
-  lazy val pushApiDocsToGHPagesStep = ReleaseStep{ Command.process("pushApiDocsToGHPages", _: State) }
+  lazy val cleanAndGenerateDocs = Command.command("cleanAndGenerateDocs")(cleanAndGenerateDocsAction)
+  lazy val pushApiDocsToGHPages = Command.command("pushApiDocsToGHPages")(pushApiDocsToGHPagesAction)
+```
+
+### Settings
+
+```scala
+  lazy val documentationSettings = 
+    Literator.settings ++ Seq[Setting[_]](
+      commands ++= Seq(
+        cleanAndGenerateDocs,
+        pushApiDocsToGHPages
+      )
+    )
 
 }
 

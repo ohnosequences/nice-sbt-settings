@@ -37,7 +37,7 @@ object ReleaseSettings extends sbt.Plugin {
 ### Additional release steps
 
 ```scala
-  def releaseTask[T](key: TaskKey[T]): ReleaseStep = { st: State =>
+  def releaseTask[T](key: TaskKey[T]) = { st: State =>
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
     try { 
@@ -79,7 +79,7 @@ commiting _only_ them
     st
   }
 
-  lazy val tempSetVersion: ReleaseStep = { st: State =>
+  lazy val tempSetVersion = { st: State =>
     val v = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))._1
     st.log.info("Setting version temporarily to '" + v + "'")
     ReleaseStateTransformations.reapply(Seq(
@@ -91,22 +91,21 @@ commiting _only_ them
 Almost the same as the standard release step, but it doesn't use our modified commitMessage task
 
 ```scala
-  lazy val commitNextReleaseVersion: ReleaseStep = { st: State =>
+  lazy val commitNextReleaseVersion = { st: State =>
     val extracted = Project.extract(st)
     val v = st.get(versions).
       getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))._2
     commitFiles("Setting version to '" +v+ "'", extracted get versionFile)(st)
   }
 
-  lazy val checkReleaseNotes = ReleaseStep { st: State =>
+  lazy val checkReleaseNotes = { st: State =>
     val extracted = Project.extract(st)
     val v = extracted get (version in ThisBuild)
     val note: File = (extracted get baseDirectory) / "notes" / (v+".markdown")
     if (!note.exists || IO.read(note).isEmpty)
-      sys.error("Release notes file "+note+"  doesn't exist or is empty! You forgot to write release notes.")
+      sys.error(s"Aborting release. File [notes/${v}.markdown] doesn't exist or is empty. You forgot to write release notes.")
     else {
-      st.log.info(s"\nTaking release notes from the [notes/${v}.markdown] file:\n")
-      st.log.info(IO.read(note))
+      st.log.info(s"\nTaking release notes from the [notes/${v}.markdown] file:\n \n${IO.read(note)}\n ")
       SimpleReader.readLine("Do you want to proceed with these release notes (y/n)? [y] ") match {
         case Some("n" | "N") => sys.error("Aborting release. Go write better release notes.")
         case _ => // go on
@@ -115,16 +114,45 @@ Almost the same as the standard release step, but it doesn't use our modified co
     }
   }
 
-  def shout(what: String, dontStop: Boolean = false): ReleaseStep = { st: State =>
+  def shout(what: String, transit: Boolean = false) = { st: State =>
     val extracted = Project.extract(st)
     st.log.info("\n"+what+"\n")
-    if (extracted.get(releaseStepByStep) && !dontStop) {
+    if (extracted.get(releaseStepByStep) && !transit) {
       SimpleReader.readLine("Do you want to continue (y/n)? [y] ") match {
         case Some("n" | "N") => sys.error("Aborting release")
         case _ => // go on
       }
     }
     st
+  }
+
+  case class ReleaseBlock(name: String, steps: Seq[ReleaseStep], transit: Boolean = false)
+
+  def Check(ch: State => State) = ReleaseStep(action = identity, check = ch)
+```
+
+This function take a seuqence of release blocks and constructs a normal release process:
+- it aggregates checks from all steps and puts them as a first release block
+- then it runs `action` of every release step, naming release blocks and asking confirmation if needed
+
+
+```scala
+  def constructReleaseProcess(checks: ReleaseBlock, blocks: Seq[ReleaseBlock]): Seq[ReleaseStep] = {
+    val allChecks = for( 
+        block <- blocks;
+        step <- block.steps
+      ) yield ReleaseStep(step.check)
+
+    val initBlock = ReleaseBlock(checks.name, checks.steps ++ allChecks, transit = true)
+    val allBlocks = initBlock +: blocks
+    val total = allBlocks.length
+
+    for( 
+      (block, n) <- allBlocks.zipWithIndex: Seq[(ReleaseBlock, Int)];
+      heading = s"[${n+1}/${total}] ${block.name}";
+      announce = ReleaseStep(shout("\n"+ heading +"\n"+ heading.replaceAll(".", "-") +"\n  ", block.transit));
+      step <- announce +: block.steps
+    ) yield step
   }
 ```
 
@@ -146,58 +174,68 @@ Almost the same as the standard release step, but it doesn't use our modified co
         val text: String = IO.read(note)
         "Setting version to " +v+ ":\n\n"+ text
       },
+      releaseProcess := constructReleaseProcess(
+        initChecks, Seq(
+        askVersionsAndCheckNotes,
+        packAndTest,
+        genMdDocs,
+        genApiDocs,
+        publishArtifacts,
+        commitAndTag,
+        githubRelease,
+        nextVersion,
+        githubPush
+      ))
+    )
 ```
 
-### Release process
+### Release blocks
 
 ```scala
-      releaseProcess := Seq[ReleaseStep](
+    val initChecks = ReleaseBlock("Initial checks", Seq(
+      checkSnapshotDependencies,
+      releaseTask(GithubRelease.checkGithubCredentials),
+      releaseTask(TagListKeys.tagList)
+      // TODO: check the gh-pages branch if we're publishing api docs
+    ), transit = true)
 
-        shout("[1/10] INITIAL CHECKS", dontStop = true),
-        checkSnapshotDependencies,
-        releaseTask(GithubRelease.checkGithubCredentials),
-        releaseTask(TagListKeys.tagList),
-        // TODO: check the gh-pages branch if we're publishing api docs
+    val askVersionsAndCheckNotes = ReleaseBlock("Setting release version", Seq(
+      inquireVersions.action,
+      tempSetVersion,
+      checkReleaseNotes
+    ), transit = true)
 
-        shout("[2/10] SETTING RELEASE VERSION", dontStop = true),
-        inquireVersions,                                   // ask about release version and the next one
-        tempSetVersion,                                    // set the chosen version for publishing
-        checkReleaseNotes,
+    val packAndTest = ReleaseBlock("Packaging and running tests", Seq(
+      releaseTask(Keys.`package`),
+      runTest.action
+    ), transit = true)
 
-        shout("[3/10] PACKAGING AND RUNNING TESTS", dontStop = true),
-        releaseTask(Keys.`package`),                       // try to package the artifacts
-        runTest,                                           // compile and test
+    val genMdDocs = ReleaseBlock("Generating markdown documentation", Seq(cleanAndGenerateDocsAction))
+    val genApiDocs = ReleaseBlock("Generating api documentation and pushing to gh-pages", Seq(pushApiDocsToGHPagesAction))
 
-        shout("[4/10] GENERATING MARKDOWN DOCUMENTATION"),
-        cleanAndGenerateDocsStep,                          // generate literator docs and commit if needed
+    val publishArtifacts = ReleaseBlock("Publishing artifacts", Seq(releaseTask(publish)))
 
-        shout("[5/10] GENERATING API DOCUMENTATION AND PUSHING TO GH-PAGES"),
-        pushApiDocsToGHPagesStep,                          // generate javadocs or scaladocs and push it to the gh-pages branch
+    val commitAndTag = ReleaseBlock("Committing and tagging", Seq(
+      { st: State =>
+        commitFiles("Autogenerated markdown documentation", 
+                    (Project.extract(st) get Literator.docsOutputDirs): _*)(st)
+      },
+      setReleaseVersion.action,
+      commitReleaseVersion,
+      tagRelease.action
+    ), transit = true)
 
-        shout("[6/10] PUBLISHING ARTIFACTS"),
-        releaseTask(publish),                              // try to publish artifacts
+    val githubRelease = ReleaseBlock("Publishing release on github", Seq(releaseTask(GithubRelease.releaseOnGithub)))
 
-        // until this step nothing should be commited
-        shout("[7/10] COMMITTING AND TAGGING", dontStop = true),
-        ReleaseStep{ commitFiles("Autogenerated markdown documentation", 
-                                 Literator.docsOutputDirs.value: _*)(_) },
-        setReleaseVersion,                                 // this writes to the version.sbt file
-        commitReleaseVersion,                              // and commit it
-        tagRelease,                                        // and make a tag
+    val nextVersion = ReleaseBlock("Setting and committing next version", Seq(
+      setNextVersion.action,
+      commitNextReleaseVersion
+    ))
 
-        shout("[8/10] PUBLISHING RELEASE ON GITHUB"),
-        releaseTask(GithubRelease.releaseOnGithub),        // and publish notes on github
+    val githubPush = ReleaseBlock("Pushing commits to github", Seq(pushChanges.action), transit = true)
 
-        shout("[9/10] SETTING AND COMMITTING NEXT VERSION"),
-        setNextVersion,                                    // bump the version
-        commitNextReleaseVersion,                          // commit it
-
-        shout("[10/10] PUSHING COMMITS TO GITHUB", dontStop = true),
-        pushChanges                                        // and push everything to github
-
-      )
-    )
 }
+  
 
 ```
 
