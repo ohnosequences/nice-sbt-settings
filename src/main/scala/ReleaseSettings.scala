@@ -108,6 +108,11 @@ object ReleaseSettings extends sbt.Plugin {
 
   case class ReleaseBlock(name: String, steps: Seq[ReleaseStep], transit: Boolean = false)
 
+  implicit def blockToCommand(b: ReleaseBlock) = Command.command(b.name){
+    (b.steps map { s => s.check andThen s.action }).
+      foldLeft(identity: State => State)(_ andThen _)
+  }
+
   /* This function take a seuqence of release blocks and constructs a normal release process:
      - it aggregates checks from all steps and puts them as a first release block
      - then it runs `action` of every release step, naming release blocks and asking confirmation if needed
