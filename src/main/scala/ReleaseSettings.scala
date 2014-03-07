@@ -83,9 +83,9 @@ object ReleaseSettings extends sbt.Plugin {
     val v = extracted get (version in ThisBuild)
     val note: File = (extracted get baseDirectory) / "notes" / (v+".markdown")
     if (!note.exists || IO.read(note).isEmpty)
-      sys.error(s"Release notes file [notes/${v}.markdown] doesn't exist or is empty! You forgot to write release notes.")
+      sys.error(s"Aborting release. File [notes/${v}.markdown] doesn't exist or is empty. You forgot to write release notes.")
     else {
-      st.log.info(s"\nTaking release notes from the [notes/${v}.markdown] file:\n ${IO.read(note)}\n ")
+      st.log.info(s"\nTaking release notes from the [notes/${v}.markdown] file:\n \n${IO.read(note)}\n ")
       SimpleReader.readLine("Do you want to proceed with these release notes (y/n)? [y] ") match {
         case Some("n" | "N") => sys.error("Aborting release. Go write better release notes.")
         case _ => // go on
