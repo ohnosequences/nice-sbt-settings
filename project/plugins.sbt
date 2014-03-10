@@ -6,4 +6,5 @@ resolvers ++= Seq(
   Resolver.url("laughedelic sbt-plugins", url("http://dl.bintray.com/laughedelic/sbt-plugins"))(Resolver.ivyStylePatterns)
 )
 
-addSbtPlugin("ohnosequences" % "nice-sbt-settings" % "0.4.0-M4")
+// addSbtPlugin("ohnosequences" % "nice-sbt-settings" % "0.4.0-M4")
+addSbtPlugin("ohnosequences" % "nice-sbt-settings" % "0.4.0-SNAPSHOT")
