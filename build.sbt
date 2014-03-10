@@ -24,7 +24,7 @@ dependencyOverrides ++= Set(
 
 addSbtPlugin("ohnosequences" % "sbt-s3-resolver" % "0.9.0")
 
-addSbtPlugin("ohnosequences" % "sbt-github-release" % "0.1.0")
+addSbtPlugin("ohnosequences" % "sbt-github-release" % "0.1.1")
 
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "0.8.2")
 
