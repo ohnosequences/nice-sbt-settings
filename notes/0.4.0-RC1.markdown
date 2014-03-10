@@ -1,0 +1,10 @@
+This pre-release becomes a release-candidate, because it contains all desired functionality for the `v0.4.0` release — i.e. no more features here, only bugfixes and minor refactoring. After some testing it will become a normal release.
+
+Fixes:
+  * Git push related fixes: push tags before github release; push timetracker branch and the current one in the end;
+  * Fixed git-add --all in gh-pages docs
+  * Upgraded to sbt-github-release [v0.1.1](https://github.com/ohnosequences/sbt-github-release/releases/tag/v0.1.1) which contains some minor fixes
+
+Features:
+  * Integrated the [sbt-updates](https://github.com/rtimush/sbt-updates) plugin (#10)
+  * Added implicit conversion from a release block to an sbt command
