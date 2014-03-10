@@ -62,7 +62,7 @@ object DocumentationSettings extends sbt.Plugin {
             override def cmd(args: Any*): ProcessBuilder = 
               Process(exec +: args.map(_.toString), ghpagesDir)
           }
-          ghpages.add("docs") ! lastSt.log
+          ghpages.cmd("add", "--all", "docs/api") ! lastSt.log
           ghpages.commit("Updated API docs for sources commit: " + vcs.currentHash) ! lastSt.log
           ghpages.cmd("push") ! lastSt.log
 

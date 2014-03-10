@@ -23,6 +23,8 @@ import laughedelic.literator.plugin.LiteratorPlugin._
 import com.markatta.sbttaglist._
 import TagListPlugin._
 
+import com.timushev.sbt.updates.UpdatesKeys
+
 object ReleaseSettings extends sbt.Plugin {
 
   /* ### Setting Keys */
@@ -45,7 +47,7 @@ object ReleaseSettings extends sbt.Plugin {
   // NOTE: With any VCS business I always think about Git and don't care much about other VCS systems 
   // FIXME: I don't care about correct CWD here, so everybody should be awared of it
   // See <https://github.com/sbt/sbt-release/pull/62>
-  def commitFiles(msg: String, files: File*)(st: State): State = {
+  def commitFiles(msg: String, files: File*) = { st: State =>
     val extracted = Project.extract(st)
     val vcs = extracted.get(versionControlSystem).getOrElse(sys.error("No version control system is set!"))
     val base = vcs.baseDir
@@ -54,10 +56,10 @@ object ReleaseSettings extends sbt.Plugin {
       getOrElse(s"Version file [${f}] is outside of this VCS repository with base directory [${base}]!")
     }
     /* adding files */
-    vcs.cmd((Seq("add", "--all") ++ paths): _*) !! st.log
+    vcs.cmd((Seq("add", "--all") ++ paths): _*) ! st.log
     /* commiting _only_ them */
     if (vcs.status.!!.trim.nonEmpty) {
-      vcs.cmd((Seq("commit", "-m", msg) ++ paths): _*) !! st.log
+      vcs.cmd((Seq("commit", "-m", msg) ++ paths): _*) ! st.log
     }
     st
   }
@@ -94,6 +96,26 @@ object ReleaseSettings extends sbt.Plugin {
     }
   }
 
+  /* Almost the same as the task `dependencyUpdates`, but it outputs result as a warning 
+     and asks for a confirmation if needed */
+  lazy val checkDependecyUpdates = { st: State =>
+    import com.timushev.sbt.updates.Reporter._
+    val extracted = Project.extract(st)
+    val ref = extracted.get(thisProjectRef)
+    st.log.info("Checking project dependency updates...")
+    val (newSt, extResolvers) = extracted.runTask(externalResolvers in ref, st)
+    val data = dependencyUpdatesData(extracted.get(projectID), extracted.get(libraryDependencies), extResolvers, extracted.get(scalaVersion), extracted.get(scalaBinaryVersion))
+    if (data.nonEmpty) {
+      val report = dependencyUpdatesReport(extracted.get(projectID), data)
+      newSt.log.warn(report)
+      SimpleReader.readLine("Are you sure you want to continue with outdated dependencies (y/n)? [y] ") match {
+        case Some("n" | "N") => sys.error("Aborting release due to outdated project dependencies")
+        case _ => // go on
+      }
+    } else st.log.info("All dependencies seem to be up to date")
+    newSt
+  }
+
   def shout(what: String, transit: Boolean = false) = { st: State =>
     val extracted = Project.extract(st)
     st.log.info("\n"+what+"\n")
@@ -108,7 +130,10 @@ object ReleaseSettings extends sbt.Plugin {
 
   case class ReleaseBlock(name: String, steps: Seq[ReleaseStep], transit: Boolean = false)
 
-  def Check(ch: State => State) = ReleaseStep(action = identity, check = ch)
+  implicit def blockToCommand(b: ReleaseBlock) = Command.command(b.name){
+    (b.steps map { s => s.check andThen s.action }).
+      foldLeft(identity: State => State)(_ andThen _)
+  }
 
   /* This function take a seuqence of release blocks and constructs a normal release process:
      - it aggregates checks from all steps and puts them as a first release block
@@ -167,6 +192,7 @@ object ReleaseSettings extends sbt.Plugin {
 
     val initChecks = ReleaseBlock("Initial checks", Seq(
       checkSnapshotDependencies,
+      checkDependecyUpdates,
       releaseTask(GithubRelease.checkGithubCredentials),
       releaseTask(TagListKeys.tagList)
       // TODO: check the gh-pages branch if we're publishing api docs
@@ -198,14 +224,30 @@ object ReleaseSettings extends sbt.Plugin {
       tagRelease.action
     ), transit = true)
 
-    val githubRelease = ReleaseBlock("Publishing release on github", Seq(releaseTask(GithubRelease.releaseOnGithub)))
+    val githubRelease = ReleaseBlock("Publishing release on github", Seq(
+      { st: State =>
+        val vcs = Project.extract(st).get(versionControlSystem).
+          getOrElse(sys.error("No version control system is set!"))
+        vcs.cmd("push", "--tags", vcs.trackingRemote) ! st.log
+        st
+      },
+      releaseTask(GithubRelease.releaseOnGithub)
+    ))
 
     val nextVersion = ReleaseBlock("Setting and committing next version", Seq(
       setNextVersion.action,
       commitNextReleaseVersion
     ))
 
-    val githubPush = ReleaseBlock("Pushing commits to github", Seq(pushChanges.action), transit = true)
+    val githubPush = ReleaseBlock("Pushing commits to github", Seq(
+      { st: State =>
+        val vcs = Project.extract(st).get(versionControlSystem).
+          getOrElse(sys.error("No version control system is set!"))
+        vcs.cmd("push", vcs.trackingRemote) ! st.log // pushing default branch
+        vcs.cmd("push", vcs.trackingRemote, vcs.currentBranch) ! st.log // and then the current one
+        st
+      }
+    ))
 
 }
   
