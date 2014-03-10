@@ -23,6 +23,8 @@ import laughedelic.literator.plugin.LiteratorPlugin._
 import com.markatta.sbttaglist._
 import TagListPlugin._
 
+import com.timushev.sbt.updates.UpdatesKeys
+
 object ReleaseSettings extends sbt.Plugin {
 
   /* ### Setting Keys */
@@ -92,6 +94,26 @@ object ReleaseSettings extends sbt.Plugin {
       }
       st
     }
+  }
+
+  /* Almost the same as the task `dependencyUpdates`, but it outputs result as a warning 
+     and asks for a confirmation if needed */
+  lazy val checkDependecyUpdates = { st: State =>
+    import com.timushev.sbt.updates.Reporter._
+    val extracted = Project.extract(st)
+    val ref = extracted.get(thisProjectRef)
+    st.log.info("Checking project dependency updates...")
+    val (newSt, extResolvers) = extracted.runTask(externalResolvers in ref, st)
+    val data = dependencyUpdatesData(extracted.get(projectID), extracted.get(libraryDependencies), extResolvers, extracted.get(scalaVersion), extracted.get(scalaBinaryVersion))
+    if (data.nonEmpty) {
+      val report = dependencyUpdatesReport(extracted.get(projectID), data)
+      newSt.log.warn(report)
+      SimpleReader.readLine("Are you sure you want to continue with outdated dependencies (y/n)? [y] ") match {
+        case Some("n" | "N") => sys.error("Aborting release due to outdated project dependencies")
+        case _ => // go on
+      }
+    } else st.log.info("All dependencies seem to be up to date")
+    newSt
   }
 
   def shout(what: String, transit: Boolean = false) = { st: State =>
@@ -170,6 +192,7 @@ object ReleaseSettings extends sbt.Plugin {
 
     val initChecks = ReleaseBlock("Initial checks", Seq(
       checkSnapshotDependencies,
+      checkDependecyUpdates,
       releaseTask(GithubRelease.checkGithubCredentials),
       releaseTask(TagListKeys.tagList)
       // TODO: check the gh-pages branch if we're publishing api docs
