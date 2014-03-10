@@ -1,0 +1,3 @@
+* Added `ReleaseBlock` notion
+* Constructed release process from release blocks, it makes more check in the beginning
+* Prettified release process logging

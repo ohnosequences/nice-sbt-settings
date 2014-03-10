@@ -1,0 +1,16 @@
+Refactoring:
+    * A lot of refactoring, separated different modules
+    * Added a function to commit files to avoid code duplication
+    * Moved docs cleaning to the special command
+
+Release process changes:
+    * Moved api docs cloning/generation to a temp dir
+    * Moved taglist task to the release initial checks
+    * Moved release notes check after the version setting step
+    * Moved commiting to the end of release process
+
+Updates:
+    * Upgraded to sbt-s3-resolver 0.9.0
+    * Upgraded to literator 0.5.1
+    * Upgraded to sbt-assembly 0.11.0
+    
