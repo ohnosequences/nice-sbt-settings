@@ -1,0 +1,2 @@
+* Upgraded sbt-github-release to [`v0.1.2`](https://github.com/ohnosequences/sbt-github-release/releases/tag/v0.1.2)
+* Upgraded sbt-s3-resolver to [`v0.10.0`](https://github.com/ohnosequences/sbt-s3-resolver/releases/tag/v0.10.0)
