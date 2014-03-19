@@ -9,7 +9,7 @@ To start using this plugin add the following to the `project/plugins.sbt`:
 
 ```scala
 resolvers ++= Seq(
-  "Era7 maven releases" at "http://releases.era7.com.s3.amazonaws.com"
+  "Era7 maven releases" at "http://releases.era7.com.s3.amazonaws.com",
   "sbt-taglist-releases" at "http://johanandren.github.com/releases/",
   "laughedelic maven releases" at "http://dl.bintray.com/laughedelic/maven",
   Resolver.url("laughedelic sbt-plugins", url("http://dl.bintray.com/laughedelic/sbt-plugins"))(Resolver.ivyStylePatterns)
