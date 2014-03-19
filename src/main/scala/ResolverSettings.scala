@@ -25,7 +25,7 @@ object ResolverSettings extends sbt.Plugin {
   val ivy = Resolver.ivyStylePatterns
 
   lazy val resolverSettings: Seq[Setting[_]] = 
-    S3Resolver.settings ++ 
+    S3Resolver.defaults ++ 
     Seq(
       /* resolving */
       bucketSuffix := organization.value + ".com",

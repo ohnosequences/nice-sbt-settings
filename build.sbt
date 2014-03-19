@@ -22,7 +22,7 @@ dependencyOverrides ++= Set(
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.2.3"
 )
 
-addSbtPlugin("ohnosequences" % "sbt-s3-resolver" % "0.9.0")
+addSbtPlugin("ohnosequences" % "sbt-s3-resolver" % "0.10.0")
 
 addSbtPlugin("ohnosequences" % "sbt-github-release" % "0.1.2")
 
