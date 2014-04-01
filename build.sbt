@@ -10,11 +10,11 @@ organization := "ohnosequences"
 
 bucketSuffix := "era7.com"
 
-resolvers ++= Seq(
-  "sbt-taglist-releases" at "http://johanandren.github.com/releases/",
-  "laughedelic maven releases" at "http://dl.bintray.com/laughedelic/maven",
-  Resolver.url("laughedelic sbt-plugins", url("http://dl.bintray.com/laughedelic/sbt-plugins"))(Resolver.ivyStylePatterns)
-)
+// resolvers ++= Seq(
+//   "sbt-taglist-releases" at "http://johanandren.github.com/releases/",
+//   "laughedelic maven releases" at "http://dl.bintray.com/laughedelic/maven",
+//   Resolver.url("laughedelic sbt-plugins", url("http://dl.bintray.com/laughedelic/sbt-plugins"))(Resolver.ivyStylePatterns)
+// )
 
 dependencyOverrides ++= Set(
   "org.apache.ivy" % "ivy" % "2.3.0",

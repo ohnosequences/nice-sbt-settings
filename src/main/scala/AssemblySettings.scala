@@ -19,20 +19,21 @@ object AssemblySettings extends sbt.Plugin {
 
   /* ### Settings 
 
-  Note, that these settings are not included by default. To add them, add to your `build.sbt`
-  `Nice.fatArtifactSettings` line
+     Note, that these settings are not included by default. To turn them on them, add to your 
+     `build.sbt` `fatArtifactSettings` line (without any prefix)
   */
 
   lazy val fatArtifactSettings: Seq[Setting[_]] =
     (assemblySettings: Seq[Setting[_]]) ++ 
     addArtifact(artifact in (Compile, assembly), assembly) ++ 
     Seq(
-      // publishing also a fat artifact:
+      // publishing fat artifact:
       fatArtifactClassifier := "fat",
       artifact in (Compile, assembly) :=
         (artifact in (Compile, assembly)).value.copy(
            `classifier` = Some(fatArtifactClassifier.value)
         ),
+      // turning off tests in assembly:
       test in assembly := {}
     )
 
