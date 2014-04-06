@@ -45,8 +45,6 @@ object ReleaseSettings extends sbt.Plugin {
   }
 
   // NOTE: With any VCS business I always think about Git and don't care much about other VCS systems 
-  // FIXME: I don't care about correct CWD here, so everybody should be awared of it
-  // See <https://github.com/sbt/sbt-release/pull/62>
   def commitFiles(msg: String, files: File*) = { st: State =>
     val extracted = Project.extract(st)
     val vcs = extracted.get(versionControlSystem).getOrElse(sys.error("No version control system is set!"))
@@ -195,7 +193,6 @@ object ReleaseSettings extends sbt.Plugin {
       checkDependecyUpdates,
       releaseTask(GithubRelease.checkGithubCredentials),
       releaseTask(TagListKeys.tagList)
-      // TODO: check the gh-pages branch if we're publishing api docs
     ), transit = true)
 
     val askVersionsAndCheckNotes = ReleaseBlock("Setting release version", Seq(
