@@ -46,26 +46,17 @@ can be directly used as release steps
         lazy val remote: String = vcs.cmd("config", "branch.%s.remote" format vcs.currentBranch).!!.trim
         lazy val url: String = vcs.cmd("ls-remote", "--get-url", remote).!!.trim
         val ghpagesDir = IO.createTemporaryDirectory
-        if (vcs.cmd("clone", "-b", "gh-pages", "--single-branch", url, ghpagesDir).! != 0)
-          sys.error("Couldn't generate API docs, because this repo doesn't have gh-pages branch")
-        else {
+        if (vcs.cmd("clone", "-b", "gh-pages", "--single-branch", url, ghpagesDir).! != 0) {
+          st.log.error("Couldn't generate API docs, because this repo doesn't have gh-pages branch")
+          st.log.error("Create the branch and rerun the [pushApiDocsToGHPages] command")
+          st
+        } else {
           val newSt = ReleaseStateTransformations.reapply(Seq(
               target in (Compile, doc) := ghpagesDir / "docs" / "api" / extracted.get(version).stripSuffix("-SNAPSHOT")
             ), st)
           val lastSt = Project.extract(newSt).runAggregated(doc in Compile in ref, newSt)
 
-          // TODO: remove this once it's not needed
-          // This is a workaround to set the sorrect CWD
-          // See <https://github.com/sbt/sbt-release/pull/62>
-          object ghpages extends Git(ghpagesDir) {
-            lazy val exec = {
-              val maybeOsName = sys.props.get("os.name").map(_.toLowerCase)
-              val maybeIsWindows = maybeOsName.filter(_.contains("windows"))
-              maybeIsWindows.map(_ => "git.exe").getOrElse("git")
-            }
-            override def cmd(args: Any*): ProcessBuilder = 
-              Process(exec +: args.map(_.toString), ghpagesDir)
-          }
+          val ghpages = new Git(ghpagesDir) 
           ghpages.cmd("add", "--all", "docs/api") ! lastSt.log
           ghpages.commit("Updated API docs for sources commit: " + vcs.currentHash) ! lastSt.log
           ghpages.cmd("push") ! lastSt.log
