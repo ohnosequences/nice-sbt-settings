@@ -26,11 +26,11 @@ addSbtPlugin("ohnosequences" % "sbt-s3-resolver" % "0.10.1")
 
 addSbtPlugin("ohnosequences" % "sbt-github-release" % "0.1.2")
 
-addSbtPlugin("com.github.gseitz" % "sbt-release" % "0.8.2")
+addSbtPlugin("com.github.gseitz" % "sbt-release" % "0.8.3")
 
-addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.11.0")
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.11.2")
 
-addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.4")
+addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.5")
 
 addSbtPlugin("laughedelic" % "literator-plugin" % "0.5.1")
 
