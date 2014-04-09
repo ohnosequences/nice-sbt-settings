@@ -12,6 +12,8 @@ object JavaSettings extends sbt.Plugin {
 
   /* ### Settings */
 
+  lazy val javaVersion = settingKey[String]("Java version")
+
   lazy val javaSettings: Seq[Setting[_]] = Seq(
     // to omit _2.10 suffixes:
     crossPaths := false,
@@ -19,8 +21,8 @@ object JavaSettings extends sbt.Plugin {
     autoScalaLibrary := false,
 
     javacOptions ++= Seq(
-      "-source", "1.7",
-      "-target", "1.7",
+      "-source", javaVersion.value,
+      "-target", javaVersion.value,
       "-Xlint:unchecked",
       "-encoding", "UTF-8"
     ),
