@@ -38,7 +38,15 @@ object NiceProjectConfigs extends sbt.Plugin {
 
     import JavaSettings._
 
-    /* Same for `Nice.javaProject` — it includes all `scalaProject` settings */
+    /* Same for `Nice.javaProject` — it includes all `scalaProject` settings,
+       Note that default java version is 1.7. You can change it after loading these settings:
+
+       ```scala
+       Nice.javaProject
+
+       javaVersion := "1.8"
+       ```
+    */
     lazy val javaProject: Seq[Setting[_]] =
       scalaProject ++
       javaSettings

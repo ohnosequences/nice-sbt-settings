@@ -15,6 +15,8 @@ object JavaSettings extends sbt.Plugin {
   lazy val javaVersion = settingKey[String]("Java version")
 
   lazy val javaSettings: Seq[Setting[_]] = Seq(
+    javaVersion := "1.7",
+
     // to omit _2.10 suffixes:
     crossPaths := false,
     // to omit scala library dependency
