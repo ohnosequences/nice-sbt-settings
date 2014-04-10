@@ -23,7 +23,7 @@ object ScalaSettings extends sbt.Plugin {
     // this doesn't allow any conflicts in dependencies:
     conflictManager := ConflictManager.strict,
 
-    scalaVersion := "2.10.3",
+    scalaVersion := "2.10.4",
     // 2.10.x are compatible and we want to use the latest _for everything_:
     dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value,
     dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
