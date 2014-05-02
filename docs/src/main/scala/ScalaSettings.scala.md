@@ -17,18 +17,16 @@ object ScalaSettings extends sbt.Plugin {
 ### Settings
 
 ```scala
-  lazy val metainfoSettings: Seq[Setting[_]] = Seq(
-    homepage := Some(url("https://github.com/"+organization.value+"/"+name.value)),
-    organizationHomepage := Some(url("http://"+organization.value+".com")),
-    licenses := Seq("AGPL-V3" -> url("http://www.gnu.org/licenses/agpl-3.0.txt"))
-  )
-
   lazy val scalaSettings: Seq[Setting[_]] = Seq(
-    // this doesn't allow any conflicts in dependencies:
+```
+
+This doesn't allow any conflicts in dependencies:
+
+```scala
     conflictManager := ConflictManager.strict,
 
-    scalaVersion := "2.10.3",
-    // 2.10.x are compatible and we want to use the latest _for everything_:
+    scalaVersion := "2.10.4",
+    // we don't want these versions to conflict:
     dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value,
     dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
     dependencyOverrides += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -43,11 +41,14 @@ object ScalaSettings extends sbt.Plugin {
       "-Xlint",
       "-target:jvm-1.7"
     ),
+```
 
-    // full cleaning
+full cleaning
+
+```scala
     cleanFiles ++= Seq(
       baseDirectory.value / "project/target",
-      // NOTE: we assume here, that you don't have a super-meta-sbt-project
+      // NOTE: we assume here, that you don't have a super-meta-nested-sbt-project
       baseDirectory.value / "project/project",
       (target in (Compile, doc)).value
     )
@@ -68,6 +69,7 @@ object ScalaSettings extends sbt.Plugin {
       + [AssemblySettings.scala][main/scala/AssemblySettings.scala]
       + [DocumentationSettings.scala][main/scala/DocumentationSettings.scala]
       + [JavaSettings.scala][main/scala/JavaSettings.scala]
+      + [MetadataSettings.scala][main/scala/MetadataSettings.scala]
       + [NiceProjectConfigs.scala][main/scala/NiceProjectConfigs.scala]
       + [ReleaseSettings.scala][main/scala/ReleaseSettings.scala]
       + [ResolverSettings.scala][main/scala/ResolverSettings.scala]
@@ -77,6 +79,7 @@ object ScalaSettings extends sbt.Plugin {
 [main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
 [main/scala/DocumentationSettings.scala]: DocumentationSettings.scala.md
 [main/scala/JavaSettings.scala]: JavaSettings.scala.md
+[main/scala/MetadataSettings.scala]: MetadataSettings.scala.md
 [main/scala/NiceProjectConfigs.scala]: NiceProjectConfigs.scala.md
 [main/scala/ReleaseSettings.scala]: ReleaseSettings.scala.md
 [main/scala/ResolverSettings.scala]: ResolverSettings.scala.md

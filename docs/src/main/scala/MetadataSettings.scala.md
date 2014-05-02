@@ -1,6 +1,7 @@
-## Java-related settings
+## Project metadata settings
 
-This module defines settings that are specific to Java projects
+This module defines some [sbt project metadata](http://www.scala-sbt.org/release/docs/Howto/metadata.html):
+default homepages and the license.
 
 
 ```scala
@@ -9,36 +10,17 @@ package ohnosequences.sbt.nice
 import sbt._
 import Keys._
 
-object JavaSettings extends sbt.Plugin {
+object MetadataSettings extends sbt.Plugin {
 ```
 
-### Settings 
-
-Java version can be `"1.6"` or `"1.7"`
-
+### Settings
 
 ```scala
-  lazy val javaVersion = settingKey[String]("Java version")
-
-  lazy val javaSettings: Seq[Setting[_]] = Seq(
-    // default is Java 7
-    javaVersion := "1.7",
-
-    // to omit _2.10 suffixes:
-    crossPaths := false,
-    // to omit scala library dependency
-    autoScalaLibrary := false,
-
-    javacOptions ++= Seq(
-      "-source", javaVersion.value,
-      "-target", javaVersion.value,
-      "-Xlint:unchecked",
-      "-encoding", "UTF-8"
-    ),
-
-    // javadoc doesn't know about source/target 1.7
-    javacOptions in (Compile, doc) := Seq()
-    )
+  lazy val metadataSettings: Seq[Setting[_]] = Seq(
+    homepage := Some(url("https://github.com/"+organization.value+"/"+name.value)),
+    organizationHomepage := Some(url("http://"+organization.value+".com")),
+    licenses := Seq("AGPL-V3" -> url("http://www.gnu.org/licenses/agpl-3.0.txt"))
+  )
 
 }
 

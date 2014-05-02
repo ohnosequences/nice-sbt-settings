@@ -10,21 +10,13 @@ organization := "ohnosequences"
 
 bucketSuffix := "era7.com"
 
-scalaVersion := "2.10.4"
-
-// resolvers ++= Seq(
-//   "sbt-taglist-releases" at "http://johanandren.github.com/releases/",
-//   "laughedelic maven releases" at "http://dl.bintray.com/laughedelic/maven",
-//   Resolver.url("laughedelic sbt-plugins", url("http://dl.bintray.com/laughedelic/sbt-plugins"))(Resolver.ivyStylePatterns)
-// )
-
 dependencyOverrides ++= Set(
   "org.apache.ivy" % "ivy" % "2.3.0",
   "commons-codec" % "commons-codec" % "1.7",
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.2.3"
 )
 
-addSbtPlugin("ohnosequences" % "sbt-s3-resolver" % "0.11.0-SNAPSHOT")
+addSbtPlugin("ohnosequences" % "sbt-s3-resolver" % "0.11.0")
 
 addSbtPlugin("ohnosequences" % "sbt-github-release" % "0.1.2")
 

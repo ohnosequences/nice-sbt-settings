@@ -13,12 +13,6 @@ object NiceProjectConfigs extends sbt.Plugin {
   
   object Nice {
 
-    import ScalaSettings._
-    import ResolverSettings._
-    import DocumentationSettings._
-    import TagListSettings._
-    import ReleaseSettings._
-
     /* You can just say somewhere **in the very beginning** of your `build.sbt`:
 
        ```scala
@@ -28,17 +22,15 @@ object NiceProjectConfigs extends sbt.Plugin {
        ```
     */
     lazy val scalaProject: Seq[Setting[_]] =
-      metainfoSettings ++
-      scalaSettings ++
-      resolverSettings ++
-      documentationSettings ++
-      releaseSettings ++
-      tagListSettings
+      MetadataSettings.metadataSettings ++
+      ScalaSettings.scalaSettings ++
+      ResolverSettings.resolverSettings ++
+      DocumentationSettings.documentationSettings ++
+      ReleaseSettings.releaseSettings ++
+      TagListSettings.tagListSettings
 
 
-    import JavaSettings._
-
-    /* Same for `Nice.javaProject` — it includes all `scalaProject` settings,
+    /* Same for `Nice.javaProject` - it includes all `scalaProject` settings,
        Note that default java version is 1.7. You can change it after loading these settings:
 
        ```scala
@@ -49,7 +41,7 @@ object NiceProjectConfigs extends sbt.Plugin {
     */
     lazy val javaProject: Seq[Setting[_]] =
       scalaProject ++
-      javaSettings
+      JavaSettings.javaSettings
 
   }
 

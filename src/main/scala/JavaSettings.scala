@@ -1,6 +1,6 @@
 /* ## Java-related settings
 
-   This module defines settings that are specific to Java
+   This module defines settings that are specific to Java projects
 */
 package ohnosequences.sbt.nice
 
@@ -10,11 +10,15 @@ import Keys._
 object JavaSettings extends sbt.Plugin {
 
 
-  /* ### Settings */
+  /* ### Settings 
+
+     Java version can be `"1.6"` or `"1.7"`
+  */
 
   lazy val javaVersion = settingKey[String]("Java version")
 
   lazy val javaSettings: Seq[Setting[_]] = Seq(
+    // default is Java 7
     javaVersion := "1.7",
 
     // to omit _2.10 suffixes:

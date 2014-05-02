@@ -27,6 +27,7 @@ object DocumentationSettings extends sbt.Plugin {
 Actions (`State => State` functions) are nice because you can make from them commands and they
 can be directly used as release steps
 
+This action _cleans_ docs out directory first and then generates docs (but doesn't commit)
 
 ```scala
   lazy val cleanAndGenerateDocsAction = { st: State =>
@@ -35,7 +36,15 @@ can be directly used as release steps
     Defaults.doClean(extracted get Literator.docsOutputDirs, Seq())
     extracted.runAggregated(Literator.generateDocs in ref, st)
   }
+```
 
+This action tries
+- clone `gh-pages` branch
+- generate api docs with the standard sbt task `docs` to the `docs/api/<version>/` dir
+- commit it and push the `gh-pages` branch
+
+
+```scala
   lazy val pushApiDocsToGHPagesAction = { st: State =>
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
@@ -78,7 +87,10 @@ Commands are added for convenience of invoking these actions manually from sbt r
   lazy val pushApiDocsToGHPages = Command.command("pushApiDocsToGHPages")(pushApiDocsToGHPagesAction)
 ```
 
-### Settings
+### Settings 
+
+Just making these command visible
+
 
 ```scala
   lazy val documentationSettings = 
@@ -104,6 +116,7 @@ Commands are added for convenience of invoking these actions manually from sbt r
       + [AssemblySettings.scala][main/scala/AssemblySettings.scala]
       + [DocumentationSettings.scala][main/scala/DocumentationSettings.scala]
       + [JavaSettings.scala][main/scala/JavaSettings.scala]
+      + [MetadataSettings.scala][main/scala/MetadataSettings.scala]
       + [NiceProjectConfigs.scala][main/scala/NiceProjectConfigs.scala]
       + [ReleaseSettings.scala][main/scala/ReleaseSettings.scala]
       + [ResolverSettings.scala][main/scala/ResolverSettings.scala]
@@ -113,6 +126,7 @@ Commands are added for convenience of invoking these actions manually from sbt r
 [main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
 [main/scala/DocumentationSettings.scala]: DocumentationSettings.scala.md
 [main/scala/JavaSettings.scala]: JavaSettings.scala.md
+[main/scala/MetadataSettings.scala]: MetadataSettings.scala.md
 [main/scala/NiceProjectConfigs.scala]: NiceProjectConfigs.scala.md
 [main/scala/ReleaseSettings.scala]: ReleaseSettings.scala.md
 [main/scala/ResolverSettings.scala]: ResolverSettings.scala.md

@@ -27,7 +27,8 @@ object ResolverSettings extends sbt.Plugin {
   lazy val resolverSettings: Seq[Setting[_]] = 
     S3Resolver.defaults ++ 
     Seq(
-      /* resolving */
+
+      /* Adding default maven/ivy resolvers with the default `bucketSuffix` */
       bucketSuffix := organization.value + ".com",
       resolvers ++= Seq ( 
         organization.value + " public maven releases"  at s3("releases." + bucketSuffix.value).toHttp,
@@ -36,7 +37,7 @@ object ResolverSettings extends sbt.Plugin {
         Resolver.url(organization.value + " public ivy snapshots", url(s3("snapshots." + bucketSuffix.value).toHttp))(ivy)
       ),
 
-      /* publishing */
+      /* Publishing by default is public, maven-style and with the same `bucketSuffix` as for resolving */
       isPrivate := false,
       publishMavenStyle := true,
       publishBucketSuffix := bucketSuffix.value,
