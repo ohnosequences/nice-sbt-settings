@@ -25,6 +25,7 @@ object DocumentationSettings extends sbt.Plugin {
      can be directly used as release steps
   */
 
+  /* This action _cleans_ docs out directory first and then generates docs (but doesn't commit) */
   lazy val cleanAndGenerateDocsAction = { st: State =>
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
@@ -32,6 +33,11 @@ object DocumentationSettings extends sbt.Plugin {
     extracted.runAggregated(Literator.generateDocs in ref, st)
   }
 
+  /* This action tries
+     - clone `gh-pages` branch
+     - generate api docs with the standard sbt task `docs` to the `docs/api/<version>/` dir
+     - commit it and push the `gh-pages` branch
+  */
   lazy val pushApiDocsToGHPagesAction = { st: State =>
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
@@ -71,7 +77,10 @@ object DocumentationSettings extends sbt.Plugin {
   lazy val cleanAndGenerateDocs = Command.command("cleanAndGenerateDocs")(cleanAndGenerateDocsAction)
   lazy val pushApiDocsToGHPages = Command.command("pushApiDocsToGHPages")(pushApiDocsToGHPagesAction)
 
-  /* ### Settings */
+  /* ### Settings 
+
+     Just making these command visible
+  */
 
   lazy val documentationSettings = 
     Literator.settings ++ Seq[Setting[_]](

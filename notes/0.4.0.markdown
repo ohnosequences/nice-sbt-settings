@@ -1,0 +1,17 @@
+This is a huge release, so here are only highlighted changes since the `v0.3.2`. See #9 and release notes for the `v0.4.0`-prereleases.
+
+* New plugin integrations:
+    - [sbt-taglist](https://github.com/johanandren/sbt-taglist): for warnings about `TODO` and `FIXME` tags
+    - [sbt-github-release](https://github.com/ohnosequences/sbt-github-release): for automated release notes and artifacts on Github
+    - [sbt-updates](https://github.com/rtimush/sbt-updates) plugin (#10): for warning about outdated dependencies
+
+* Upgrades:
+    - [sbt-release](https://github.com/sbt/sbt-release) -> 0.8.3
+    - [sbt-s3-resolver](https://github.com/ohnosequences/sbt-s3-resolver) -> 0.11.0
+    - [literator](https://github.com/laughedelic/literator) -> 0.5.1
+    - [sbt-assembly](https://github.com/sbt/sbt-assembly) -> 0.11.2
+
+* Improvements:
+    - Split everithing on different modules
+    - `clean` task now cleans `project/` folder from sbt-stuff
+    - A _huge improvement_ of the release process (see #12 and docs)

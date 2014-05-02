@@ -35,7 +35,7 @@ object ResolverSettings extends sbt.Plugin {
     Seq(
 ```
 
-resolving
+Adding default maven/ivy resolvers with the default `bucketSuffix`
 
 ```scala
       bucketSuffix := organization.value + ".com",
@@ -47,7 +47,7 @@ resolving
       ),
 ```
 
-publishing
+Publishing by default is public, maven-style and with the same `bucketSuffix` as for resolving
 
 ```scala
       isPrivate := false,
@@ -78,6 +78,7 @@ publishing
       + [AssemblySettings.scala][main/scala/AssemblySettings.scala]
       + [DocumentationSettings.scala][main/scala/DocumentationSettings.scala]
       + [JavaSettings.scala][main/scala/JavaSettings.scala]
+      + [MetadataSettings.scala][main/scala/MetadataSettings.scala]
       + [NiceProjectConfigs.scala][main/scala/NiceProjectConfigs.scala]
       + [ReleaseSettings.scala][main/scala/ReleaseSettings.scala]
       + [ResolverSettings.scala][main/scala/ResolverSettings.scala]
@@ -87,6 +88,7 @@ publishing
 [main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
 [main/scala/DocumentationSettings.scala]: DocumentationSettings.scala.md
 [main/scala/JavaSettings.scala]: JavaSettings.scala.md
+[main/scala/MetadataSettings.scala]: MetadataSettings.scala.md
 [main/scala/NiceProjectConfigs.scala]: NiceProjectConfigs.scala.md
 [main/scala/ReleaseSettings.scala]: ReleaseSettings.scala.md
 [main/scala/ResolverSettings.scala]: ResolverSettings.scala.md
