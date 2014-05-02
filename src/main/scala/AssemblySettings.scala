@@ -13,8 +13,10 @@ import AssemblyKeys._
 
 object AssemblySettings extends sbt.Plugin {
 
-  /* ### Setting keys */
+  /* ### Setting keys 
 
+     Classifier is the suffix appended to the artifact name
+  */
   lazy val fatArtifactClassifier = settingKey[String]("Classifier of the fat jar artifact")
 
   /* ### Settings 
@@ -22,7 +24,6 @@ object AssemblySettings extends sbt.Plugin {
      Note, that these settings are not included by default. To turn them on them, add to your 
      `build.sbt` `fatArtifactSettings` line (without any prefix)
   */
-
   lazy val fatArtifactSettings: Seq[Setting[_]] =
     (assemblySettings: Seq[Setting[_]]) ++ 
     addArtifact(artifact in (Compile, assembly), assembly) ++ 

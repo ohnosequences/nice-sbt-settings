@@ -44,6 +44,7 @@ object TagListSettings extends sbt.Plugin {
       + [AssemblySettings.scala][main/scala/AssemblySettings.scala]
       + [DocumentationSettings.scala][main/scala/DocumentationSettings.scala]
       + [JavaSettings.scala][main/scala/JavaSettings.scala]
+      + [MetadataSettings.scala][main/scala/MetadataSettings.scala]
       + [NiceProjectConfigs.scala][main/scala/NiceProjectConfigs.scala]
       + [ReleaseSettings.scala][main/scala/ReleaseSettings.scala]
       + [ResolverSettings.scala][main/scala/ResolverSettings.scala]
@@ -53,6 +54,7 @@ object TagListSettings extends sbt.Plugin {
 [main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
 [main/scala/DocumentationSettings.scala]: DocumentationSettings.scala.md
 [main/scala/JavaSettings.scala]: JavaSettings.scala.md
+[main/scala/MetadataSettings.scala]: MetadataSettings.scala.md
 [main/scala/NiceProjectConfigs.scala]: NiceProjectConfigs.scala.md
 [main/scala/ReleaseSettings.scala]: ReleaseSettings.scala.md
 [main/scala/ResolverSettings.scala]: ResolverSettings.scala.md

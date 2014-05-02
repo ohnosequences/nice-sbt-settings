@@ -37,6 +37,7 @@ object ReleaseSettings extends sbt.Plugin {
 ```
 
 ### Additional release steps
+This converts a task key to an action (which is implicitly converted the to a release step)
 
 ```scala
   def releaseTask[T](key: TaskKey[T]) = { st: State =>
@@ -48,8 +49,12 @@ object ReleaseSettings extends sbt.Plugin {
       case e: java.lang.Error => sys.error(e.toString)
     }
   }
+```
 
-  // NOTE: With any VCS business I always think about Git and don't care much about other VCS systems 
+A generic action for commiting given sequence of files with the given commit message
+
+```scala
+  // NOTE: With any VCS business we always assume Git and don't care much about other VCS systems 
   def commitFiles(msg: String, files: File*) = { st: State =>
     val extracted = Project.extract(st)
     val vcs = extracted.get(versionControlSystem).getOrElse(sys.error("No version control system is set!"))
@@ -78,7 +83,11 @@ commiting _only_ them
     }
     st
   }
+```
 
+We will need to set the version temporarily during the release (and commit it later in a separate step)
+
+```scala
   lazy val tempSetVersion = { st: State =>
     val v = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))._1
     st.log.info("Setting version temporarily to '" + v + "'")
@@ -97,7 +106,11 @@ Almost the same as the standard release step, but it doesn't use our modified co
       getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))._2
     commitFiles("Setting version to '" +v+ "'", extracted get versionFile)(st)
   }
+```
 
+Checks that you have written release notes in `notes/<version>.markdown` files and shows them
+
+```scala
   lazy val checkReleaseNotes = { st: State =>
     val extracted = Project.extract(st)
     val v = extracted get (version in ThisBuild)
@@ -136,7 +149,11 @@ and asks for a confirmation if needed
     } else st.log.info("All dependencies seem to be up to date")
     newSt
   }
+```
 
+Announcing release blocks
+
+```scala
   def shout(what: String, transit: Boolean = false) = { st: State =>
     val extracted = Project.extract(st)
     st.log.info("\n"+what+"\n")
@@ -148,7 +165,14 @@ and asks for a confirmation if needed
     }
     st
   }
+```
 
+A release block is a sequence of release steps. We want this to be able
+- to take their checks and run them first
+- to operate on semantic groups of steps
+
+
+```scala
   case class ReleaseBlock(name: String, steps: Seq[ReleaseStep], transit: Boolean = false)
 
   implicit def blockToCommand(b: ReleaseBlock) = Command.command(b.name){
@@ -157,7 +181,7 @@ and asks for a confirmation if needed
   }
 ```
 
-This function take a seuqence of release blocks and constructs a normal release process:
+This function takes a seuqence of release blocks and constructs a normal release process:
 - it aggregates checks from all steps and puts them as a first release block
 - then it runs `action` of every release step, naming release blocks and asking confirmation if needed
 
@@ -189,10 +213,25 @@ This function take a seuqence of release blocks and constructs a normal release 
     GithubRelease.defaults ++
     ReleasePlugin.releaseSettings ++ 
     Seq(
+```
+
+We want to increment `y` in `x.y.z`
+
+```scala
       versionBump := Version.Bump.Minor,
+```
+
+By default you want to have full controll over the release process:
+
+```scala
       releaseStepByStep := true,
+
       tagComment  := {organization.value +"/"+ name.value +" v"+ (version in ThisBuild).value},
-      // and adding release notes to the commit message
+```
+
+Adding release notes to the commit message
+
+```scala
       commitMessage := {
         val log = streams.value.log
         val v = (version in ThisBuild).value
@@ -200,6 +239,11 @@ This function take a seuqence of release blocks and constructs a normal release 
         val text: String = IO.read(note)
         "Setting version to " +v+ ":\n\n"+ text
       },
+```
+
+This is a sequence of blocks (see them below)
+
+```scala
       releaseProcess := constructReleaseProcess(
         initChecks, Seq(
         askVersionsAndCheckNotes,
@@ -216,6 +260,12 @@ This function take a seuqence of release blocks and constructs a normal release 
 ```
 
 ### Release blocks
+#### Initial checks
+
+- check that release doesn't have snapshot or outdated dependencies
+- check that we can use Github api for publishing notes
+- warn if we have `TODO` or `FIXME` notes
+
 
 ```scala
     val initChecks = ReleaseBlock("Initial checks", Seq(
@@ -224,23 +274,62 @@ This function take a seuqence of release blocks and constructs a normal release 
       releaseTask(GithubRelease.checkGithubCredentials),
       releaseTask(TagListKeys.tagList)
     ), transit = true)
+```
 
+#### Setting release version
+
+- inquire the current and the next release versions
+- set the current one (no commiting)
+- check and confirm release notes for this version
+
+
+```scala
     val askVersionsAndCheckNotes = ReleaseBlock("Setting release version", Seq(
       inquireVersions.action,
       tempSetVersion,
       checkReleaseNotes
     ), transit = true)
+```
 
+#### Packaging and running tests
+
+- try to pack
+- run tests
+
+
+```scala
     val packAndTest = ReleaseBlock("Packaging and running tests", Seq(
       releaseTask(Keys.`package`),
       runTest.action
     ), transit = true)
+```
 
+#### Generating markdown documentation
+
+```scala
     val genMdDocs = ReleaseBlock("Generating markdown documentation", Seq(cleanAndGenerateDocsAction))
+```
+
+#### Generating api documentation and pushing to gh-pages
+
+```scala
     val genApiDocs = ReleaseBlock("Generating api documentation and pushing to gh-pages", Seq(pushApiDocsToGHPagesAction))
+```
 
+#### Publishing artifacts
+
+```scala
     val publishArtifacts = ReleaseBlock("Publishing artifacts", Seq(releaseTask(publish)))
+```
 
+#### Committing and tagging 
+
+- commit markdown documentation
+- finally set and commit release version
+- make a corresponding git tag
+
+
+```scala
     val commitAndTag = ReleaseBlock("Committing and tagging", Seq(
       { st: State =>
         commitFiles("Autogenerated markdown documentation", 
@@ -250,7 +339,15 @@ This function take a seuqence of release blocks and constructs a normal release 
       commitReleaseVersion,
       tagRelease.action
     ), transit = true)
+```
 
+#### Publishing release on github 
+
+- push tags
+- publish a Github release (notes and assets)
+
+
+```scala
     val githubRelease = ReleaseBlock("Publishing release on github", Seq(
       { st: State =>
         val vcs = Project.extract(st).get(versionControlSystem).
@@ -260,12 +357,20 @@ This function take a seuqence of release blocks and constructs a normal release 
       },
       releaseTask(GithubRelease.releaseOnGithub)
     ))
+```
 
+#### Setting and committing next version
+
+```scala
     val nextVersion = ReleaseBlock("Setting and committing next version", Seq(
       setNextVersion.action,
       commitNextReleaseVersion
     ))
+```
 
+#### Pushing commits to github
+
+```scala
     val githubPush = ReleaseBlock("Pushing commits to github", Seq(
       { st: State =>
         val vcs = Project.extract(st).get(versionControlSystem).
@@ -292,6 +397,7 @@ This function take a seuqence of release blocks and constructs a normal release 
       + [AssemblySettings.scala][main/scala/AssemblySettings.scala]
       + [DocumentationSettings.scala][main/scala/DocumentationSettings.scala]
       + [JavaSettings.scala][main/scala/JavaSettings.scala]
+      + [MetadataSettings.scala][main/scala/MetadataSettings.scala]
       + [NiceProjectConfigs.scala][main/scala/NiceProjectConfigs.scala]
       + [ReleaseSettings.scala][main/scala/ReleaseSettings.scala]
       + [ResolverSettings.scala][main/scala/ResolverSettings.scala]
@@ -301,6 +407,7 @@ This function take a seuqence of release blocks and constructs a normal release 
 [main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
 [main/scala/DocumentationSettings.scala]: DocumentationSettings.scala.md
 [main/scala/JavaSettings.scala]: JavaSettings.scala.md
+[main/scala/MetadataSettings.scala]: MetadataSettings.scala.md
 [main/scala/NiceProjectConfigs.scala]: NiceProjectConfigs.scala.md
 [main/scala/ReleaseSettings.scala]: ReleaseSettings.scala.md
 [main/scala/ResolverSettings.scala]: ResolverSettings.scala.md

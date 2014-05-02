@@ -34,6 +34,7 @@ object ReleaseSettings extends sbt.Plugin {
 
   /* ### Additional release steps */
 
+  /* This converts a task key to an action (which is implicitly converted the to a release step) */
   def releaseTask[T](key: TaskKey[T]) = { st: State =>
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
@@ -44,7 +45,9 @@ object ReleaseSettings extends sbt.Plugin {
     }
   }
 
-  // NOTE: With any VCS business I always think about Git and don't care much about other VCS systems 
+  /* A generic action for commiting given sequence of files with the given commit message */
+  
+  // NOTE: With any VCS business we always assume Git and don't care much about other VCS systems 
   def commitFiles(msg: String, files: File*) = { st: State =>
     val extracted = Project.extract(st)
     val vcs = extracted.get(versionControlSystem).getOrElse(sys.error("No version control system is set!"))
@@ -62,6 +65,7 @@ object ReleaseSettings extends sbt.Plugin {
     st
   }
 
+  /* We will need to set the version temporarily during the release (and commit it later in a separate step) */
   lazy val tempSetVersion = { st: State =>
     val v = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))._1
     st.log.info("Setting version temporarily to '" + v + "'")
@@ -78,6 +82,7 @@ object ReleaseSettings extends sbt.Plugin {
     commitFiles("Setting version to '" +v+ "'", extracted get versionFile)(st)
   }
 
+  /* Checks that you have written release notes in `notes/<version>.markdown` files and shows them */
   lazy val checkReleaseNotes = { st: State =>
     val extracted = Project.extract(st)
     val v = extracted get (version in ThisBuild)
@@ -114,6 +119,7 @@ object ReleaseSettings extends sbt.Plugin {
     newSt
   }
 
+  /* Announcing release blocks */
   def shout(what: String, transit: Boolean = false) = { st: State =>
     val extracted = Project.extract(st)
     st.log.info("\n"+what+"\n")
@@ -126,6 +132,10 @@ object ReleaseSettings extends sbt.Plugin {
     st
   }
 
+  /* A release block is a sequence of release steps. We want this to be able
+     - to take their checks and run them first
+     - to operate on semantic groups of steps
+  */
   case class ReleaseBlock(name: String, steps: Seq[ReleaseStep], transit: Boolean = false)
 
   implicit def blockToCommand(b: ReleaseBlock) = Command.command(b.name){
@@ -133,7 +143,7 @@ object ReleaseSettings extends sbt.Plugin {
       foldLeft(identity: State => State)(_ andThen _)
   }
 
-  /* This function take a seuqence of release blocks and constructs a normal release process:
+  /* This function takes a seuqence of release blocks and constructs a normal release process:
      - it aggregates checks from all steps and puts them as a first release block
      - then it runs `action` of every release step, naming release blocks and asking confirmation if needed
   */
@@ -161,10 +171,15 @@ object ReleaseSettings extends sbt.Plugin {
     GithubRelease.defaults ++
     ReleasePlugin.releaseSettings ++ 
     Seq(
+      /* We want to increment `y` in `x.y.z` */
       versionBump := Version.Bump.Minor,
+
+      /* By default you want to have full controll over the release process: */
       releaseStepByStep := true,
+
       tagComment  := {organization.value +"/"+ name.value +" v"+ (version in ThisBuild).value},
-      // and adding release notes to the commit message
+
+      /* Adding release notes to the commit message */
       commitMessage := {
         val log = streams.value.log
         val v = (version in ThisBuild).value
@@ -172,6 +187,8 @@ object ReleaseSettings extends sbt.Plugin {
         val text: String = IO.read(note)
         "Setting version to " +v+ ":\n\n"+ text
       },
+
+      /* This is a sequence of blocks (see them below) */
       releaseProcess := constructReleaseProcess(
         initChecks, Seq(
         askVersionsAndCheckNotes,
@@ -186,8 +203,16 @@ object ReleaseSettings extends sbt.Plugin {
       ))
     )
 
-    /* ### Release blocks*/
 
+    /* ### Release blocks */
+
+
+    /* #### Initial checks
+
+       - check that release doesn't have snapshot or outdated dependencies
+       - check that we can use Github api for publishing notes
+       - warn if we have `TODO` or `FIXME` notes
+    */
     val initChecks = ReleaseBlock("Initial checks", Seq(
       checkSnapshotDependencies,
       checkDependecyUpdates,
@@ -195,22 +220,49 @@ object ReleaseSettings extends sbt.Plugin {
       releaseTask(TagListKeys.tagList)
     ), transit = true)
 
+
+    /* #### Setting release version
+
+       - inquire the current and the next release versions
+       - set the current one (no commiting)
+       - check and confirm release notes for this version
+    */
     val askVersionsAndCheckNotes = ReleaseBlock("Setting release version", Seq(
       inquireVersions.action,
       tempSetVersion,
       checkReleaseNotes
     ), transit = true)
 
+
+    /* #### Packaging and running tests
+
+       - try to pack
+       - run tests
+    */
     val packAndTest = ReleaseBlock("Packaging and running tests", Seq(
       releaseTask(Keys.`package`),
       runTest.action
     ), transit = true)
 
+
+    /* #### Generating markdown documentation */
     val genMdDocs = ReleaseBlock("Generating markdown documentation", Seq(cleanAndGenerateDocsAction))
+
+
+    /* #### Generating api documentation and pushing to gh-pages */
     val genApiDocs = ReleaseBlock("Generating api documentation and pushing to gh-pages", Seq(pushApiDocsToGHPagesAction))
 
+
+    /* #### Publishing artifacts */
     val publishArtifacts = ReleaseBlock("Publishing artifacts", Seq(releaseTask(publish)))
 
+
+    /* #### Committing and tagging 
+
+       - commit markdown documentation
+       - finally set and commit release version
+       - make a corresponding git tag
+    */
     val commitAndTag = ReleaseBlock("Committing and tagging", Seq(
       { st: State =>
         commitFiles("Autogenerated markdown documentation", 
@@ -221,6 +273,12 @@ object ReleaseSettings extends sbt.Plugin {
       tagRelease.action
     ), transit = true)
 
+
+    /* #### Publishing release on github 
+
+       - push tags
+       - publish a Github release (notes and assets)
+    */
     val githubRelease = ReleaseBlock("Publishing release on github", Seq(
       { st: State =>
         val vcs = Project.extract(st).get(versionControlSystem).
@@ -231,11 +289,15 @@ object ReleaseSettings extends sbt.Plugin {
       releaseTask(GithubRelease.releaseOnGithub)
     ))
 
+
+    /* #### Setting and committing next version */
     val nextVersion = ReleaseBlock("Setting and committing next version", Seq(
       setNextVersion.action,
       commitNextReleaseVersion
     ))
 
+
+    /* #### Pushing commits to github */
     val githubPush = ReleaseBlock("Pushing commits to github", Seq(
       { st: State =>
         val vcs = Project.extract(st).get(versionControlSystem).
