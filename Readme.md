@@ -18,7 +18,7 @@ addSbtPlugin("ohnosequences" % "nice-sbt-settings" % "0.4.0")
 
 ### Setting groups
 
-This plugin icludes
+This plugin includes
 
 * [Java related settings][JavaSettings]
 * [Scala related settings][ScalaSettings]
@@ -33,6 +33,11 @@ And defines two sets of these settings: [for java and for scala projects][NicePr
 
 Just follow the links, as all docs are there (generated from the comments in the code).
 
+
+## Contacts
+
+This project is maintained by [@laughedelic](https://github.com/laughedelic). Join the chat-room if you want to ask or discuss something  
+[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/ohnosequences/nice-sbt-settings?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 
 [JavaSettings]: docs/src/main/scala/JavaSettings.scala.md
