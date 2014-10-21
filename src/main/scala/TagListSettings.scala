@@ -20,7 +20,7 @@ object TagListSettings extends sbt.Plugin {
       TagListKeys.tags := Set(
         // Tag("note", TagListPlugin.Info),
         Tag("todo", TagListPlugin.Warn), 
-        Tag("fixme", TagListPlugin.Warn)
+        Tag("fixme", TagListPlugin.Error)
       )
     )
   }

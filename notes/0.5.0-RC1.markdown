@@ -1,0 +1,18 @@
+
+* New plugin integrations:
+
+* Upgrades:
+
+    - [sbt-s3-resolver](https://github.com/ohnosequences/sbt-s3-resolver): `0.11.0 -> 0.12.0`
+    - [sbt-release](https://github.com/sbt/sbt-release): `0.8.3 -> 0.8.5`
+    - [literator](https://github.com/laughedelic/literator): `0.5.1 -> 0.6.0`
+    - [sbt-updates](https://github.com/rtimush/sbt-updates): `0.1.5 -> 0.1.6`
+    - [sbt-taglist](https://github.com/johanandren/sbt-taglist): `1.3 -> 1.3.1`
+
+* Other updates:
+
+    - default Scala version: `2.10.4 -> 2.11.3`
+
+* General improvements and fixes:
+
+    - changed log-level for FIXME tags to error
