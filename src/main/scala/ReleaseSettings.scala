@@ -127,7 +127,8 @@ object ReleaseSettings extends sbt.Plugin {
     val (newSt, list) = extracted.runTask(TagListKeys.tagList in ref, st)
     if (list.flatMap{ _._2 }.nonEmpty) {
       SimpleReader.readLine("Are you sure you want to continue without fixing this (y/n)? [y] ") match {
-        case Some("n" | "N") => sys.error("Aborting release due to some fixme-notes in the code")
+        // TODO: check
+        case Some("n" | "N") => newSt.log.error("Aborting release due to some fixme-notes in the code"); sys.exit
         case _ => // go on
       }
     }
