@@ -119,6 +119,21 @@ object ReleaseSettings extends sbt.Plugin {
     newSt
   }
 
+  /* Almost the same as the task `dependencyUpdates`, but it outputs result as a warning 
+     and asks for a confirmation if needed */
+  lazy val checkTagList = { st: State =>
+    val extracted = Project.extract(st)
+    val ref = extracted.get(thisProjectRef)
+    val (newSt, list) = extracted.runTask(TagListKeys.tagList in ref, st)
+    if (list.flatMap{ _._2 }.nonEmpty) {
+      SimpleReader.readLine("Are you sure you want to continue without fixing this (y/n)? [y] ") match {
+        case Some("n" | "N") => sys.error("Aborting release due to some fixme-notes in the code")
+        case _ => // go on
+      }
+    }
+    newSt
+  }
+
   /* Announcing release blocks */
   def shout(what: String, transit: Boolean = false) = { st: State =>
     val extracted = Project.extract(st)
@@ -216,8 +231,8 @@ object ReleaseSettings extends sbt.Plugin {
     val initChecks = ReleaseBlock("Initial checks", Seq(
       checkSnapshotDependencies,
       checkDependecyUpdates,
-      releaseTask(GithubRelease.checkGithubCredentials),
-      releaseTask(TagListKeys.tagList)
+      checkTagList,
+      releaseTask(GithubRelease.checkGithubCredentials)
     ), transit = true)
 
 
