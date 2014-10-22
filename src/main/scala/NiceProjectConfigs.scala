@@ -8,6 +8,7 @@ package ohnosequences.sbt.nice
 import sbt._
 import Keys._
 import sbt.Extracted
+import wartremover._
 
 object NiceProjectConfigs extends sbt.Plugin {
   
@@ -28,7 +29,7 @@ object NiceProjectConfigs extends sbt.Plugin {
       DocumentationSettings.documentationSettings ++
       ReleaseSettings.releaseSettings ++
       TagListSettings.tagListSettings ++
-      Seq(wartremoverWarnings in (Compile, compile) ++= Warts.unsafe)
+      Seq(wartremoverWarnings in (Compile, compile) ++= Warts.all)
 
 
     /* Same for `Nice.javaProject` - it includes all `scalaProject` settings,
