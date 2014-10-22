@@ -27,7 +27,8 @@ object NiceProjectConfigs extends sbt.Plugin {
       ResolverSettings.resolverSettings ++
       DocumentationSettings.documentationSettings ++
       ReleaseSettings.releaseSettings ++
-      TagListSettings.tagListSettings
+      TagListSettings.tagListSettings ++
+      Seq(wartremoverWarnings in (Compile, compile) ++= Warts.unsafe)
 
 
     /* Same for `Nice.javaProject` - it includes all `scalaProject` settings,

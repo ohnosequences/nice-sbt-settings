@@ -12,11 +12,6 @@ bucketSuffix := "era7.com"
 
 scalaVersion := "2.10.4"
 
-dependencyOverrides ++= Set(
-  "org.apache.ivy" % "ivy" % "2.3.0",
-  "commons-codec" % "commons-codec" % "1.7",
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.2.3"
-)
 
 addSbtPlugin("ohnosequences" % "sbt-s3-resolver" % "0.12.0")
 
@@ -31,3 +26,11 @@ addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.6")
 addSbtPlugin("laughedelic" % "literator-plugin" % "0.6.0")
 
 addSbtPlugin("com.markatta" % "taglist-plugin" % "1.3.1")
+
+addSbtPlugin("org.brianmckenna" % "sbt-wartremover" % "0.11")
+
+
+dependencyOverrides ++= Set(
+  "commons-codec" % "commons-codec" % "1.7",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.2.3"
+)
