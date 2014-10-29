@@ -49,6 +49,7 @@ object ReleaseSettings extends sbt.Plugin {
   
   // NOTE: With any VCS business we always assume Git and don't care much about other VCS systems 
   def commitFiles(msg: String, files: File*) = { st: State =>
+
     val extracted = Project.extract(st)
     val vcs = extracted.get(versionControlSystem).getOrElse(sys.error("No version control system is set!"))
     val base = vcs.baseDir
@@ -57,14 +58,16 @@ object ReleaseSettings extends sbt.Plugin {
       getOrElse(s"Version file [${f}] is outside of this VCS repository with base directory [${base}]!")
     }
     /* adding files */
-    val exitCode = vcs.cmd((Seq("add", "--all") ++ paths): _*) ! 
-
-    st.log
+    val addExit: Int = vcs.cmd((Seq("add", "--all") ++ paths): _*) ! st.log
     /* commiting _only_ them */
-    if (vcs.status.!!.trim.nonEmpty) {
-      vcs.cmd((Seq("commit", "-m", msg) ++ paths): _*) ! st.log
+    // shouldn't be inside if but hey
+    if (vcs.status.!!.trim.nonEmpty && addExit == 0) {
+
+      val commitExit = vcs.cmd((Seq("commit", "-m", msg) ++ paths): _*) ! st.log
+      // no error checking here!
+      if(commitExit == 0) st else st
     }
-    st
+    else { st }
   }
 
   /* We will need to set the version temporarily during the release (and commit it later in a separate step) */
