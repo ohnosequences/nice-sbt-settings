@@ -15,11 +15,7 @@ object WartremoverSettings extends sbt.Plugin {
 
   /* ### Settings */
 
-  lazy val wartremoverSettings: Seq[Setting[_]] = {
-    /* We add the same list of warts as `Wart.unsafe` except of `Any` and `NonUnitStatements`.
-       See [warts documentation](https://github.com/typelevel/wartremover#warts).
-    */
-    Seq(wartremoverWarnings in (Compile, compile) ++= Seq(
+  private val defaultWarts = Seq(
       Wart.Any2StringAdd,
       Wart.AsInstanceOf,
       Wart.EitherProjectionPartial,
@@ -31,7 +27,15 @@ object WartremoverSettings extends sbt.Plugin {
       Wart.Serializable,
       Wart.Var,
       Wart.ListOps
-    ))
+    )
+
+  lazy val wartremoverSettings: Seq[Setting[_]] = {
+    /* We add the same list of warts as `Wart.unsafe` except of `Any` and `NonUnitStatements`.
+       See [warts documentation](https://github.com/typelevel/wartremover#warts).
+    */
+    Seq(
+      wartremoverWarnings in (Compile, compile) ++= defaultWarts
+    )
   }
 
 }

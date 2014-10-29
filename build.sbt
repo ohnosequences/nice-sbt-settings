@@ -29,6 +29,7 @@ addSbtPlugin("com.markatta" % "taglist-plugin" % "1.3.1")
 
 addSbtPlugin("org.brianmckenna" % "sbt-wartremover" % "0.11")
 
+wartremoverWarnings ++= Warts.allBut(Wart.NoNeedForMonad)
 
 dependencyOverrides ++= Set(
   "commons-codec" % "commons-codec" % "1.7",

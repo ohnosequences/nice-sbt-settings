@@ -30,10 +30,9 @@ object AssemblySettings extends sbt.Plugin {
     Seq(
       // publishing fat artifact:
       fatArtifactClassifier := "fat",
-      artifact in (Compile, assembly) :=
-        (artifact in (Compile, assembly)).value.copy(
-           `classifier` = Some(fatArtifactClassifier.value)
-        ),
+      artifact in (Compile, assembly) := (artifact in (Compile, assembly)).value.copy(
+        classifier = Some(fatArtifactClassifier.value)
+      ),
       // turning off tests in assembly:
       test in assembly := {}
     )
