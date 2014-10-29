@@ -30,7 +30,7 @@ object ResolverSettings extends sbt.Plugin {
 
       /* Adding default maven/ivy resolvers with the default `bucketSuffix` */
       bucketSuffix := organization.value + ".com",
-      resolvers ++= Seq ( 
+      resolvers ++= Seq[Resolver]( 
         organization.value + " public maven releases"  at s3("releases." + bucketSuffix.value).toHttp,
         organization.value + " public maven snapshots" at s3("snapshots." + bucketSuffix.value).toHttp,
         Resolver.url(organization.value + " public ivy releases", url(s3("releases." + bucketSuffix.value).toHttp))(ivy),
