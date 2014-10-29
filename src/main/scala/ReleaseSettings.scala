@@ -27,6 +27,17 @@ import com.timushev.sbt.updates.UpdatesKeys
 
 object ReleaseSettings extends sbt.Plugin {
 
+  // will return None if things go wrong
+  def execCommandWithState(vcs: Vcs, cmd: Seq[String], st: State): Option[State] = {
+
+    val exitCode = vcs.cmd(cmd) ! st.log
+
+    if (exitCode == 0 ) Some(st) else None
+  }
+
+  // what's the point of this check??
+  def isOk(vcs: Vcs): Boolean = (vcs.status !! ).trim.nonEmpty
+
   /* ### Setting Keys */
 
   lazy val releaseStepByStep = settingKey[Boolean]("Defines whether release process will wait for confirmation after each step")
@@ -52,22 +63,21 @@ object ReleaseSettings extends sbt.Plugin {
 
     val extracted = Project.extract(st)
     val vcs = extracted.get(versionControlSystem).getOrElse(sys.error("No version control system is set!"))
+
+    def vcsExec(cmd: Seq[String], state: State): Option[State] = execCommandWithState(vcs, cmd, state)
+
     val base = vcs.baseDir
     /* Making paths relative to the base dir */
     val paths = files map { f => IO.relativize(base, f).
       getOrElse(s"Version file [${f}] is outside of this VCS repository with base directory [${base}]!")
     }
     /* adding files */
-    val addExit: Int = vcs.cmd((Seq("add", "--all") ++ paths): _*) ! st.log
-    /* commiting _only_ them */
-    // shouldn't be inside if but hey
-    if (vcs.status.!!.trim.nonEmpty && addExit == 0) {
 
-      val commitExit = vcs.cmd((Seq("commit", "-m", msg) ++ paths): _*) ! st.log
-      // no error checking here!
-      if(commitExit == 0) st else st
-    }
-    else { st }
+    vcsExec( Seq("add", "--all") ++ paths, st ) flatMap {
+
+      s => if ( isOk(vcs) ) vcsExec( Seq("commit", "-m", msg) ++ paths, s ) else None
+
+    } getOrElse st
   }
 
   /* We will need to set the version temporarily during the release (and commit it later in a separate step) */
