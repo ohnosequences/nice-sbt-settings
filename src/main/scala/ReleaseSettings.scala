@@ -64,7 +64,7 @@ object ReleaseSettings extends sbt.Plugin {
     val extracted = Project.extract(st)
     val vcs = extracted.get(versionControlSystem).getOrElse(sys.error("No version control system is set!"))
 
-    def vcsExec(cmd: Seq[String], state: State): Option[State] = execCommandWithState(vcs, cmd, state)
+    def vcsExec(cmd: Seq[String]): Option[State] = execCommandWithState(vcs, cmd, st)
 
     val base = vcs.baseDir
     /* Making paths relative to the base dir */
@@ -73,9 +73,9 @@ object ReleaseSettings extends sbt.Plugin {
     }
     /* adding files */
 
-    vcsExec( Seq("add", "--all") ++ paths, st ) flatMap {
+    vcsExec( Seq("add", "--all") ++ paths ) flatMap {
 
-      s => if ( isOk(vcs) ) vcsExec( Seq("commit", "-m", msg) ++ paths, s ) else None
+      _ => if ( isOk(vcs) ) vcsExec( Seq("commit", "-m", msg) ++ paths) else None
 
     } getOrElse st
   }
