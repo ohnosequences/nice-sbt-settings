@@ -28,6 +28,17 @@ import TagListPlugin._
 import com.timushev.sbt.updates.UpdatesKeys
 
 object ReleaseSettings extends sbt.Plugin {
+
+  // will return None if things go wrong
+  def execCommandWithState(vcs: Vcs, cmd: Seq[String], st: State): Option[State] = {
+
+    val exitCode = vcs.cmd(cmd) ! st.log
+
+    if (exitCode == 0 ) Some(st) else None
+  }
+
+  // what's the point of this check??
+  def isOk(vcs: Vcs): Boolean = (vcs.status !! ).trim.nonEmpty
 ```
 
 ### Setting Keys
@@ -56,8 +67,12 @@ A generic action for commiting given sequence of files with the given commit mes
 ```scala
   // NOTE: With any VCS business we always assume Git and don't care much about other VCS systems 
   def commitFiles(msg: String, files: File*) = { st: State =>
+
     val extracted = Project.extract(st)
     val vcs = extracted.get(versionControlSystem).getOrElse(sys.error("No version control system is set!"))
+
+    def vcsExec(cmd: Seq[String]): Option[State] = execCommandWithState(vcs, cmd, st)
+
     val base = vcs.baseDir
 ```
 
@@ -72,16 +87,11 @@ Making paths relative to the base dir
 adding files
 
 ```scala
-    vcs.cmd((Seq("add", "--all") ++ paths): _*) ! st.log
-```
+    vcsExec( Seq("add", "--all") ++ paths ) flatMap {
 
-commiting _only_ them
+      _ => if ( isOk(vcs) ) vcsExec( Seq("commit", "-m", msg) ++ paths) else None
 
-```scala
-    if (vcs.status.!!.trim.nonEmpty) {
-      vcs.cmd((Seq("commit", "-m", msg) ++ paths): _*) ! st.log
-    }
-    st
+    } getOrElse st
   }
 ```
 
@@ -147,6 +157,24 @@ and asks for a confirmation if needed
         case _ => // go on
       }
     } else st.log.info("All dependencies seem to be up to date")
+    newSt
+  }
+```
+
+Almost the same as the task `dependencyUpdates`, but it outputs result as a warning 
+and asks for a confirmation if needed
+
+```scala
+  lazy val checkTagList = { st: State =>
+    val extracted = Project.extract(st)
+    val ref = extracted.get(thisProjectRef)
+    val (newSt, list) = extracted.runTask(TagListKeys.tagList in ref, st)
+    if (list.flatMap{ _._2 }.nonEmpty) {
+      SimpleReader.readLine("Are you sure you want to continue without fixing this (y/n)? [y] ") match {
+        case Some("n" | "N") => sys.error("Aborting release due to some fixme-notes in the code")
+        case _ => // go on
+      }
+    }
     newSt
   }
 ```
@@ -271,8 +299,8 @@ This is a sequence of blocks (see them below)
     val initChecks = ReleaseBlock("Initial checks", Seq(
       checkSnapshotDependencies,
       checkDependecyUpdates,
-      releaseTask(GithubRelease.checkGithubCredentials),
-      releaseTask(TagListKeys.tagList)
+      checkTagList,
+      releaseTask(GithubRelease.checkGithubCredentials)
     ), transit = true)
 ```
 
@@ -403,6 +431,7 @@ This is a sequence of blocks (see them below)
       + [ResolverSettings.scala][main/scala/ResolverSettings.scala]
       + [ScalaSettings.scala][main/scala/ScalaSettings.scala]
       + [TagListSettings.scala][main/scala/TagListSettings.scala]
+      + [WartremoverSettings.scala][main/scala/WartremoverSettings.scala]
 
 [main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
 [main/scala/DocumentationSettings.scala]: DocumentationSettings.scala.md
@@ -413,3 +442,4 @@ This is a sequence of blocks (see them below)
 [main/scala/ResolverSettings.scala]: ResolverSettings.scala.md
 [main/scala/ScalaSettings.scala]: ScalaSettings.scala.md
 [main/scala/TagListSettings.scala]: TagListSettings.scala.md
+[main/scala/WartremoverSettings.scala]: WartremoverSettings.scala.md

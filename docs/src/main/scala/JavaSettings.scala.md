@@ -21,8 +21,8 @@ Java version can be `"1.6"` or `"1.7"`
   lazy val javaVersion = settingKey[String]("Java version")
 
   lazy val javaSettings: Seq[Setting[_]] = Seq(
-    // default is Java 7
-    javaVersion := "1.7",
+    // default is Java 8
+    javaVersion := "1.8",
 
     // to omit _2.10 suffixes:
     crossPaths := false,
@@ -61,6 +61,7 @@ Java version can be `"1.6"` or `"1.7"`
       + [ResolverSettings.scala][main/scala/ResolverSettings.scala]
       + [ScalaSettings.scala][main/scala/ScalaSettings.scala]
       + [TagListSettings.scala][main/scala/TagListSettings.scala]
+      + [WartremoverSettings.scala][main/scala/WartremoverSettings.scala]
 
 [main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
 [main/scala/DocumentationSettings.scala]: DocumentationSettings.scala.md
@@ -71,3 +72,4 @@ Java version can be `"1.6"` or `"1.7"`
 [main/scala/ResolverSettings.scala]: ResolverSettings.scala.md
 [main/scala/ScalaSettings.scala]: ScalaSettings.scala.md
 [main/scala/TagListSettings.scala]: TagListSettings.scala.md
+[main/scala/WartremoverSettings.scala]: WartremoverSettings.scala.md

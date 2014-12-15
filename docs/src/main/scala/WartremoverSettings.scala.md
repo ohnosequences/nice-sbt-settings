@@ -1,7 +1,7 @@
-## Project configurations
+## Linting settings
 
-This is the module defining project configurations, which are 
-just combinations of the setting sets defined in other modules.
+This module adds settings to use the [wartremover](https://github.com/typelevel/wartremover) 
+linting plugin, which warns you about different "warts" in your code.
 
 
 ```scala
@@ -9,48 +9,41 @@ package ohnosequences.sbt.nice
 
 import sbt._
 import Keys._
-import sbt.Extracted
 
-object NiceProjectConfigs extends sbt.Plugin {
-  
-  object Nice {
+import com.markatta.sbttaglist._
+import wartremover._
+
+object WartremoverSettings extends sbt.Plugin {
 ```
 
-You can just say somewhere **in the very beginning** of your `build.sbt`:
+### Settings
 
 ```scala
-Nice.scalaProject
+  private val defaultWarts = Seq(
+      Wart.Any2StringAdd,
+      Wart.AsInstanceOf,
+      Wart.EitherProjectionPartial,
+      Wart.IsInstanceOf,
+      Wart.Null,
+      Wart.OptionPartial,
+      Wart.Product,
+      Wart.Return,
+      Wart.Serializable,
+      Wart.Var,
+      Wart.ListOps
+    )
 
-// and then you can adjust any settings
+  lazy val wartremoverSettings: Seq[Setting[_]] = {
 ```
 
-
-```scala
-    lazy val scalaProject: Seq[Setting[_]] =
-      MetadataSettings.metadataSettings ++
-      ScalaSettings.scalaSettings ++
-      ResolverSettings.resolverSettings ++
-      DocumentationSettings.documentationSettings ++
-      ReleaseSettings.releaseSettings ++
-      TagListSettings.tagListSettings ++
-      WartremoverSettings.wartremoverSettings
-```
-
-Same for `Nice.javaProject` - it includes all `scalaProject` settings,
-Note that default java version is 1.7. You can change it after loading these settings:
-
-```scala
-Nice.javaProject
-
-javaVersion := "1.8"
-```
+We add the same list of warts as `Wart.unsafe` except of `Any` and `NonUnitStatements`.
+See [warts documentation](https://github.com/typelevel/wartremover#warts).
 
 
 ```scala
-    lazy val javaProject: Seq[Setting[_]] =
-      scalaProject ++
-      JavaSettings.javaSettings
-
+    Seq(
+      wartremoverWarnings in (Compile, compile) ++= defaultWarts
+    )
   }
 
 }

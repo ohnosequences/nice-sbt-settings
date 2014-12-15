@@ -19,6 +19,7 @@ object ResolverSettings extends sbt.Plugin {
 ```scala
   lazy val isPrivate = settingKey[Boolean]("If true, publish to private S3 bucket, else to public")
   lazy val bucketSuffix = settingKey[String]("Amazon S3 bucket suffix for resolvers")
+  lazy val bucketRegion = settingKey[String]("Amazon S3 bucket region")
   lazy val publishBucketSuffix = settingKey[String]("Amazon S3 bucket suffix for publish-to resolver")
   lazy val publishS3Resolver = settingKey[S3Resolver]("S3Resolver which will be used in publishTo")
 ```
@@ -30,6 +31,8 @@ object ResolverSettings extends sbt.Plugin {
   val mvn = Resolver.mavenStylePatterns
   val ivy = Resolver.ivyStylePatterns
 
+  def s3https(region: String, bucket: String): String = s"https://s3-${region}.amazonaws.com/${bucket}"
+
   lazy val resolverSettings: Seq[Setting[_]] = 
     S3Resolver.defaults ++ 
     Seq(
@@ -39,11 +42,12 @@ Adding default maven/ivy resolvers with the default `bucketSuffix`
 
 ```scala
       bucketSuffix := organization.value + ".com",
-      resolvers ++= Seq ( 
-        organization.value + " public maven releases"  at s3("releases." + bucketSuffix.value).toHttp,
-        organization.value + " public maven snapshots" at s3("snapshots." + bucketSuffix.value).toHttp,
-        Resolver.url(organization.value + " public ivy releases", url(s3("releases." + bucketSuffix.value).toHttp))(ivy),
-        Resolver.url(organization.value + " public ivy snapshots", url(s3("snapshots." + bucketSuffix.value).toHttp))(ivy)
+      bucketRegion := "eu-west-1",
+      resolvers ++= Seq[Resolver]( 
+        organization.value + " public maven releases"  at s3https(bucketRegion.value, "releases." + bucketSuffix.value),
+        organization.value + " public maven snapshots" at s3https(bucketRegion.value, "snapshots." + bucketSuffix.value),
+        Resolver.url(organization.value + " public ivy releases", url(s3https(bucketRegion.value, "releases." + bucketSuffix.value)))(ivy),
+        Resolver.url(organization.value + " public ivy snapshots", url(s3https(bucketRegion.value, "snapshots." + bucketSuffix.value)))(ivy)
       ),
 ```
 
@@ -84,6 +88,7 @@ Publishing by default is public, maven-style and with the same `bucketSuffix` as
       + [ResolverSettings.scala][main/scala/ResolverSettings.scala]
       + [ScalaSettings.scala][main/scala/ScalaSettings.scala]
       + [TagListSettings.scala][main/scala/TagListSettings.scala]
+      + [WartremoverSettings.scala][main/scala/WartremoverSettings.scala]
 
 [main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
 [main/scala/DocumentationSettings.scala]: DocumentationSettings.scala.md
@@ -94,3 +99,4 @@ Publishing by default is public, maven-style and with the same `bucketSuffix` as
 [main/scala/ResolverSettings.scala]: ResolverSettings.scala.md
 [main/scala/ScalaSettings.scala]: ScalaSettings.scala.md
 [main/scala/TagListSettings.scala]: TagListSettings.scala.md
+[main/scala/WartremoverSettings.scala]: WartremoverSettings.scala.md

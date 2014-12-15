@@ -43,6 +43,7 @@ object MetadataSettings extends sbt.Plugin {
       + [ResolverSettings.scala][main/scala/ResolverSettings.scala]
       + [ScalaSettings.scala][main/scala/ScalaSettings.scala]
       + [TagListSettings.scala][main/scala/TagListSettings.scala]
+      + [WartremoverSettings.scala][main/scala/WartremoverSettings.scala]
 
 [main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
 [main/scala/DocumentationSettings.scala]: DocumentationSettings.scala.md
@@ -53,3 +54,4 @@ object MetadataSettings extends sbt.Plugin {
 [main/scala/ResolverSettings.scala]: ResolverSettings.scala.md
 [main/scala/ScalaSettings.scala]: ScalaSettings.scala.md
 [main/scala/TagListSettings.scala]: TagListSettings.scala.md
+[main/scala/WartremoverSettings.scala]: WartremoverSettings.scala.md
