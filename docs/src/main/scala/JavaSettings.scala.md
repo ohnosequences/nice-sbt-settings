@@ -21,8 +21,8 @@ Java version can be `"1.6"` or `"1.7"`
   lazy val javaVersion = settingKey[String]("Java version")
 
   lazy val javaSettings: Seq[Setting[_]] = Seq(
-    // default is Java 7
-    javaVersion := "1.7",
+    // default is Java 8
+    javaVersion := "1.8",
 
     // to omit _2.10 suffixes:
     crossPaths := false,

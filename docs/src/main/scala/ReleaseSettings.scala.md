@@ -28,6 +28,17 @@ import TagListPlugin._
 import com.timushev.sbt.updates.UpdatesKeys
 
 object ReleaseSettings extends sbt.Plugin {
+
+  // will return None if things go wrong
+  def execCommandWithState(vcs: Vcs, cmd: Seq[String], st: State): Option[State] = {
+
+    val exitCode = vcs.cmd(cmd) ! st.log
+
+    if (exitCode == 0 ) Some(st) else None
+  }
+
+  // what's the point of this check??
+  def isOk(vcs: Vcs): Boolean = (vcs.status !! ).trim.nonEmpty
 ```
 
 ### Setting Keys
@@ -56,8 +67,12 @@ A generic action for commiting given sequence of files with the given commit mes
 ```scala
   // NOTE: With any VCS business we always assume Git and don't care much about other VCS systems 
   def commitFiles(msg: String, files: File*) = { st: State =>
+
     val extracted = Project.extract(st)
     val vcs = extracted.get(versionControlSystem).getOrElse(sys.error("No version control system is set!"))
+
+    def vcsExec(cmd: Seq[String]): Option[State] = execCommandWithState(vcs, cmd, st)
+
     val base = vcs.baseDir
 ```
 
@@ -72,16 +87,11 @@ Making paths relative to the base dir
 adding files
 
 ```scala
-    vcs.cmd((Seq("add", "--all") ++ paths): _*) ! st.log
-```
+    vcsExec( Seq("add", "--all") ++ paths ) flatMap {
 
-commiting _only_ them
+      _ => if ( isOk(vcs) ) vcsExec( Seq("commit", "-m", msg) ++ paths) else None
 
-```scala
-    if (vcs.status.!!.trim.nonEmpty) {
-      vcs.cmd((Seq("commit", "-m", msg) ++ paths): _*) ! st.log
-    }
-    st
+    } getOrElse st
   }
 ```
 
