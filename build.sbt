@@ -19,9 +19,9 @@ addSbtPlugin("ohnosequences" % "sbt-github-release" % "0.1.2")
 
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "0.8.5")
 
-addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.11.2")
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.12.0")
 
-addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.6")
+addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.7")
 
 addSbtPlugin("laughedelic" % "literator-plugin" % "0.6.0")
 

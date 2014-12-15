@@ -8,7 +8,6 @@ import sbt._
 import Keys._
 
 import sbtassembly._
-import sbtassembly.Plugin._
 import AssemblyKeys._
 
 object AssemblySettings extends sbt.Plugin {
@@ -25,7 +24,6 @@ object AssemblySettings extends sbt.Plugin {
      `build.sbt` `fatArtifactSettings` line (without any prefix)
   */
   lazy val fatArtifactSettings: Seq[Setting[_]] =
-    (assemblySettings: Seq[Setting[_]]) ++ 
     addArtifact(artifact in (Compile, assembly), assembly) ++ 
     Seq(
       // publishing fat artifact:
