@@ -1,7 +1,7 @@
 * Bugfixes:
     
     - fixed the way VCS commands are executed
-    - fixed target-jvm scalac option (`1.8` is default now)
+    - removed target-jvm scalac option
 
 * Updates:
 

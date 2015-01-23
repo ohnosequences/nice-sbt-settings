@@ -30,8 +30,7 @@ object ScalaSettings extends sbt.Plugin {
       "-language:postfixOps",
       "-deprecation",
       "-unchecked",
-      "-Xlint",
-      "-target:jvm-1.8"
+      "-Xlint"
     ),
 
     /* full cleaning */
