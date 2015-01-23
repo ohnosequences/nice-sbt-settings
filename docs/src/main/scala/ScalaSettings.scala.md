@@ -25,7 +25,7 @@ This doesn't allow any conflicts in dependencies:
 ```scala
     conflictManager := ConflictManager.strict,
 
-    scalaVersion := "2.11.3",
+    scalaVersion := "2.11.5",
     // we don't want these versions to conflict:
     dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value,
     dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
@@ -38,8 +38,7 @@ This doesn't allow any conflicts in dependencies:
       "-language:postfixOps",
       "-deprecation",
       "-unchecked",
-      "-Xlint",
-      "-target:jvm-1.7"
+      "-Xlint"
     ),
 ```
 
