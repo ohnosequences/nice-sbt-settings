@@ -30,7 +30,7 @@ object ReleaseSettings extends sbt.Plugin {
   // will return None if things go wrong
   def execCommandWithState(vcs: Vcs, cmd: Seq[String], st: State): Option[State] = {
 
-    val exitCode = vcs.cmd(cmd) ! st.log
+    val exitCode = vcs.cmd(cmd: _*) ! st.log
 
     if (exitCode == 0 ) Some(st) else None
   }

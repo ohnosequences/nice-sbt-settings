@@ -1,0 +1,8 @@
+* Bugfixes:
+    
+    - fixed the way VCS commands are executed
+    - fixed target-jvm scalac option (`1.8` is default now)
+
+* Updates:
+
+    - updated default Scala version to [`2.11.5`](http://www.scala-lang.org/news/2.11.5)

@@ -17,7 +17,7 @@ object ScalaSettings extends sbt.Plugin {
     /* This doesn't allow any conflicts in dependencies: */
     conflictManager := ConflictManager.strict,
 
-    scalaVersion := "2.11.3",
+    scalaVersion := "2.11.5",
     // we don't want these versions to conflict:
     dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value,
     dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
@@ -31,7 +31,7 @@ object ScalaSettings extends sbt.Plugin {
       "-deprecation",
       "-unchecked",
       "-Xlint",
-      "-target:jvm-1.7"
+      "-target:jvm-1.8"
     ),
 
     /* full cleaning */
