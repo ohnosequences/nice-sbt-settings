@@ -1,24 +1,23 @@
 ## Nice sbt settings plugin
 
-This is an SBT plugin, aimed to standardize and simplify configuration of all era7/ohnosequences sbt-based projects.
-
+This SBT plugin aims to standardize and simplify the configuration of all Scala and Java era7/ohnosequences/bio4j sbt-based projects.
 
 ### Usage
 
-To start using this plugin add the following to the `project/plugins.sbt`:
+To start using this plugin add the following to your `project/plugins.sbt` file:
 
 ```scala
-resolvers += "Era7 maven releases" at "http://releases.era7.com.s3.amazonaws.com",
+resolvers += "Era7 maven releases" at "https://s3-eu-west-1.amazonaws.com/releases.era7.com",
 
 addSbtPlugin("ohnosequences" % "nice-sbt-settings" % "<version>")
 ```
 
-Check the latest version in [releases](https://github.com/ohnosequences/nice-sbt-settings/releases) list.
+Check the latest version in this repo list of [releases](https://github.com/ohnosequences/nice-sbt-settings/releases).
 
 > **Note**: you should use sbt `v0.13`.
 
 
-### Setting groups
+### Settings and configuration
 
 This plugin includes
 
@@ -35,10 +34,9 @@ And defines two sets of these settings: [for java and for scala projects][NicePr
 
 Just follow the links, as all docs are there (generated from the comments in the code).
 
+## Contact / help
 
-## Contacts
-
-This project is maintained by [@laughedelic](https://github.com/laughedelic). Join the chat-room if you want to ask or discuss something  
+This project is maintained by [@laughedelic](https://github.com/laughedelic). Join the chat-room if you want to ask or discuss something
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/ohnosequences/nice-sbt-settings?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 
