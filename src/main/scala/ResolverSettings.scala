@@ -7,7 +7,7 @@ package ohnosequences.sbt.nice
 import sbt._
 import Keys._
 
-import ohnosequences.sbt.SbtS3Resolver._
+import ohnosequences.sbt.SbtS3Resolver.autoImport._
 
 object ResolverSettings extends sbt.Plugin {
 
@@ -28,9 +28,7 @@ object ResolverSettings extends sbt.Plugin {
   def s3https(region: String, bucket: String): String = s"https://s3-${region}.amazonaws.com/${bucket}"
 
   lazy val resolverSettings: Seq[Setting[_]] = 
-    S3Resolver.defaults ++ 
     Seq(
-
       /* Adding default maven/ivy resolvers with the default `bucketSuffix` */
       bucketSuffix := organization.value + ".com",
       bucketRegion := "eu-west-1",
