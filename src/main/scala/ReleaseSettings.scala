@@ -1,6 +1,6 @@
-/* ## Release process 
+/* ## Release process
 
-   This module defines some new release steps and defines 
+   This module defines some new release steps and defines
    a configurable sequence of the release process
 */
 package ohnosequences.sbt.nice
@@ -9,10 +9,7 @@ import sbt._
 import Keys._
 import sbt.Extracted._
 
-import sbtrelease._
-import ReleaseStateTransformations._
-import ReleasePlugin._
-import ReleaseKeys._
+import sbtrelease._, ReleasePlugin.autoImport._, ReleaseKeys._, ReleaseStateTransformations._
 
 import DocumentationSettings._
 
@@ -50,7 +47,7 @@ object ReleaseSettings extends sbt.Plugin {
   def releaseTask[T](key: TaskKey[T]) = { st: State =>
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
-    try { 
+    try {
       extracted.runAggregated(key in ref, st)
     } catch {
       case e: java.lang.Error => sys.error(e.toString)
@@ -58,12 +55,12 @@ object ReleaseSettings extends sbt.Plugin {
   }
 
   /* A generic action for commiting given sequence of files with the given commit message */
-  
-  // NOTE: With any VCS business we always assume Git and don't care much about other VCS systems 
+
+  // NOTE: With any VCS business we always assume Git and don't care much about other VCS systems
   def commitFiles(msg: String, files: File*) = { st: State =>
 
     val extracted = Project.extract(st)
-    val vcs = extracted.get(versionControlSystem).getOrElse(sys.error("No version control system is set!"))
+    val vcs = extracted.get(releaseVcs).getOrElse(sys.error("No version control system is set!"))
 
     def vcsExec(cmd: Seq[String]): Option[State] = execCommandWithState(vcs, cmd, st)
 
@@ -95,7 +92,7 @@ object ReleaseSettings extends sbt.Plugin {
     val extracted = Project.extract(st)
     val v = st.get(versions).
       getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))._2
-    commitFiles("Setting version to '" +v+ "'", extracted get versionFile)(st)
+    commitFiles("Setting version to '" +v+ "'", extracted get releaseVersionFile)(st)
   }
 
   /* Checks that you have written release notes in `notes/<version>.markdown` files and shows them */
@@ -115,27 +112,37 @@ object ReleaseSettings extends sbt.Plugin {
     }
   }
 
-  /* Almost the same as the task `dependencyUpdates`, but it outputs result as a warning 
+  /* Almost the same as the task `dependencyUpdates`, but it outputs result as a warning
      and asks for a confirmation if needed */
   lazy val checkDependecyUpdates = { st: State =>
     import com.timushev.sbt.updates.Reporter._
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
     st.log.info("Checking project dependency updates...")
-    val (newSt, extResolvers) = extracted.runTask(externalResolvers in ref, st)
-    val data = dependencyUpdatesData(extracted.get(projectID), extracted.get(libraryDependencies), extResolvers, extracted.get(scalaVersion), extracted.get(scalaBinaryVersion))
+    val (st1, extResolvers) = extracted.runTask(externalResolvers in ref, st)
+    val (st2, strms) = extracted.runTask(streams in ref, st1)
+    val data = dependencyUpdatesData(
+      extracted.get(projectID),
+      extracted.get(libraryDependencies),
+      extResolvers,
+      extracted.get(scalaVersion),
+      extracted.get(scalaBinaryVersion),
+      // extracted.get(dependencyUpdatesExclusions),
+      // extracted.get(dependencyAllowPreRelease),
+      strms
+    )
     if (data.nonEmpty) {
       val report = dependencyUpdatesReport(extracted.get(projectID), data)
-      newSt.log.warn(report)
+      st2.log.warn(report)
       SimpleReader.readLine("Are you sure you want to continue with outdated dependencies (y/n)? [y] ") match {
         case Some("n" | "N") => sys.error("Aborting release due to outdated project dependencies")
         case _ => // go on
       }
     } else st.log.info("All dependencies seem to be up to date")
-    newSt
+    st2
   }
 
-  /* Almost the same as the task `dependencyUpdates`, but it outputs result as a warning 
+  /* Almost the same as the task `dependencyUpdates`, but it outputs result as a warning
      and asks for a confirmation if needed */
   lazy val checkTagList = { st: State =>
     val extracted = Project.extract(st)
@@ -179,7 +186,7 @@ object ReleaseSettings extends sbt.Plugin {
      - then it runs `action` of every release step, naming release blocks and asking confirmation if needed
   */
   def constructReleaseProcess(checks: ReleaseBlock, blocks: Seq[ReleaseBlock]): Seq[ReleaseStep] = {
-    val allChecks = for( 
+    val allChecks = for(
         block <- blocks;
         step <- block.steps
       ) yield ReleaseStep(step.check)
@@ -188,7 +195,7 @@ object ReleaseSettings extends sbt.Plugin {
     val allBlocks = initBlock +: blocks
     val total = allBlocks.length
 
-    for( 
+    for(
       (block, n) <- allBlocks.zipWithIndex: Seq[(ReleaseBlock, Int)];
       heading = s"[${n+1}/${total}] ${block.name}";
       announce = ReleaseStep(shout("\n"+ heading +"\n"+ heading.replaceAll(".", "-") +"\n  ", block.transit));
@@ -198,19 +205,19 @@ object ReleaseSettings extends sbt.Plugin {
 
   /* ### Release settings */
 
-  lazy val releaseSettings: Seq[Setting[_]] = 
-    ReleasePlugin.releaseSettings ++ 
+  lazy val releaseSettings: Seq[Setting[_]] =
+    ReleasePlugin.projectSettings ++
     Seq(
       /* We want to increment `y` in `x.y.z` */
-      versionBump := Version.Bump.Minor,
+      releaseVersionBump := Version.Bump.Minor,
 
       /* By default you want to have full controll over the release process: */
       releaseStepByStep := true,
 
-      tagComment  := {organization.value +"/"+ name.value +" v"+ (version in ThisBuild).value},
+      releaseTagComment := {organization.value +"/"+ name.value +" v"+ (version in ThisBuild).value},
 
       /* Adding release notes to the commit message */
-      commitMessage := {
+      releaseCommitMessage := {
         val log = streams.value.log
         val v = (version in ThisBuild).value
         val note: File = baseDirectory.value / "notes" / (v+".markdown")
@@ -287,7 +294,7 @@ object ReleaseSettings extends sbt.Plugin {
     val publishArtifacts = ReleaseBlock("Publishing artifacts", Seq(releaseTask(publish)))
 
 
-    /* #### Committing and tagging 
+    /* #### Committing and tagging
 
        - commit markdown documentation
        - finally set and commit release version
@@ -295,7 +302,7 @@ object ReleaseSettings extends sbt.Plugin {
     */
     val commitAndTag = ReleaseBlock("Committing and tagging", Seq(
       { st: State =>
-        commitFiles("Autogenerated markdown documentation", 
+        commitFiles("Autogenerated markdown documentation",
                     (Project.extract(st) get docsOutputDirs): _*)(st)
       },
       setReleaseVersion.action,
@@ -304,14 +311,14 @@ object ReleaseSettings extends sbt.Plugin {
     ), transit = true)
 
 
-    /* #### Publishing release on github 
+    /* #### Publishing release on github
 
        - push tags
        - publish a Github release (notes and assets)
     */
     val githubRelease = ReleaseBlock("Publishing release on github", Seq(
       { st: State =>
-        val vcs = Project.extract(st).get(versionControlSystem).
+        val vcs = Project.extract(st).get(releaseVcs).
           getOrElse(sys.error("No version control system is set!"))
         vcs.cmd("push", "--tags", vcs.trackingRemote) ! st.log
         st
@@ -330,7 +337,7 @@ object ReleaseSettings extends sbt.Plugin {
     /* #### Pushing commits to github */
     val githubPush = ReleaseBlock("Pushing commits to github", Seq(
       { st: State =>
-        val vcs = Project.extract(st).get(versionControlSystem).
+        val vcs = Project.extract(st).get(releaseVcs).
           getOrElse(sys.error("No version control system is set!"))
         vcs.cmd("push", vcs.trackingRemote) ! st.log // pushing default branch
         vcs.cmd("push", vcs.trackingRemote, vcs.currentBranch) ! st.log // and then the current one
@@ -339,4 +346,3 @@ object ReleaseSettings extends sbt.Plugin {
     ))
 
 }
-  

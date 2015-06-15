@@ -1,4 +1,4 @@
-/* ## Documentation settings 
+/* ## Documentation settings
 
    This module takes care of producing two kinds of documentation:
 
@@ -10,16 +10,13 @@ package ohnosequences.sbt.nice
 import sbt._
 import Keys._
 
-import sbtrelease._
-import ReleaseStateTransformations._
-import ReleasePlugin._
-import ReleaseKeys._
+import sbtrelease._, ReleasePlugin.autoImport._
 
 import laughedelic.literator.plugin.LiteratorPlugin.autoImport._
 
 object DocumentationSettings extends sbt.Plugin {
 
-  /* ### Actions 
+  /* ### Actions
 
      Actions (`State => State` functions) are nice because you can make from them commands and they
      can be directly used as release steps
@@ -42,7 +39,7 @@ object DocumentationSettings extends sbt.Plugin {
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
 
-    extracted get versionControlSystem match {
+    extracted get releaseVcs match {
       case None => sys.error("No version control system is set!")
       case Some(vcs) => {
         lazy val remote: String = vcs.cmd("config", "branch.%s.remote" format vcs.currentBranch).!!.trim
@@ -62,7 +59,7 @@ object DocumentationSettings extends sbt.Plugin {
             ), st)
           val lastSt = Project.extract(newSt).runAggregated(doc in Compile in ref, newSt)
 
-          val ghpages = new Git(ghpagesDir) 
+          val ghpages = new Git(ghpagesDir)
           ghpages.cmd("add", "--all", "docs/api") ! lastSt.log
           ghpages.commit("Updated API docs for sources commit: " + vcs.currentHash) ! lastSt.log
           ghpages.cmd("push") ! lastSt.log
@@ -73,7 +70,7 @@ object DocumentationSettings extends sbt.Plugin {
     }
   }
 
-  /* ### Commands 
+  /* ### Commands
 
      Commands are added for convenience of invoking these actions manually from sbt repl
   */
@@ -81,7 +78,7 @@ object DocumentationSettings extends sbt.Plugin {
   lazy val cleanAndGenerateDocs = Command.command("cleanAndGenerateDocs")(cleanAndGenerateDocsAction)
   lazy val pushApiDocsToGHPages = Command.command("pushApiDocsToGHPages")(pushApiDocsToGHPagesAction)
 
-  /* ### Settings 
+  /* ### Settings
 
      Just making these command visible
   */
