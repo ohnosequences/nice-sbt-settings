@@ -15,7 +15,7 @@ import ReleaseStateTransformations._
 import ReleasePlugin._
 import ReleaseKeys._
 
-import laughedelic.literator.plugin.LiteratorPlugin._
+import laughedelic.literator.plugin.LiteratorPlugin.autoImport._
 
 object DocumentationSettings extends sbt.Plugin {
 
@@ -29,8 +29,8 @@ object DocumentationSettings extends sbt.Plugin {
   lazy val cleanAndGenerateDocsAction = { st: State =>
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
-    Defaults.doClean(extracted get Literator.docsOutputDirs, Seq())
-    extracted.runAggregated(Literator.generateDocs in ref, st)
+    Defaults.doClean(extracted get docsOutputDirs, Seq())
+    extracted.runAggregated(generateDocs in ref, st)
   }
 
   /* This action tries
@@ -46,7 +46,11 @@ object DocumentationSettings extends sbt.Plugin {
       case None => sys.error("No version control system is set!")
       case Some(vcs) => {
         lazy val remote: String = vcs.cmd("config", "branch.%s.remote" format vcs.currentBranch).!!.trim
+        if (remote.isEmpty) sys.error("Remote branch for ${vcs.currentBranch} is not set up properly")
+
         lazy val url: String = vcs.cmd("ls-remote", "--get-url", remote).!!.trim
+        if (url.isEmpty) sys.error("Remote url is not set up properly")
+
         val ghpagesDir = IO.createTemporaryDirectory
         if (vcs.cmd("clone", "-b", "gh-pages", "--single-branch", url, ghpagesDir).! != 0) {
           st.log.error("Couldn't generate API docs, because this repo doesn't have gh-pages branch")
@@ -82,12 +86,11 @@ object DocumentationSettings extends sbt.Plugin {
      Just making these command visible
   */
 
-  lazy val documentationSettings = 
-    Literator.settings ++ Seq[Setting[_]](
-      commands ++= Seq(
-        cleanAndGenerateDocs,
-        pushApiDocsToGHPages
-      )
+  lazy val documentationSettings = Seq[Setting[_]](
+    commands ++= Seq(
+      cleanAndGenerateDocs,
+      pushApiDocsToGHPages
     )
+  )
 
 }
