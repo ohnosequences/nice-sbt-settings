@@ -119,18 +119,9 @@ object ReleaseSettings extends sbt.Plugin {
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
     st.log.info("Checking project dependency updates...")
-    val (st1, extResolvers) = extracted.runTask(externalResolvers in ref, st)
-    val (st2, strms) = extracted.runTask(streams in ref, st1)
-    val data = dependencyUpdatesData(
-      extracted.get(projectID),
-      extracted.get(libraryDependencies),
-      extResolvers,
-      extracted.get(scalaVersion),
-      extracted.get(scalaBinaryVersion),
-      // extracted.get(dependencyUpdatesExclusions),
-      // extracted.get(dependencyAllowPreRelease),
-      strms
-    )
+
+    val (st2, data) = extracted.runTask(UpdatesKeys.dependencyUpdatesData in ref, st)
+
     if (data.nonEmpty) {
       val report = dependencyUpdatesReport(extracted.get(projectID), data)
       st2.log.warn(report)
@@ -138,7 +129,8 @@ object ReleaseSettings extends sbt.Plugin {
         case Some("n" | "N") => sys.error("Aborting release due to outdated project dependencies")
         case _ => // go on
       }
-    } else st.log.info("All dependencies seem to be up to date")
+    } else st2.log.info("All dependencies seem to be up to date")
+
     st2
   }
 
