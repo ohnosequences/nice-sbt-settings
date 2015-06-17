@@ -220,8 +220,8 @@ object ReleaseSettings extends sbt.Plugin {
       /* This is a sequence of blocks (see them below) */
       releaseProcess := constructReleaseProcess(
         initChecks, Seq(
-        askVersionsAndCheckNotes,
         packAndTest,
+        askVersionsAndCheckNotes,
         genMdDocs,
         genApiDocs,
         publishArtifacts,
@@ -250,6 +250,17 @@ object ReleaseSettings extends sbt.Plugin {
     ), transit = true)
 
 
+    /* #### Packaging and running tests
+
+       - try to pack
+       - run tests
+    */
+    val packAndTest = ReleaseBlock("Packaging and running tests", Seq(
+      releaseTask(Keys.`package`),
+      runTest.action
+    ), transit = true)
+
+
     /* #### Setting release version
 
        - inquire the current and the next release versions
@@ -260,17 +271,6 @@ object ReleaseSettings extends sbt.Plugin {
       inquireVersions.action,
       tempSetVersion,
       checkReleaseNotes
-    ), transit = true)
-
-
-    /* #### Packaging and running tests
-
-       - try to pack
-       - run tests
-    */
-    val packAndTest = ReleaseBlock("Packaging and running tests", Seq(
-      releaseTask(Keys.`package`),
-      runTest.action
     ), transit = true)
 
 
