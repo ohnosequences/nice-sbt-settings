@@ -9,5 +9,3 @@
     - [literator](https://github.com/laughedelic/literator): `0.6.0 -> 0.7.0`
     - [sbt-updates](https://github.com/rtimush/sbt-updates): `0.1.7 -> 0.1.8`
     - [wartremover](https://github.com/typelevel/wartremover): `0.11 -> 0.13`
-
-* Improvements:
