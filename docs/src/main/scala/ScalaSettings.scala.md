@@ -24,8 +24,14 @@ This doesn't allow any conflicts in dependencies:
 
 ```scala
     conflictManager := ConflictManager.strict,
+```
 
-    scalaVersion := "2.11.5",
+Circular dependencies are prohibited
+
+```scala
+    updateOptions := updateOptions.value.withCircularDependencyLevel(CircularDependencyLevel.Error),
+
+    scalaVersion := "2.11.6",
     // we don't want these versions to conflict:
     dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value,
     dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
@@ -58,23 +64,7 @@ full cleaning
 ```
 
 
-------
 
-### Index
-
-+ src
-  + main
-    + scala
-      + [AssemblySettings.scala][main/scala/AssemblySettings.scala]
-      + [DocumentationSettings.scala][main/scala/DocumentationSettings.scala]
-      + [JavaSettings.scala][main/scala/JavaSettings.scala]
-      + [MetadataSettings.scala][main/scala/MetadataSettings.scala]
-      + [NiceProjectConfigs.scala][main/scala/NiceProjectConfigs.scala]
-      + [ReleaseSettings.scala][main/scala/ReleaseSettings.scala]
-      + [ResolverSettings.scala][main/scala/ResolverSettings.scala]
-      + [ScalaSettings.scala][main/scala/ScalaSettings.scala]
-      + [TagListSettings.scala][main/scala/TagListSettings.scala]
-      + [WartremoverSettings.scala][main/scala/WartremoverSettings.scala]
 
 [main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
 [main/scala/DocumentationSettings.scala]: DocumentationSettings.scala.md

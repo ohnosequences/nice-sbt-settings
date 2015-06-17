@@ -1,6 +1,6 @@
-## Release process 
+## Release process
 
-This module defines some new release steps and defines 
+This module defines some new release steps and defines
 a configurable sequence of the release process
 
 
@@ -9,18 +9,16 @@ package ohnosequences.sbt.nice
 
 import sbt._
 import Keys._
-import sbt.Extracted
+import sbt.Extracted._
 
-import sbtrelease._
-import ReleaseStateTransformations._
-import ReleasePlugin._
-import ReleaseKeys._
+import sbtrelease._, ReleasePlugin.autoImport._, ReleaseKeys._, ReleaseStateTransformations._
 
 import DocumentationSettings._
 
 import ohnosequences.sbt.SbtGithubReleasePlugin._
+import ohnosequences.sbt.SbtGithubReleasePlugin.autoImport._
 
-import laughedelic.literator.plugin.LiteratorPlugin._
+import laughedelic.literator.plugin.LiteratorPlugin.autoImport._
 
 import com.markatta.sbttaglist._
 import TagListPlugin._
@@ -34,7 +32,7 @@ object ReleaseSettings extends sbt.Plugin {
 
     val exitCode = vcs.cmd(cmd: _*) ! st.log
 
-    if (exitCode == 0 ) Some(st) else None
+    if (exitCode == 0) Some(st) else None
   }
 
   // what's the point of this check??
@@ -54,7 +52,7 @@ This converts a task key to an action (which is implicitly converted the to a re
   def releaseTask[T](key: TaskKey[T]) = { st: State =>
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
-    try { 
+    try {
       extracted.runAggregated(key in ref, st)
     } catch {
       case e: java.lang.Error => sys.error(e.toString)
@@ -65,11 +63,11 @@ This converts a task key to an action (which is implicitly converted the to a re
 A generic action for commiting given sequence of files with the given commit message
 
 ```scala
-  // NOTE: With any VCS business we always assume Git and don't care much about other VCS systems 
+  // NOTE: With any VCS business we always assume Git and don't care much about other VCS systems
   def commitFiles(msg: String, files: File*) = { st: State =>
 
     val extracted = Project.extract(st)
-    val vcs = extracted.get(versionControlSystem).getOrElse(sys.error("No version control system is set!"))
+    val vcs = extracted.get(releaseVcs).getOrElse(sys.error("No version control system is set!"))
 
     def vcsExec(cmd: Seq[String]): Option[State] = execCommandWithState(vcs, cmd, st)
 
@@ -114,7 +112,7 @@ Almost the same as the standard release step, but it doesn't use our modified co
     val extracted = Project.extract(st)
     val v = st.get(versions).
       getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))._2
-    commitFiles("Setting version to '" +v+ "'", extracted get versionFile)(st)
+    commitFiles("Setting version to '" +v+ "'", extracted get releaseVersionFile)(st)
   }
 ```
 
@@ -138,7 +136,7 @@ Checks that you have written release notes in `notes/<version>.markdown` files a
   }
 ```
 
-Almost the same as the task `dependencyUpdates`, but it outputs result as a warning 
+Almost the same as the task `dependencyUpdates`, but it outputs result as a warning
 and asks for a confirmation if needed
 
 ```scala
@@ -147,21 +145,23 @@ and asks for a confirmation if needed
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
     st.log.info("Checking project dependency updates...")
-    val (newSt, extResolvers) = extracted.runTask(externalResolvers in ref, st)
-    val data = dependencyUpdatesData(extracted.get(projectID), extracted.get(libraryDependencies), extResolvers, extracted.get(scalaVersion), extracted.get(scalaBinaryVersion))
+
+    val (st2, data) = extracted.runTask(UpdatesKeys.dependencyUpdatesData in ref, st)
+
     if (data.nonEmpty) {
       val report = dependencyUpdatesReport(extracted.get(projectID), data)
-      newSt.log.warn(report)
+      st2.log.warn(report)
       SimpleReader.readLine("Are you sure you want to continue with outdated dependencies (y/n)? [y] ") match {
         case Some("n" | "N") => sys.error("Aborting release due to outdated project dependencies")
         case _ => // go on
       }
-    } else st.log.info("All dependencies seem to be up to date")
-    newSt
+    } else st2.log.info("All dependencies seem to be up to date")
+
+    st2
   }
 ```
 
-Almost the same as the task `dependencyUpdates`, but it outputs result as a warning 
+Almost the same as the task `dependencyUpdates`, but it outputs result as a warning
 and asks for a confirmation if needed
 
 ```scala
@@ -216,7 +216,7 @@ This function takes a seuqence of release blocks and constructs a normal release
 
 ```scala
   def constructReleaseProcess(checks: ReleaseBlock, blocks: Seq[ReleaseBlock]): Seq[ReleaseStep] = {
-    val allChecks = for( 
+    val allChecks = for(
         block <- blocks;
         step <- block.steps
       ) yield ReleaseStep(step.check)
@@ -225,7 +225,7 @@ This function takes a seuqence of release blocks and constructs a normal release
     val allBlocks = initBlock +: blocks
     val total = allBlocks.length
 
-    for( 
+    for(
       (block, n) <- allBlocks.zipWithIndex: Seq[(ReleaseBlock, Int)];
       heading = s"[${n+1}/${total}] ${block.name}";
       announce = ReleaseStep(shout("\n"+ heading +"\n"+ heading.replaceAll(".", "-") +"\n  ", block.transit));
@@ -237,16 +237,15 @@ This function takes a seuqence of release blocks and constructs a normal release
 ### Release settings
 
 ```scala
-  lazy val releaseSettings: Seq[Setting[_]] = 
-    GithubRelease.defaults ++
-    ReleasePlugin.releaseSettings ++ 
+  lazy val releaseSettings: Seq[Setting[_]] =
+    ReleasePlugin.projectSettings ++
     Seq(
 ```
 
 We want to increment `y` in `x.y.z`
 
 ```scala
-      versionBump := Version.Bump.Minor,
+      releaseVersionBump := Version.Bump.Minor,
 ```
 
 By default you want to have full controll over the release process:
@@ -254,13 +253,13 @@ By default you want to have full controll over the release process:
 ```scala
       releaseStepByStep := true,
 
-      tagComment  := {organization.value +"/"+ name.value +" v"+ (version in ThisBuild).value},
+      releaseTagComment := {organization.value +"/"+ name.value +" v"+ (version in ThisBuild).value},
 ```
 
 Adding release notes to the commit message
 
 ```scala
-      commitMessage := {
+      releaseCommitMessage := {
         val log = streams.value.log
         val v = (version in ThisBuild).value
         val note: File = baseDirectory.value / "notes" / (v+".markdown")
@@ -300,7 +299,7 @@ This is a sequence of blocks (see them below)
       checkSnapshotDependencies,
       checkDependecyUpdates,
       checkTagList,
-      releaseTask(GithubRelease.checkGithubCredentials)
+      releaseTask(checkGithubCredentials)
     ), transit = true)
 ```
 
@@ -350,7 +349,7 @@ This is a sequence of blocks (see them below)
     val publishArtifacts = ReleaseBlock("Publishing artifacts", Seq(releaseTask(publish)))
 ```
 
-#### Committing and tagging 
+#### Committing and tagging
 
 - commit markdown documentation
 - finally set and commit release version
@@ -360,8 +359,8 @@ This is a sequence of blocks (see them below)
 ```scala
     val commitAndTag = ReleaseBlock("Committing and tagging", Seq(
       { st: State =>
-        commitFiles("Autogenerated markdown documentation", 
-                    (Project.extract(st) get Literator.docsOutputDirs): _*)(st)
+        commitFiles("Autogenerated markdown documentation",
+                    (Project.extract(st) get docsOutputDirs): _*)(st)
       },
       setReleaseVersion.action,
       commitReleaseVersion,
@@ -369,7 +368,7 @@ This is a sequence of blocks (see them below)
     ), transit = true)
 ```
 
-#### Publishing release on github 
+#### Publishing release on github
 
 - push tags
 - publish a Github release (notes and assets)
@@ -378,12 +377,12 @@ This is a sequence of blocks (see them below)
 ```scala
     val githubRelease = ReleaseBlock("Publishing release on github", Seq(
       { st: State =>
-        val vcs = Project.extract(st).get(versionControlSystem).
+        val vcs = Project.extract(st).get(releaseVcs).
           getOrElse(sys.error("No version control system is set!"))
         vcs.cmd("push", "--tags", vcs.trackingRemote) ! st.log
         st
       },
-      releaseTask(GithubRelease.releaseOnGithub)
+      releaseTask(releaseOnGithub)
     ))
 ```
 
@@ -401,7 +400,7 @@ This is a sequence of blocks (see them below)
 ```scala
     val githubPush = ReleaseBlock("Pushing commits to github", Seq(
       { st: State =>
-        val vcs = Project.extract(st).get(versionControlSystem).
+        val vcs = Project.extract(st).get(releaseVcs).
           getOrElse(sys.error("No version control system is set!"))
         vcs.cmd("push", vcs.trackingRemote) ! st.log // pushing default branch
         vcs.cmd("push", vcs.trackingRemote, vcs.currentBranch) ! st.log // and then the current one
@@ -410,28 +409,11 @@ This is a sequence of blocks (see them below)
     ))
 
 }
-  
 
 ```
 
 
-------
 
-### Index
-
-+ src
-  + main
-    + scala
-      + [AssemblySettings.scala][main/scala/AssemblySettings.scala]
-      + [DocumentationSettings.scala][main/scala/DocumentationSettings.scala]
-      + [JavaSettings.scala][main/scala/JavaSettings.scala]
-      + [MetadataSettings.scala][main/scala/MetadataSettings.scala]
-      + [NiceProjectConfigs.scala][main/scala/NiceProjectConfigs.scala]
-      + [ReleaseSettings.scala][main/scala/ReleaseSettings.scala]
-      + [ResolverSettings.scala][main/scala/ResolverSettings.scala]
-      + [ScalaSettings.scala][main/scala/ScalaSettings.scala]
-      + [TagListSettings.scala][main/scala/TagListSettings.scala]
-      + [WartremoverSettings.scala][main/scala/WartremoverSettings.scala]
 
 [main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
 [main/scala/DocumentationSettings.scala]: DocumentationSettings.scala.md

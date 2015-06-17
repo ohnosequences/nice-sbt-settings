@@ -1,4 +1,4 @@
-## Documentation settings 
+## Documentation settings
 
 This module takes care of producing two kinds of documentation:
 
@@ -12,17 +12,14 @@ package ohnosequences.sbt.nice
 import sbt._
 import Keys._
 
-import sbtrelease._
-import ReleaseStateTransformations._
-import ReleasePlugin._
-import ReleaseKeys._
+import sbtrelease._, ReleasePlugin.autoImport._
 
-import laughedelic.literator.plugin.LiteratorPlugin._
+import laughedelic.literator.plugin.LiteratorPlugin.autoImport._
 
 object DocumentationSettings extends sbt.Plugin {
 ```
 
-### Actions 
+### Actions
 
 Actions (`State => State` functions) are nice because you can make from them commands and they
 can be directly used as release steps
@@ -33,8 +30,8 @@ This action _cleans_ docs out directory first and then generates docs (but doesn
   lazy val cleanAndGenerateDocsAction = { st: State =>
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
-    Defaults.doClean(extracted get Literator.docsOutputDirs, Seq())
-    extracted.runAggregated(Literator.generateDocs in ref, st)
+    Defaults.doClean(extracted get docsOutputDirs, Seq())
+    extracted.runAggregated(generateDocs in ref, st)
   }
 ```
 
@@ -49,11 +46,15 @@ This action tries
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
 
-    extracted get versionControlSystem match {
+    extracted get releaseVcs match {
       case None => sys.error("No version control system is set!")
       case Some(vcs) => {
         lazy val remote: String = vcs.cmd("config", "branch.%s.remote" format vcs.currentBranch).!!.trim
+        if (remote.isEmpty) sys.error("Remote branch for ${vcs.currentBranch} is not set up properly")
+
         lazy val url: String = vcs.cmd("ls-remote", "--get-url", remote).!!.trim
+        if (url.isEmpty) sys.error("Remote url is not set up properly")
+
         val ghpagesDir = IO.createTemporaryDirectory
         if (vcs.cmd("clone", "-b", "gh-pages", "--single-branch", url, ghpagesDir).! != 0) {
           st.log.error("Couldn't generate API docs, because this repo doesn't have gh-pages branch")
@@ -65,7 +66,7 @@ This action tries
             ), st)
           val lastSt = Project.extract(newSt).runAggregated(doc in Compile in ref, newSt)
 
-          val ghpages = new Git(ghpagesDir) 
+          val ghpages = new Git(ghpagesDir)
           ghpages.cmd("add", "--all", "docs/api") ! lastSt.log
           ghpages.commit("Updated API docs for sources commit: " + vcs.currentHash) ! lastSt.log
           ghpages.cmd("push") ! lastSt.log
@@ -77,7 +78,7 @@ This action tries
   }
 ```
 
-### Commands 
+### Commands
 
 Commands are added for convenience of invoking these actions manually from sbt repl
 
@@ -87,42 +88,25 @@ Commands are added for convenience of invoking these actions manually from sbt r
   lazy val pushApiDocsToGHPages = Command.command("pushApiDocsToGHPages")(pushApiDocsToGHPagesAction)
 ```
 
-### Settings 
+### Settings
 
 Just making these command visible
 
 
 ```scala
-  lazy val documentationSettings = 
-    Literator.settings ++ Seq[Setting[_]](
-      commands ++= Seq(
-        cleanAndGenerateDocs,
-        pushApiDocsToGHPages
-      )
+  lazy val documentationSettings = Seq[Setting[_]](
+    commands ++= Seq(
+      cleanAndGenerateDocs,
+      pushApiDocsToGHPages
     )
+  )
 
 }
 
 ```
 
 
-------
 
-### Index
-
-+ src
-  + main
-    + scala
-      + [AssemblySettings.scala][main/scala/AssemblySettings.scala]
-      + [DocumentationSettings.scala][main/scala/DocumentationSettings.scala]
-      + [JavaSettings.scala][main/scala/JavaSettings.scala]
-      + [MetadataSettings.scala][main/scala/MetadataSettings.scala]
-      + [NiceProjectConfigs.scala][main/scala/NiceProjectConfigs.scala]
-      + [ReleaseSettings.scala][main/scala/ReleaseSettings.scala]
-      + [ResolverSettings.scala][main/scala/ResolverSettings.scala]
-      + [ScalaSettings.scala][main/scala/ScalaSettings.scala]
-      + [TagListSettings.scala][main/scala/TagListSettings.scala]
-      + [WartremoverSettings.scala][main/scala/WartremoverSettings.scala]
 
 [main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
 [main/scala/DocumentationSettings.scala]: DocumentationSettings.scala.md

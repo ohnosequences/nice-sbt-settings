@@ -9,7 +9,7 @@ package ohnosequences.sbt.nice
 import sbt._
 import Keys._
 
-import ohnosequences.sbt.SbtS3Resolver._
+import ohnosequences.sbt.SbtS3Resolver.autoImport._
 
 object ResolverSettings extends sbt.Plugin {
 ```
@@ -34,7 +34,6 @@ object ResolverSettings extends sbt.Plugin {
   def s3https(region: String, bucket: String): String = s"https://s3-${region}.amazonaws.com/${bucket}"
 
   lazy val resolverSettings: Seq[Setting[_]] = 
-    S3Resolver.defaults ++ 
     Seq(
 ```
 
@@ -72,23 +71,7 @@ Publishing by default is public, maven-style and with the same `bucketSuffix` as
 ```
 
 
-------
 
-### Index
-
-+ src
-  + main
-    + scala
-      + [AssemblySettings.scala][main/scala/AssemblySettings.scala]
-      + [DocumentationSettings.scala][main/scala/DocumentationSettings.scala]
-      + [JavaSettings.scala][main/scala/JavaSettings.scala]
-      + [MetadataSettings.scala][main/scala/MetadataSettings.scala]
-      + [NiceProjectConfigs.scala][main/scala/NiceProjectConfigs.scala]
-      + [ReleaseSettings.scala][main/scala/ReleaseSettings.scala]
-      + [ResolverSettings.scala][main/scala/ResolverSettings.scala]
-      + [ScalaSettings.scala][main/scala/ScalaSettings.scala]
-      + [TagListSettings.scala][main/scala/TagListSettings.scala]
-      + [WartremoverSettings.scala][main/scala/WartremoverSettings.scala]
 
 [main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
 [main/scala/DocumentationSettings.scala]: DocumentationSettings.scala.md

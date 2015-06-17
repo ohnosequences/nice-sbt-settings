@@ -58,23 +58,7 @@ javaVersion := "1.8"
 ```
 
 
-------
 
-### Index
-
-+ src
-  + main
-    + scala
-      + [AssemblySettings.scala][main/scala/AssemblySettings.scala]
-      + [DocumentationSettings.scala][main/scala/DocumentationSettings.scala]
-      + [JavaSettings.scala][main/scala/JavaSettings.scala]
-      + [MetadataSettings.scala][main/scala/MetadataSettings.scala]
-      + [NiceProjectConfigs.scala][main/scala/NiceProjectConfigs.scala]
-      + [ReleaseSettings.scala][main/scala/ReleaseSettings.scala]
-      + [ResolverSettings.scala][main/scala/ResolverSettings.scala]
-      + [ScalaSettings.scala][main/scala/ScalaSettings.scala]
-      + [TagListSettings.scala][main/scala/TagListSettings.scala]
-      + [WartremoverSettings.scala][main/scala/WartremoverSettings.scala]
 
 [main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
 [main/scala/DocumentationSettings.scala]: DocumentationSettings.scala.md
