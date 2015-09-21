@@ -7,7 +7,7 @@ This SBT plugin aims to standardize and simplify the configuration of all Scala 
 To start using this plugin add the following to your `project/plugins.sbt` file:
 
 ```scala
-resolvers += "Era7 maven releases" at "https://s3-eu-west-1.amazonaws.com/releases.era7.com",
+resolvers += "Era7 maven releases" at "https://s3-eu-west-1.amazonaws.com/releases.era7.com"
 
 addSbtPlugin("ohnosequences" % "nice-sbt-settings" % "<version>")
 ```
