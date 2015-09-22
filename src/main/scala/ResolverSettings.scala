@@ -27,17 +27,17 @@ object ResolverSettings extends sbt.Plugin {
 
   def s3https(region: String, bucket: String): String = s"https://s3-${region}.amazonaws.com/${bucket}"
 
-  lazy val resolverSettings: Seq[Setting[_]] = 
+  lazy val resolverSettings: Seq[Setting[_]] =
     Seq(
       /* Adding default maven/ivy resolvers with the default `bucketSuffix` */
       bucketSuffix := organization.value + ".com",
       bucketRegion := "eu-west-1",
-      resolvers ++= Seq[Resolver]( 
+      resolvers := Seq[Resolver](
         organization.value + " public maven releases"  at s3https(bucketRegion.value, "releases." + bucketSuffix.value),
         organization.value + " public maven snapshots" at s3https(bucketRegion.value, "snapshots." + bucketSuffix.value),
         Resolver.url(organization.value + " public ivy releases", url(s3https(bucketRegion.value, "releases." + bucketSuffix.value)))(ivy),
         Resolver.url(organization.value + " public ivy snapshots", url(s3https(bucketRegion.value, "snapshots." + bucketSuffix.value)))(ivy)
-      ),
+      ) ++ resolvers.value,
 
       /* Publishing by default is public, maven-style and with the same `bucketSuffix` as for resolving */
       isPrivate := false,
@@ -46,7 +46,7 @@ object ResolverSettings extends sbt.Plugin {
       publishS3Resolver := {
         val privacy = if (isPrivate.value) "private." else ""
         val prefix = if (isSnapshot.value) "snapshots" else "releases"
-        val address = privacy+prefix+"."+publishBucketSuffix.value 
+        val address = privacy+prefix+"."+publishBucketSuffix.value
         s3resolver.value(address+" S3 publishing bucket", s3(address)).
           withPatterns(if(publishMavenStyle.value) mvn else ivy)
       },
