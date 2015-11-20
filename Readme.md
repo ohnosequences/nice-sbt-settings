@@ -1,4 +1,4 @@
-## Nice sbt settings plugin
+## Nice sbt settings plugin  ![](https://img.shields.io/github/release/ohnosequences/nice-sbt-settings.svg)
 
 This SBT plugin aims to standardize and simplify the configuration of all Scala and Java era7/ohnosequences/bio4j sbt-based projects.
 
@@ -12,9 +12,7 @@ resolvers += "Era7 maven releases" at "https://s3-eu-west-1.amazonaws.com/releas
 addSbtPlugin("ohnosequences" % "nice-sbt-settings" % "<version>")
 ```
 
-Check the latest version in this repo list of [releases](https://github.com/ohnosequences/nice-sbt-settings/releases).
-
-> **Note**: you should use sbt `v0.13`.
+> **Note**: you should use sbt `v0.13.5+`.
 
 
 ### Settings and configuration
