@@ -15,3 +15,5 @@
     - [sbt-assembly](https://github.com/sbt/sbt-assembly): `0.13.0 -> 0.14.0`
     - [sbt-updates](https://github.com/rtimush/sbt-updates): `0.1.8 -> 0.1.9`
     - [wartremover](https://github.com/typelevel/wartremover): `0.13 -> 0.14`
+
+See the full list of the merged pull-requests for this version: [v0.7.0 milestone](https://github.com/ohnosequences/nice-sbt-settings/issues?q=milestone%3Av0.7.0).
