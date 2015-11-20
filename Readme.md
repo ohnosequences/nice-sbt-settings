@@ -1,4 +1,7 @@
-## Nice sbt settings plugin  ![](https://img.shields.io/github/release/ohnosequences/nice-sbt-settings.svg)
+## Nice sbt settings plugin  
+
+[![License](https://img.shields.io/badge/license-AGPLv3-blue.svg)](https://tldrlegal.com/license/gnu-affero-general-public-license-v3-%28agpl-3.0%29)
+[![](https://img.shields.io/github/release/ohnosequences/nice-sbt-settings.svg)](https://github.com/ohnosequences/nice-sbt-settings/releases/latest)
 
 This SBT plugin aims to standardize and simplify the configuration of all Scala and Java era7/ohnosequences/bio4j sbt-based projects.
 
