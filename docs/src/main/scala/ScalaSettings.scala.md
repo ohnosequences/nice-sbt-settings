@@ -31,7 +31,7 @@ Circular dependencies are prohibited
 ```scala
     updateOptions := updateOptions.value.withCircularDependencyLevel(CircularDependencyLevel.Error),
 
-    scalaVersion := "2.11.6",
+    scalaVersion := "2.11.7",
     // we don't want these versions to conflict:
     dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value,
     dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value,

@@ -136,6 +136,21 @@ Checks that you have written release notes in `notes/<version>.markdown` files a
   }
 ```
 
+I took it from sb-release plugin, to make it strict: no releases with snapshot deps
+
+```scala
+  lazy val checkNoSnapshotDeps = { st: State =>
+    val extracted = Project.extract(st)
+    val ref = extracted.get(thisProjectRef)
+    val (newSt, snapshotDeps) = extracted.runTask(releaseSnapshotDependencies in ref, st)
+    if (snapshotDeps.nonEmpty) {
+      st.log.error("Snapshot dependencies detected:\n" + snapshotDeps.mkString("\n"))
+      sys.error("Aborting release due to snapshot dependencies.")
+    }
+    newSt
+  }
+```
+
 Almost the same as the task `dependencyUpdates`, but it outputs result as a warning
 and asks for a confirmation if needed
 
@@ -146,18 +161,18 @@ and asks for a confirmation if needed
     val ref = extracted.get(thisProjectRef)
     st.log.info("Checking project dependency updates...")
 
-    val (st2, data) = extracted.runTask(UpdatesKeys.dependencyUpdatesData in ref, st)
+    val (newSt, data) = extracted.runTask(UpdatesKeys.dependencyUpdatesData in ref, st)
 
     if (data.nonEmpty) {
       val report = dependencyUpdatesReport(extracted.get(projectID), data)
-      st2.log.warn(report)
+      newSt.log.warn(report)
       SimpleReader.readLine("Are you sure you want to continue with outdated dependencies (y/n)? [y] ") match {
         case Some("n" | "N") => sys.error("Aborting release due to outdated project dependencies")
         case _ => // go on
       }
-    } else st2.log.info("All dependencies seem to be up to date")
+    } else newSt.log.info("All dependencies seem to be up to date")
 
-    st2
+    newSt
   }
 ```
 
@@ -273,8 +288,8 @@ This is a sequence of blocks (see them below)
 ```scala
       releaseProcess := constructReleaseProcess(
         initChecks, Seq(
-        askVersionsAndCheckNotes,
         packAndTest,
+        askVersionsAndCheckNotes,
         genMdDocs,
         genApiDocs,
         publishArtifacts,
@@ -296,10 +311,23 @@ This is a sequence of blocks (see them below)
 
 ```scala
     val initChecks = ReleaseBlock("Initial checks", Seq(
-      checkSnapshotDependencies,
+      checkNoSnapshotDeps,
       checkDependecyUpdates,
       checkTagList,
       releaseTask(checkGithubCredentials)
+    ), transit = true)
+```
+
+#### Packaging and running tests
+
+- try to pack
+- run tests
+
+
+```scala
+    val packAndTest = ReleaseBlock("Packaging and running tests", Seq(
+      releaseTask(Keys.`package`),
+      runTest.action
     ), transit = true)
 ```
 
@@ -315,19 +343,6 @@ This is a sequence of blocks (see them below)
       inquireVersions.action,
       tempSetVersion,
       checkReleaseNotes
-    ), transit = true)
-```
-
-#### Packaging and running tests
-
-- try to pack
-- run tests
-
-
-```scala
-    val packAndTest = ReleaseBlock("Packaging and running tests", Seq(
-      releaseTask(Keys.`package`),
-      runTest.action
     ), transit = true)
 ```
 
