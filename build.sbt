@@ -15,13 +15,13 @@ addSbtPlugin("ohnosequences"     % "sbt-s3-resolver"    % "0.13.0")
 addSbtPlugin("ohnosequences"     % "sbt-github-release" % "0.3.0")
 
 // https://github.com/sbt/sbt-release
-addSbtPlugin("com.github.gseitz" % "sbt-release"        % "1.0.1")
+addSbtPlugin("com.github.gseitz" % "sbt-release"        % "1.0.3")
 
 // https://github.com/sbt/sbt-assembly
-addSbtPlugin("com.eed3si9n"      % "sbt-assembly"       % "0.14.0")
+addSbtPlugin("com.eed3si9n"      % "sbt-assembly"       % "0.14.2")
 
 // https://github.com/rtimush/sbt-updates
-addSbtPlugin("com.timushev.sbt"  % "sbt-updates"        % "0.1.9")
+addSbtPlugin("com.timushev.sbt"  % "sbt-updates"        % "0.1.10")
 
 // https://github.com/laughedelic/literator
 addSbtPlugin("laughedelic"       % "literator"          % "0.7.0")
