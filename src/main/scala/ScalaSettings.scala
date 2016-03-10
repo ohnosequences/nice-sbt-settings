@@ -20,7 +20,7 @@ object ScalaSettings extends sbt.Plugin {
     /* Circular dependencies are prohibited */
     updateOptions := updateOptions.value.withCircularDependencyLevel(CircularDependencyLevel.Error),
 
-    scalaVersion := "2.11.7",
+    scalaVersion := "2.11.8",
     // we don't want these versions to conflict:
     dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value,
     dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
