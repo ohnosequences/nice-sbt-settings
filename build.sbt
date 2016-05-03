@@ -32,6 +32,9 @@ addSbtPlugin("com.markatta"      % "taglist-plugin"     % "1.3.1")
 // https://github.com/puffnfresh/wartremover
 addSbtPlugin("org.brianmckenna"  % "sbt-wartremover"    % "0.14")
 
+libraryDependencies ++= Seq(
+  "org.scalatest" %% "scalatest" % "2.2.6"
+)
 
 wartremoverWarnings ++= Warts.allBut(Wart.NoNeedForMonad)
 
