@@ -30,7 +30,7 @@ addSbtPlugin("laughedelic"       % "literator"          % "0.7.0")
 addSbtPlugin("com.markatta"      % "taglist-plugin"     % "1.3.1")
 
 // https://github.com/puffnfresh/wartremover
-addSbtPlugin("org.brianmckenna"  % "sbt-wartremover"    % "0.14")
+addSbtPlugin("org.wartremover"  % "sbt-wartremover"    % "1.0.0")
 
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.6"
