@@ -42,7 +42,9 @@ object ReleaseSettings extends sbt.Plugin {
   /* ### Setting Keys */
   lazy val releaseStepByStep = settingKey[Boolean]("Defines whether release process will wait for confirmation after each step")
 
-  lazy val releaseOnlyTestTag = settingKey[String]("Sets the name for the tag that is used to distinguish release-pnly tests")
+  lazy val releaseOnlyTestTag = settingKey[String]("Sets the name for the tag that is used to distinguish release-only tests")
+
+  lazy val releaseOnlyTestTagPackage = settingKey[String]("The package for release-only tags")
 
   lazy val testAll = taskKey[Unit]("Runs testOnly without args (runs all tests)")
 
@@ -213,16 +215,14 @@ object ReleaseSettings extends sbt.Plugin {
     ) yield step
   }
 
-  val releaseOnlyTestPackage = "${organization.value}.test.tags"
-
   val generateTestTags = Def.task {
     val file = (sourceManaged in Test).value / "tags.scala"
 
     IO.write(file, s"""
-      |package ${releaseOnlyTestPackage}
+      |package ${releaseOnlyTestTagPackage}
       |
       |case object ${releaseOnlyTestTag.value}
-      |  extends org.scalatest.Tag(${releaseOnlyTestPackage}.${releaseOnlyTestTag.value})
+      |  extends org.scalatest.Tag(${releaseOnlyTestTagPackage}.${releaseOnlyTestTag.value})
       |""".stripMargin
     )
 
@@ -234,10 +234,12 @@ object ReleaseSettings extends sbt.Plugin {
   lazy val releaseSettings: Seq[Setting[_]] =
     ReleasePlugin.projectSettings ++
     Seq(
+      releaseOnlyTestTagPackage := s"${organization.value}.test.tags",
       releaseOnlyTestTag := "ReleaseOnlyTest",
+
       sourceGenerators in Test += generateTestTags.taskValue,
       /* Release only test tag is excluded by default */
-      testOptions in (Test, test) += Tests.Argument("-l", s"${releaseOnlyTestPackage}.${releaseOnlyTestTag.value}"),
+      testOptions in (Test, test) += Tests.Argument("-l", s"${releaseOnlyTestTagPackage}.${releaseOnlyTestTag.value}"),
       testAll := (testOnly in Test).toTask("").value,
 
       /* We want to increment `y` in `x.y.z` */
