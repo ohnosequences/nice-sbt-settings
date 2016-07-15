@@ -23,6 +23,9 @@ import TagListPlugin._
 
 import com.timushev.sbt.updates.UpdatesKeys
 
+import org.scalatest.Tag
+
+
 object ReleaseSettings extends sbt.Plugin {
 
   // will return None if things go wrong
@@ -37,8 +40,13 @@ object ReleaseSettings extends sbt.Plugin {
   def isOk(vcs: Vcs): Boolean = (vcs.status !! ).trim.nonEmpty
 
   /* ### Setting Keys */
-
   lazy val releaseStepByStep = settingKey[Boolean]("Defines whether release process will wait for confirmation after each step")
+
+  lazy val releaseOnlyTestTag = settingKey[String]("Sets the name for the tag that is used to distinguish release-only tests")
+
+  lazy val releaseOnlyTestTagPackage = settingKey[String]("The package for release-only tags")
+
+  lazy val testAll = taskKey[Unit]("Runs testOnly without args (runs all tests)")
 
 
   /* ### Additional release steps */
@@ -207,11 +215,33 @@ object ReleaseSettings extends sbt.Plugin {
     ) yield step
   }
 
+  val generateTestTags = Def.task {
+    val file = (sourceManaged in Test).value / "tags.scala"
+
+    IO.write(file, s"""
+      |package ${releaseOnlyTestTagPackage}
+      |
+      |case object ${releaseOnlyTestTag.value}
+      |  extends org.scalatest.Tag(${releaseOnlyTestTagPackage}.${releaseOnlyTestTag.value})
+      |""".stripMargin
+    )
+
+    Seq(file)
+  }
+
   /* ### Release settings */
 
   lazy val releaseSettings: Seq[Setting[_]] =
     ReleasePlugin.projectSettings ++
     Seq(
+      releaseOnlyTestTagPackage := s"${organization.value}.test.tags",
+      releaseOnlyTestTag := "ReleaseOnlyTest",
+
+      sourceGenerators in Test += generateTestTags.taskValue,
+      /* Release only test tag is excluded by default */
+      testOptions in (Test, test) += Tests.Argument("-l", s"${releaseOnlyTestTagPackage}.${releaseOnlyTestTag.value}"),
+      testAll := (testOnly in Test).toTask("").value,
+
       /* We want to increment `y` in `x.y.z` */
       releaseVersionBump := Version.Bump.Minor,
 
@@ -265,11 +295,11 @@ object ReleaseSettings extends sbt.Plugin {
     /* #### Packaging and running tests
 
        - try to pack
-       - run tests
+       - run tests (including release-only)
     */
     val packAndTest = ReleaseBlock("Packaging and running tests", Seq(
       releaseTask(Keys.`package`),
-      runTest.action
+      releaseTask(testAll)
     ), transit = true)
 
 
