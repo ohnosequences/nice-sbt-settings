@@ -40,11 +40,11 @@ object ReleaseSettings extends sbt.Plugin {
   def isOk(vcs: Vcs): Boolean = (vcs.status !! ).trim.nonEmpty
 
   /* ### Setting Keys */
-  lazy val ReleaseTest = config("releaseTest").extend(Test)
-
   lazy val releaseStepByStep = settingKey[Boolean]("Defines whether release process will wait for confirmation after each step")
 
   lazy val releaseOnlyTestTag = settingKey[String]("Sets the name for the tag that is used to distinguish release-pnly tests")
+
+  lazy val testAll = taskKey[Unit]("Runs testOnly without args (runs all tests)")
 
 
   /* ### Additional release steps */
@@ -238,11 +238,7 @@ object ReleaseSettings extends sbt.Plugin {
       sourceGenerators in Test += generateTestTags.taskValue,
       /* Release only test tag is excluded by default */
       testOptions in (Test, test) += Tests.Argument("-l", s"${releaseOnlyTestPackage}.${releaseOnlyTestTag.value}"),
-
-      /* Adding the Release configuration to return the expluded tests tag */
-      // configs(ReleaseTest),
-      inConfig(ReleaseTest)(Defaults.testTasks),
-      testOptions in ReleaseTest -= Tests.Argument("-l", s"${releaseOnlyTestPackage}.${releaseOnlyTestTag.value}"),
+      testAll := (testOnly in Test).toTask("").value,
 
       /* We want to increment `y` in `x.y.z` */
       releaseVersionBump := Version.Bump.Minor,
@@ -301,7 +297,7 @@ object ReleaseSettings extends sbt.Plugin {
     */
     val packAndTest = ReleaseBlock("Packaging and running tests", Seq(
       releaseTask(Keys.`package`),
-      releaseTask(Keys.test in ReleaseTest)
+      releaseTask(testAll)
     ), transit = true)
 
 
