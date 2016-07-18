@@ -14,7 +14,29 @@ import sbtrelease._, ReleasePlugin.autoImport._
 
 import laughedelic.literator.plugin.LiteratorPlugin.autoImport._
 
-object DocumentationSettings extends sbt.Plugin {
+object DocumentationSettings extends sbt.AutoPlugin {
+
+  override def requires = laughedelic.literator.plugin.LiteratorPlugin
+  override def trigger = allRequirements
+
+  case object autoImport {
+    /* ### Commands
+
+       Commands are added for convenience of invoking these actions manually from sbt repl
+    */
+
+    lazy val cleanAndGenerateDocs = Command.command("cleanAndGenerateDocs")(cleanAndGenerateDocsAction)
+    lazy val pushApiDocsToGHPages = Command.command("pushApiDocsToGHPages")(pushApiDocsToGHPagesAction)
+  }
+  import autoImport._
+
+  /* ### Settings */
+  override lazy val projectSettings: Seq[Setting[_]] = Seq(
+    commands ++= Seq(
+      cleanAndGenerateDocs,
+      pushApiDocsToGHPages
+    )
+  )
 
   /* ### Actions
 
@@ -69,25 +91,5 @@ object DocumentationSettings extends sbt.Plugin {
       }
     }
   }
-
-  /* ### Commands
-
-     Commands are added for convenience of invoking these actions manually from sbt repl
-  */
-
-  lazy val cleanAndGenerateDocs = Command.command("cleanAndGenerateDocs")(cleanAndGenerateDocsAction)
-  lazy val pushApiDocsToGHPages = Command.command("pushApiDocsToGHPages")(pushApiDocsToGHPagesAction)
-
-  /* ### Settings
-
-     Just making these command visible
-  */
-
-  lazy val documentationSettings = Seq[Setting[_]](
-    commands ++= Seq(
-      cleanAndGenerateDocs,
-      pushApiDocsToGHPages
-    )
-  )
 
 }

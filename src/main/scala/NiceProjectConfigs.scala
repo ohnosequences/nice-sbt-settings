@@ -25,7 +25,6 @@ object NiceProjectConfigs extends sbt.Plugin {
       MetadataSettings.metadataSettings ++
       ScalaSettings.scalaSettings ++
       ResolverSettings.resolverSettings ++
-      DocumentationSettings.documentationSettings ++
       ReleaseSettings.releaseSettings ++
       TagListSettings.tagListSettings ++
       WartremoverSettings.wartremoverSettings
