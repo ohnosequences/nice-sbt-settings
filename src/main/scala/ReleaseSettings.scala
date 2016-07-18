@@ -23,8 +23,6 @@ import TagListPlugin._
 
 import com.timushev.sbt.updates.UpdatesKeys
 
-import org.scalatest.Tag
-
 
 object ReleaseSettings extends sbt.Plugin {
 
