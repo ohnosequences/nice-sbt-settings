@@ -55,11 +55,11 @@ object AssemblySettings extends sbt.Plugin {
 
   /* Note, that these settings are not included by default. To turn them on them, add to your
      `build.sbt` `fatArtifactPublishing` line (without any prefix) */
-  lazy val fatArtifactPublishing: Seq[Setting[_]] = Seq(
-    artifact in (Compile, assembly) := {
-      val art = (artifact in (Compile, assembly)).value
+  def fatArtifactPublishing(conf: Configuration): Seq[Setting[_]] = Seq(
+    artifact in (conf, assembly) := {
+      val art = (artifact in (conf, assembly)).value
       art.copy( classifier = Some(fatArtifactClassifier.value) )
     }
-  ) ++ addArtifact(artifact in (Compile, assembly), assembly)
+  ) ++ addArtifact(artifact in (conf, assembly), assembly)
 
 }
