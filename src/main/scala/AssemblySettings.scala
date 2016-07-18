@@ -10,7 +10,7 @@ import Keys._
 import sbtassembly._
 import AssemblyKeys._
 
-object AssemblySettings extends sbt.AutoPlugin {
+case object AssemblySettings extends sbt.AutoPlugin {
 
   override def requires = sbtassembly.AssemblyPlugin
   override def trigger = allRequirements

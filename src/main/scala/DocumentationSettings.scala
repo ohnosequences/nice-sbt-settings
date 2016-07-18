@@ -14,7 +14,7 @@ import sbtrelease._, ReleasePlugin.autoImport._
 
 import laughedelic.literator.plugin.LiteratorPlugin.autoImport._
 
-object DocumentationSettings extends sbt.AutoPlugin {
+case object DocumentationSettings extends sbt.AutoPlugin {
 
   override def requires = laughedelic.literator.plugin.LiteratorPlugin
   override def trigger = allRequirements

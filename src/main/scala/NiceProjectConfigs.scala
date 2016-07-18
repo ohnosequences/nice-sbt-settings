@@ -23,24 +23,10 @@ object NiceProjectConfigs extends sbt.Plugin {
     */
     lazy val scalaProject: Seq[Setting[_]] =
       MetadataSettings.metadataSettings ++
-      ScalaSettings.scalaSettings ++
       ResolverSettings.resolverSettings ++
       ReleaseSettings.releaseSettings ++
       TagListSettings.tagListSettings ++
       WartremoverSettings.wartremoverSettings
-
-    /* Same for `Nice.javaProject` - it includes all `scalaProject` settings,
-       Note that default java version is 1.7. You can change it after loading these settings:
-
-       ```scala
-       Nice.javaProject
-
-       javaVersion := "1.8"
-       ```
-    */
-    lazy val javaProject: Seq[Setting[_]] =
-      scalaProject ++
-      JavaSettings.javaSettings
 
   }
 
