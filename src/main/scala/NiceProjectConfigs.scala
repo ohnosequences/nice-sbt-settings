@@ -22,7 +22,6 @@ object NiceProjectConfigs extends sbt.Plugin {
        ```
     */
     lazy val scalaProject: Seq[Setting[_]] =
-      MetadataSettings.metadataSettings ++
       ResolverSettings.resolverSettings ++
       ReleaseSettings.releaseSettings ++
       TagListSettings.tagListSettings ++
