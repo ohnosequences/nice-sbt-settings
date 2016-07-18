@@ -8,21 +8,22 @@ package ohnosequences.sbt.nice
 import sbt._
 import Keys._
 
-import com.markatta.sbttaglist._
-import TagListPlugin._
+import com.markatta.sbttaglist._, TagListPlugin._
 
-object TagListSettings extends sbt.Plugin {
+object TagListSettings extends sbt.AutoPlugin {
+
+  override def requires = empty // should be TagListPlugin, but it's not an autoplugin
+  override def trigger = allRequirements
 
   /* ### Settings */
-
-  lazy val tagListSettings: Seq[Setting[_]] = {
-    TagListPlugin.tagListSettings ++ Seq(
+  override lazy val projectSettings: Seq[Setting[_]] =
+    TagListPlugin.tagListSettings ++
+    Seq(
       TagListKeys.tags := Set(
-        // Tag("note", TagListPlugin.Info),
-        Tag("todo", TagListPlugin.Warn), 
-        Tag("fixme", TagListPlugin.Error)
+        Tag("note", TagListPlugin.Info),
+        Tag("todo", TagListPlugin.Warn),
+        Tag("fixme", TagListPlugin.Warn)
       )
     )
-  }
 
 }
