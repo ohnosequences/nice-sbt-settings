@@ -16,7 +16,35 @@ import sbtrelease._, ReleasePlugin.autoImport._
 
 import laughedelic.literator.plugin.LiteratorPlugin.autoImport._
 
-object DocumentationSettings extends sbt.Plugin {
+case object DocumentationSettings extends sbt.AutoPlugin {
+
+  override def requires = laughedelic.literator.plugin.LiteratorPlugin
+  override def trigger = allRequirements
+
+  case object autoImport {
+```
+
+### Commands
+
+Commands are added for convenience of invoking these actions manually from sbt repl
+
+
+```scala
+    lazy val cleanAndGenerateDocs = Command.command("cleanAndGenerateDocs")(cleanAndGenerateDocsAction)
+    lazy val pushApiDocsToGHPages = Command.command("pushApiDocsToGHPages")(pushApiDocsToGHPagesAction)
+  }
+  import autoImport._
+```
+
+### Settings
+
+```scala
+  override lazy val projectSettings: Seq[Setting[_]] = Seq(
+    commands ++= Seq(
+      cleanAndGenerateDocs,
+      pushApiDocsToGHPages
+    )
+  )
 ```
 
 ### Actions
@@ -76,30 +104,6 @@ This action tries
       }
     }
   }
-```
-
-### Commands
-
-Commands are added for convenience of invoking these actions manually from sbt repl
-
-
-```scala
-  lazy val cleanAndGenerateDocs = Command.command("cleanAndGenerateDocs")(cleanAndGenerateDocsAction)
-  lazy val pushApiDocsToGHPages = Command.command("pushApiDocsToGHPages")(pushApiDocsToGHPagesAction)
-```
-
-### Settings
-
-Just making these command visible
-
-
-```scala
-  lazy val documentationSettings = Seq[Setting[_]](
-    commands ++= Seq(
-      cleanAndGenerateDocs,
-      pushApiDocsToGHPages
-    )
-  )
 
 }
 
@@ -110,11 +114,10 @@ Just making these command visible
 
 [main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
 [main/scala/DocumentationSettings.scala]: DocumentationSettings.scala.md
-[main/scala/JavaSettings.scala]: JavaSettings.scala.md
+[main/scala/JavaOnlySettings.scala]: JavaOnlySettings.scala.md
 [main/scala/MetadataSettings.scala]: MetadataSettings.scala.md
-[main/scala/NiceProjectConfigs.scala]: NiceProjectConfigs.scala.md
 [main/scala/ReleaseSettings.scala]: ReleaseSettings.scala.md
 [main/scala/ResolverSettings.scala]: ResolverSettings.scala.md
 [main/scala/ScalaSettings.scala]: ScalaSettings.scala.md
 [main/scala/TagListSettings.scala]: TagListSettings.scala.md
-[main/scala/WartremoverSettings.scala]: WartremoverSettings.scala.md
+[main/scala/WartRemoverSettings.scala]: WartRemoverSettings.scala.md

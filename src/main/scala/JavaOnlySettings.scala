@@ -1,23 +1,25 @@
 /* ## Java-related settings
 
-   This module defines settings that are specific to Java projects
+   This module defines settings that are specific to purely-Java projects
 */
 package ohnosequences.sbt.nice
 
 import sbt._
 import Keys._
 
-object JavaSettings extends sbt.Plugin {
+case object JavaOnlySettings extends sbt.AutoPlugin {
 
+  override def requires = plugins.JvmPlugin
+  // NOTE: it means that the plugin has to be manually activated: `enablePlugin(JavaOnlySettings)`
+  override def trigger = noTrigger
 
-  /* ### Settings 
+  case object autoImport {
 
-     Java version can be `"1.6"` or `"1.7"`
-  */
+    lazy val javaVersion = settingKey[String]("Java version")
+  }
+  import autoImport._
 
-  lazy val javaVersion = settingKey[String]("Java version")
-
-  lazy val javaSettings: Seq[Setting[_]] = Seq(
+  override lazy val projectSettings: Seq[Setting[_]] = Seq(
     // default is Java 8
     javaVersion := "1.8",
 
@@ -35,6 +37,6 @@ object JavaSettings extends sbt.Plugin {
 
     // javadoc doesn't know about source/target 1.7
     javacOptions in (Compile, doc) := Seq()
-    )
+  )
 
 }

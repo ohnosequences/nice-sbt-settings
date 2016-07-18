@@ -5,14 +5,15 @@
 */
 package ohnosequences.sbt.nice
 
-import sbt._
-import Keys._
+import sbt._, Keys._
 
-object MetadataSettings extends sbt.Plugin {
+object MetadataSettings extends sbt.AutoPlugin {
+
+  override def requires = empty
+  override def trigger = allRequirements
 
   /* ### Settings */
-
-  lazy val metadataSettings: Seq[Setting[_]] = Seq(
+  override lazy val projectSettings: Seq[Setting[_]] = Seq(
     homepage := Some(url("https://github.com/"+organization.value+"/"+name.value)),
     organizationHomepage := Some(url("http://"+organization.value+".com")),
     licenses := Seq("AGPL-V3" -> url("http://www.gnu.org/licenses/agpl-3.0.txt"))

@@ -10,20 +10,33 @@ import Keys._
 import sbtassembly._
 import AssemblyKeys._
 
-object AssemblySettings extends sbt.Plugin {
+case object AssemblySettings extends sbt.AutoPlugin {
 
-  /* ### Setting keys
+  override def requires =
+    sbtassembly.AssemblyPlugin &&
+    ResolverSettings
+  override def trigger = allRequirements
 
-     Classifier is the suffix appended to the artifact name
-  */
-  lazy val fatArtifactClassifier = settingKey[String]("Classifier of the fat jar artifact")
-  /* This setting holds the url of the published fat artifact */
-  lazy val fatArtifactUrl = settingKey[String]("URL of the published fat artifact")
+  case object autoImport {
 
-  /* ### Settings
+    /* Classifier is the suffix appended to the artifact name */
+    lazy val fatArtifactClassifier = settingKey[String]("Classifier of the fat jar artifact")
+    /* This setting holds the url of the published fat artifact */
+    lazy val fatArtifactUrl = settingKey[String]("URL of the published fat artifact")
 
-  */
-  lazy val fatArtifactSettings: Seq[Setting[_]] = Seq(
+    /* Note, that these settings are not included by default. To turn them on them, add to your
+       `build.sbt` `addFatArtifactPublishing()` line (without any prefix) */
+    def addFatArtifactPublishing(conf: Configuration = Compile): Seq[Setting[_]] = Seq(
+      artifact in (conf, assembly) := {
+        val art = (artifact in (conf, assembly)).value
+        art.copy( classifier = Some(fatArtifactClassifier.value) )
+      }
+    ) ++ addArtifact(artifact in (conf, assembly), assembly)
+  }
+  import autoImport._
+
+  /* ### Settings */
+  override lazy val projectSettings: Seq[Setting[_]] = Seq(
     // suffix for the fat artifact:
     fatArtifactClassifier := "fat",
     // turning off tests in assembly:
@@ -44,7 +57,7 @@ object AssemblySettings extends sbt.Plugin {
       ).mkString
 
       Seq(
-        ResolverSettings.publishS3Resolver.value.url,
+        ResolverSettings.autoImport.publishS3Resolver.value.url,
         organization.value,
         module,
         version.value,
@@ -52,14 +65,5 @@ object AssemblySettings extends sbt.Plugin {
       ).mkString("/")
     }
   )
-
-  /* Note, that these settings are not included by default. To turn them on them, add to your
-     `build.sbt` `fatArtifactPublishing` line (without any prefix) */
-  def fatArtifactPublishing(conf: Configuration): Seq[Setting[_]] = Seq(
-    artifact in (conf, assembly) := {
-      val art = (artifact in (conf, assembly)).value
-      art.copy( classifier = Some(fatArtifactClassifier.value) )
-    }
-  ) ++ addArtifact(artifact in (conf, assembly), assembly)
 
 }

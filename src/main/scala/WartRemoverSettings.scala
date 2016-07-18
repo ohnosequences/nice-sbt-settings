@@ -5,17 +5,16 @@
 */
 package ohnosequences.sbt.nice
 
-import sbt._
-import Keys._
-
-import com.markatta.sbttaglist._
+import sbt._, Keys._
 import wartremover._
 
-object WartremoverSettings extends sbt.Plugin {
+object WartRemoverSettings extends sbt.AutoPlugin {
+
+  override def requires = WartRemover
+  override def trigger = allRequirements
 
   /* ### Settings */
-
-  lazy val wartremoverSettings: Seq[Setting[_]] = Seq(
+  override lazy val projectSettings: Seq[Setting[_]] = Seq(
     wartremoverErrors in (Compile, compile) ++= Warts.unsafe
   )
 
