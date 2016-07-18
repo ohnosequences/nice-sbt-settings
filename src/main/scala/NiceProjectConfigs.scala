@@ -28,8 +28,7 @@ object NiceProjectConfigs extends sbt.Plugin {
       DocumentationSettings.documentationSettings ++
       ReleaseSettings.releaseSettings ++
       TagListSettings.tagListSettings ++
-      WartremoverSettings.wartremoverSettings ++
-      AssemblySettings.fatArtifactSettings
+      WartremoverSettings.wartremoverSettings
 
     /* Same for `Nice.javaProject` - it includes all `scalaProject` settings,
        Note that default java version is 1.7. You can change it after loading these settings:
