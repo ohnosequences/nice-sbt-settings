@@ -23,8 +23,6 @@ import TagListPlugin._
 
 import com.timushev.sbt.updates.UpdatesKeys
 
-import org.scalatest.Tag
-
 
 object ReleaseSettings extends sbt.Plugin {
 
@@ -234,6 +232,8 @@ object ReleaseSettings extends sbt.Plugin {
   lazy val releaseSettings: Seq[Setting[_]] =
     ReleasePlugin.projectSettings ++
     Seq(
+      libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6",
+
       releaseOnlyTestTagPackage := s"${organization.value}.test.tags",
       releaseOnlyTestTag := "ReleaseOnlyTest",
 
