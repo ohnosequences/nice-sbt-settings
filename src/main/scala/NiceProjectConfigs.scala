@@ -1,6 +1,6 @@
 /* ## Project configurations
-   
-   This is the module defining project configurations, which are 
+
+   This is the module defining project configurations, which are
    just combinations of the setting sets defined in other modules.
 */
 package ohnosequences.sbt.nice
@@ -10,7 +10,7 @@ import Keys._
 import sbt.Extracted
 
 object NiceProjectConfigs extends sbt.Plugin {
-  
+
   object Nice {
 
     /* You can just say somewhere **in the very beginning** of your `build.sbt`:
@@ -28,7 +28,8 @@ object NiceProjectConfigs extends sbt.Plugin {
       DocumentationSettings.documentationSettings ++
       ReleaseSettings.releaseSettings ++
       TagListSettings.tagListSettings ++
-      WartremoverSettings.wartremoverSettings
+      WartremoverSettings.wartremoverSettings ++
+      AssemblySettings.fatArtifactSettings
 
     /* Same for `Nice.javaProject` - it includes all `scalaProject` settings,
        Note that default java version is 1.7. You can change it after loading these settings:
