@@ -24,10 +24,17 @@ import TagListPlugin._
 import com.timushev.sbt.updates.UpdatesKeys
 
 
-object ReleaseSettings extends sbt.AutoPlugin {
+case object ReleaseSettings extends sbt.AutoPlugin {
 
-  override def requires = ReleasePlugin
   override def trigger = allRequirements
+  override def requires =
+    ohnosequences.sbt.nice.DocumentationSettings &&
+    ohnosequences.sbt.nice.ResolverSettings &&
+    ohnosequences.sbt.nice.ScalaSettings &&
+    ohnosequences.sbt.nice.TagListSettings &&
+    ohnosequences.sbt.nice.WartRemoverSettings &&
+    ohnosequences.sbt.SbtGithubReleasePlugin &&
+    sbtrelease.ReleasePlugin
 
   case object autoImport {
 
