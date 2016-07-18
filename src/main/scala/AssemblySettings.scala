@@ -12,7 +12,9 @@ import AssemblyKeys._
 
 case object AssemblySettings extends sbt.AutoPlugin {
 
-  override def requires = sbtassembly.AssemblyPlugin
+  override def requires =
+    sbtassembly.AssemblyPlugin &&
+    ResolverSettings
   override def trigger = allRequirements
 
   case object autoImport {
@@ -55,7 +57,7 @@ case object AssemblySettings extends sbt.AutoPlugin {
       ).mkString
 
       Seq(
-        ResolverSettings.publishS3Resolver.value.url,
+        ResolverSettings.autoImport.publishS3Resolver.value.url,
         organization.value,
         module,
         version.value,
