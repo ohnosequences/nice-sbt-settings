@@ -20,22 +20,12 @@ object AssemblySettings extends sbt.Plugin {
   /* This setting holds the url of the published fat artifact */
   lazy val fatArtifactUrl = settingKey[String]("URL of the published fat artifact")
 
-  lazy val fatArtifactPublish = settingKey[Boolean]("Defines whether to publish fat jar or not")
-
   /* ### Settings
 
-     Note, that these settings are not included by default. To turn them on them, add to your
-     `build.sbt` `fatArtifactSettings` line (without any prefix)
   */
   lazy val fatArtifactSettings: Seq[Setting[_]] = Seq(
-    // publishing fat artifact:
+    // suffix for the fat artifact:
     fatArtifactClassifier := "fat",
-    fatArtifactPublish := !(isSnapshot.value), // don't publish fat snapshots
-    artifact in (Compile, assembly) := {
-      val art = (artifact in (Compile, assembly)).value
-      art.copy( classifier = Some(fatArtifactClassifier.value) )
-    },
-
     // turning off tests in assembly:
     test in assembly := {},
 
@@ -61,11 +51,15 @@ object AssemblySettings extends sbt.Plugin {
         artifact
       ).mkString("/")
     }
-
   )
-  // ++ Def.settings(
-  //   if (fatArtifactPublish.value) addArtifact(artifact in (Compile, assembly), assembly)
-  //   else seq()
-  // )
+
+  /* Note, that these settings are not included by default. To turn them on them, add to your
+     `build.sbt` `fatArtifactPublishing` line (without any prefix) */
+  lazy val fatArtifactPublishing: Seq[Setting[_]] = Seq(
+    artifact in (Compile, assembly) := {
+      val art = (artifact in (Compile, assembly)).value
+      art.copy( classifier = Some(fatArtifactClassifier.value) )
+    }
+  ) ++ addArtifact(artifact in (Compile, assembly), assembly)
 
 }
