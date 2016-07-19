@@ -1,6 +1,7 @@
 * Major changes:
-  - #47: Translated all settings-modules to [auto-plugins](http://www.scala-sbt.org/0.13/docs/Plugins.html) with proper dependencies between them. They will be [enabled](http://www.scala-sbt.org/0.13/docs/Using-Plugins.html#Enabling+and+disabling+auto+plugins) automatically, so you can disable some of them explicitly if needed.  
-    The only plugin that doesn't enable itself automatically the one for Java-only projects. To switch it on you have to add `enablePlugin(JavaOnlySettings)` to your `build.sbt`.
+  - #47: Translated all settings-modules to [auto-plugins](http://www.scala-sbt.org/0.13/docs/Plugins.html) with proper dependencies between them. They will be [enabled](http://www.scala-sbt.org/0.13/docs/Using-Plugins.html#Enabling+and+disabling+auto+plugins) automatically, so you can disable some of them explicitly if needed. Plugins that need to be ebaled explicitly:
+    + The one for Java-only projects: add `enablePlugins(JavaOnlySettings)` to enable it
+    + #39: New `StatikaBundleSettings` plugin, which adds dependency on Statika (version is configurable with `statikaVersion`) and uses [sbt-buildinfo](https://github.com/sbt/sbt-buildinfo) to generate the artifact metadata for statika bundles. Add `enablePlugins(StatikaBundleSettings)` to enable it.
   - #45: The new `AssemblySettings` auto-plugin loads fat-jar related settings automatically, but to publish the generated artifact, you need to add `addFatArtifactPublishing(<config>)` setting to your `build.sbt` explicitly (default `<config>` is `Compile`).
 
 
