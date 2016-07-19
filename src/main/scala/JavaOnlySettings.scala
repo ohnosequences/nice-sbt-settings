@@ -9,9 +9,9 @@ import Keys._
 
 case object JavaOnlySettings extends sbt.AutoPlugin {
 
-  override def requires = plugins.JvmPlugin
   // NOTE: it means that the plugin has to be manually activated: `enablePlugin(JavaOnlySettings)`
-  override def trigger = noTrigger
+  override def trigger  = noTrigger
+  override def requires = plugins.JvmPlugin
 
   case object autoImport {
 

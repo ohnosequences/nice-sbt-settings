@@ -16,7 +16,8 @@ addSbtPlugin("com.markatta"      % "taglist-plugin"     % "1.3.1")   // https://
 addSbtPlugin("org.wartremover"   % "sbt-wartremover"    % "1.0.1")   // https://github.com/puffnfresh/wartremover
 addSbtPlugin("com.eed3si9n"      % "sbt-buildinfo"      % "0.6.1")   // https://github.com/sbt/sbt-buildinfo
 
-wartremoverWarnings ++= Warts.allBut(Wart.NoNeedForMonad)
+wartremoverErrors in (Compile, compile) := Seq()
+// wartremoverWarnings ++= Warts.allBut(Wart.NoNeedForMonad)
 
 dependencyOverrides ++= Set(
   "commons-codec"              % "commons-codec"    % "1.10",
