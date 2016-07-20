@@ -15,7 +15,6 @@ addSbtPlugin("laughedelic"       % "literator"          % "0.7.0")   // https://
 addSbtPlugin("com.markatta"      % "taglist-plugin"     % "1.3.1")   // https://github.com/johanandren/sbt-taglist
 addSbtPlugin("org.wartremover"   % "sbt-wartremover"    % "1.0.1")   // https://github.com/puffnfresh/wartremover
 addSbtPlugin("com.eed3si9n"      % "sbt-buildinfo"      % "0.6.1")   // https://github.com/sbt/sbt-buildinfo
-addSbtPlugin("com.typesafe.sbt"  % "sbt-git"            % "0.8.5")   // https://github.com/sbt/sbt-git
 
 wartremoverErrors in (Compile, compile) := Seq()
 // wartremoverWarnings ++= Warts.allBut(Wart.NoNeedForMonad)
