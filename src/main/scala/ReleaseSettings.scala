@@ -59,7 +59,7 @@ case object ReleaseSettings extends sbt.AutoPlugin {
     testAll := (testOnly in Test).toTask("").value,
 
     /* We want to increment `y` in `x.y.z` */
-    releaseVersionBump := Version.Bump.Minor,
+    releaseVersionBump := sbtrelease.Version.Bump.Minor,
 
     /* By default you want to have full controll over the release process: */
     releaseStepByStep := true,

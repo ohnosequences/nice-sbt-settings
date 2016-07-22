@@ -1,3 +1,5 @@
+// Nice.scalaProject
+
 name := "nice-sbt-settings"
 organization := "ohnosequences"
 description := "sbt plugin accumulating some useful and nice sbt settings"
