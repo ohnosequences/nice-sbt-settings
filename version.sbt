@@ -1,10 +1,11 @@
-lazy val Snap = config("snap")
+lazy val Snap = config("snap") extend(Compile)
 inConfig(Snap)(
   Classpaths.ivyBaseSettings ++
   Classpaths.ivyPublishSettings ++
   Defaults.configSettings ++
   Seq(
     packageBin <<= packageBin.in(Compile),
+    version in packageBin := version.in(Snap).value,
     packagedArtifacts <<= Classpaths.packaged(
       makePom +: (Classpaths.defaultPackageKeys).map { _ in Snap }
     )

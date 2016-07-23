@@ -29,7 +29,7 @@ object ResolverSettings extends sbt.AutoPlugin {
   private val mvn = Resolver.mavenStylePatterns
   private val ivy = Resolver.ivyStylePatterns
 
-  override lazy val projectSettings: Seq[Setting[_]] = Seq(
+  override def projectSettings: Seq[Setting[_]] = Seq(
     /* Adding default maven/ivy resolvers with the default `bucketSuffix` */
     bucketSuffix := organization.value + ".com",
     bucketRegion := "eu-west-1",
@@ -52,7 +52,21 @@ object ResolverSettings extends sbt.AutoPlugin {
       s3resolver.value(address+" S3 publishing bucket", s3(address)).
         withPatterns(if(publishMavenStyle.value) mvn else ivy)
     },
-    publishTo := Some(publishS3Resolver.value)
+    publishTo := {
+      /* This prevents from publishing snapshots: */
+      if (isSnapshot.value) None else Some(publishS3Resolver.value)
+    }
+
+    // FIXME: this works in build.sbt, but is ignored when loaded from the plugin
+    // publish := {
+    //   val git = ohnosequences.sbt.nice.GitPlugin.autoImport.git.value
+    //
+    //   if (!git.isDirty)
+    //     // streams.value.log.
+    //     sys.error("You shouldn't publish snapshots. Commit the changes and reload.")
+    //   else
+    //     Classpaths.publishTask(publishConfiguration, deliver).value
+    // }
   )
 
 }
