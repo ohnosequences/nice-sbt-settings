@@ -8,20 +8,44 @@ case class Version(
   val suffixes: Seq[String] = Seq()
 ) {
 
-  val base: String = Seq(major, minor, bugfix).mkString(".")
   val suffix: String = suffixes.mkString("-")
 
-  override def toString = base + { if (suffix.nonEmpty) "-" + suffix else "" }
+  override def toString =
+    Seq(major, minor, bugfix).mkString(".") + {
+      if (suffix.nonEmpty) "-" + suffix else ""
+    }
+
+  def base: Version = v(major, minor, bugfix)
 
   def apply(moreSuffixes: String*): Version =
     Version(major, minor, bugfix, suffixes ++ moreSuffixes)
 
   val isSnapshot: Boolean = suffix.endsWith("-SNAPSHOT")
-  def snapshot: Version = if (isSnapshot) this else apply("SNAPSHOT")
+  def snapshot: Version = if (isSnapshot) this else this.apply("SNAPSHOT")
 
-  def bumpMajor  = Version(major + 1, 0, 0)
-  def bumpMinor  = Version(major, minor + 1, 0)
-  def bumpBugfix = Version(major, minor, bugfix + 1)
+  def bumpMajor:  Version = v(major + 1, 0, 0)
+  def bumpMinor:  Version = v(major, minor + 1, 0)
+  def bumpBugfix: Version = v(major, minor, bugfix + 1)
+
+  // Milestone suffix:
+  def M(num: Int): Version = base.apply(s"M${num}")
+
+  val MilestoneRegex = "M([0-9]+)".r
+  def milestone: Option[Int] = suffix match {
+    case MilestoneRegex(num) => Some(num.toInt)
+    case _ => None
+  }
+  def isMilestone: Boolean = milestone.nonEmpty
+
+  // Release Candidate suffix:
+  def RC(num: Int): Version = base.apply(s"RC${num}")
+  
+  val ReleaseCandidateRegex = "RC([0-9]+)".r
+  def releaseCandidate: Option[Int] = suffix match {
+    case ReleaseCandidateRegex(num) => Some(num.toInt)
+    case _ => None
+  }
+  def isReleaseCandidate: Boolean = releaseCandidate.nonEmpty
 }
 
 // just an alias for writing v(2,1,13)("foo", "bar") or v(0,1,0).snapshot
