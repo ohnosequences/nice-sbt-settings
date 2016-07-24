@@ -28,3 +28,28 @@ dependencyOverrides ++= Set(
   "com.jcraft"                 % "jsch"             % "0.1.50",
   "joda-time"                  % "joda-time"        % "2.8"
 )
+
+commands += Command.command("publish") { state =>
+  val reloadedSt = state.reload
+  reloadedSt.log.info("")
+  reloadedSt.log.info("\nRELOADED\n")
+  reloadedSt.log.info("")
+
+  Project.extract(reloadedSt).runTask(publish in Compile, reloadedSt) match {
+    case (newState, _) => {
+      newState.log.warn("do something!")
+      newState
+    }
+    // case None => reloadedSt.log.warn("Key wasn't defined"); reloadedSt.fail
+    // case Some((newState, Inc(inc))) => {
+    //   reloadedSt.log.error("")
+    //   reloadedSt.log.error(s"Error detail, inc is of type Incomplete: ${inc.toString}")
+    //   reloadedSt.log.error("")
+    //   newState
+    // }
+    // case Some((newState, Value(v))) => {
+    //   reloadedSt.log.warn("do something with v: inc.Analysis")
+    //   newState
+    // }
+  }
+}
