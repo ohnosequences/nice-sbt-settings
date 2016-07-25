@@ -63,7 +63,7 @@ object ResolverSettings extends sbt.AutoPlugin {
 
       if ( Project.extract(state).get(Keys.isSnapshot) ) {
 
-        state.log.error("You shouldn't publish snapshots. Commit the changes and try again.")
+        state.log.error("You shouldn't share snapshots. Commit the changes and try again. Or use publishLocal.")
         state.fail
       } else {
 
