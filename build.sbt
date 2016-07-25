@@ -29,27 +29,25 @@ dependencyOverrides ++= Set(
   "joda-time"                  % "joda-time"        % "2.8"
 )
 
-commands += Command.command("publish") { state =>
-  val reloadedSt = state.reload
-  reloadedSt.log.info("")
-  reloadedSt.log.info("\nRELOADED\n")
-  reloadedSt.log.info("")
+// Just a command for the publish task with a custom error message in case of a snapshot version
+commands += Command.command("publishReloaded") { state =>
+  state.log.info(s"Current version: ${Project.extract(state).get(Keys.version)}")
 
-  Project.extract(reloadedSt).runTask(publish in Compile, reloadedSt) match {
-    case (newState, _) => {
-      newState.log.warn("do something!")
-      newState
+  if ( Project.extract(state).get(Keys.isSnapshot) ) {
+
+    state.log.error("You shouldn't publish snapshots. Commit the changes and try again.")
+    state.fail
+  } else {
+
+    Project.runTask(publish, state) match {
+      case None => state.log.warn("Key wasn't defined"); state.fail
+      case Some((newState, Inc(_))) => newState // incomplete
+      case Some((newState, Value(_))) => newState // success
     }
-    // case None => reloadedSt.log.warn("Key wasn't defined"); reloadedSt.fail
-    // case Some((newState, Inc(inc))) => {
-    //   reloadedSt.log.error("")
-    //   reloadedSt.log.error(s"Error detail, inc is of type Incomplete: ${inc.toString}")
-    //   reloadedSt.log.error("")
-    //   newState
-    // }
-    // case Some((newState, Value(v))) => {
-    //   reloadedSt.log.warn("do something with v: inc.Analysis")
-    //   newState
-    // }
   }
+}
+
+// Shadowing publish task with this command to do reload before actually publishing
+commands += Command.command("publish") { state =>
+  "reload" :: "publishReloaded" :: state
 }
