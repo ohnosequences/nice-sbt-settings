@@ -1,3 +1,5 @@
+// Nice.scalaProject
+
 name := "nice-sbt-settings"
 organization := "ohnosequences"
 description := "sbt plugin accumulating some useful and nice sbt settings"
@@ -22,5 +24,7 @@ wartremoverErrors in (Compile, compile) := Seq()
 dependencyOverrides ++= Set(
   "commons-codec"              % "commons-codec"    % "1.10",
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.5.4",
+  "org.apache.httpcomponents"  % "httpclient"       % "4.3.6",
+  "com.jcraft"                 % "jsch"             % "0.1.50",
   "joda-time"                  % "joda-time"        % "2.8"
 )
