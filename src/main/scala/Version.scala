@@ -23,16 +23,11 @@ case class Version(
   val isSnapshot: Boolean = suffix.endsWith("-SNAPSHOT")
   def snapshot: Version = if (isSnapshot) this else this.apply("SNAPSHOT")
 
-  def bumpMajor:  Version = v(major + 1, 0, 0)
-  def bumpMinor:  Version = v(major, minor + 1, 0)
-  def bumpBugfix: Version = v(major, minor, bugfix + 1)
-
   // Milestone suffix:
   def M(num: Int): Version = base.apply(s"M${num}")
 
-  val MilestoneRegex = "M([0-9]+)".r
   lazy val milestone: Option[Int] = suffixes match {
-    case MilestoneRegex(num) :: _ => Some(num.toInt)
+    case v.regex.milestone(num) :: _ => Some(num.toInt)
     case _ => None
   }
   lazy val isMilestone: Boolean = milestone.nonEmpty
@@ -40,25 +35,37 @@ case class Version(
   // Release Candidate suffix:
   def RC(num: Int): Version = base.apply(s"RC${num}")
 
-  val CandidateRegex = "RC([0-9]+)".r
   lazy val candidate: Option[Int] = suffixes match {
-    case CandidateRegex(num) :: _ => Some(num.toInt)
+    case v.regex.candidate(num) :: _ => Some(num.toInt)
     case _ => None
   }
   lazy val isCandidate: Boolean = candidate.nonEmpty
+
+  // bumping:
+  def bumpMajor:  Version = v(major + 1, 0, 0)
+  def bumpMinor:  Version = v(major, minor + 1, 0)
+  def bumpBugfix: Version = v(major, minor, bugfix + 1)
+
+  def bumpMilestone: Version =  this.M(milestone.getOrElse(0) + 1)
+  def bumpCandidate: Version = this.RC(candidate.getOrElse(0) + 1)
 }
 
-// just an alias for writing v(2,1,13)("foo", "bar") or v(0,1,0).snapshot
 case object v {
+  // just an alias for writing v(2,1,13)("foo", "bar") or v(0,1,0).snapshot
   def apply(x: Int, y: Int, z: Int): Version = Version(x,y,z)
+
+  case object regex {
+    val version = """v?([0-9]+)\.([0-9]+)\.([0-9]+)(-.*)?""".r
+
+    val milestone = "M([0-9]+)".r
+    val candidate = "RC([0-9]+)".r
+  }
 }
 
 case object Version {
 
-  val VersionRegex = """v?([0-9]+)\.([0-9]+)\.([0-9]+)(-.*)?""".r
-
   def parse(str: String): Option[Version] = str match {
-    case VersionRegex(maj, min, bug, suff) => Some(
+    case v.regex.version(maj, min, bug, suff) => Some(
       Version(
         maj.toInt,
         min.toInt,

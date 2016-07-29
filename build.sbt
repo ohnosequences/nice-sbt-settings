@@ -53,8 +53,7 @@ def nextVersionParser(current: Version): Parser[Version] = {
   val candidate = BumperParser("candidate", { v => v.RC(v.releaseCandidate.getOrElse(0) + 1) })
 
   if (current.isSnapshot) {
-    token(any, "fooooo bar") ~>
-    failure("You cannot release a snapshot. Commit or stash the changes first.", true)
+    failure("You cannot release a snapshot. Commit or stash the changes first.")
 
   } else if (current.isReleaseCandidate) {
     (Space ~>
@@ -83,7 +82,7 @@ commands += Command(
 ){ state =>
 
   val extracted = Project.extract(state)
-  
+
   extracted.get(VersionSettings.autoImport.gitVersion) match {
     case None => failure("gitVersion doesn't have a value")
     case Some(current) => nextVersionParser(current)
