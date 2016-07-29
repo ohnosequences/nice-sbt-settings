@@ -31,21 +31,21 @@ case class Version(
   def M(num: Int): Version = base.apply(s"M${num}")
 
   val MilestoneRegex = "M([0-9]+)".r
-  def milestone: Option[Int] = suffix match {
-    case MilestoneRegex(num) => Some(num.toInt)
+  lazy val milestone: Option[Int] = suffixes match {
+    case MilestoneRegex(num) :: _ => Some(num.toInt)
     case _ => None
   }
-  def isMilestone: Boolean = milestone.nonEmpty
+  lazy val isMilestone: Boolean = milestone.nonEmpty
 
   // Release Candidate suffix:
   def RC(num: Int): Version = base.apply(s"RC${num}")
-  
-  val ReleaseCandidateRegex = "RC([0-9]+)".r
-  def releaseCandidate: Option[Int] = suffix match {
-    case ReleaseCandidateRegex(num) => Some(num.toInt)
+
+  val CandidateRegex = "RC([0-9]+)".r
+  lazy val candidate: Option[Int] = suffixes match {
+    case CandidateRegex(num) :: _ => Some(num.toInt)
     case _ => None
   }
-  def isReleaseCandidate: Boolean = releaseCandidate.nonEmpty
+  lazy val isCandidate: Boolean = candidate.nonEmpty
 }
 
 // just an alias for writing v(2,1,13)("foo", "bar") or v(0,1,0).snapshot
