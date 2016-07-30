@@ -89,11 +89,11 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
 
     parsed match {
       case Left(msg) => state.log.error(msg); state.fail
-      case Right(ver) => {
+      case Right(releaseVersion) => {
 
-        state.log.info(s"Release version: [${ver}]")
-        // TODO: run release process
-        state
+        state.log.info(s"Release version: [${releaseVersion}]")
+        Release.preReleaseChecks(releaseVersion)(state)
+        // state
       }
     }
   }
@@ -103,4 +103,58 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     commands += releaseCommand
   )
 
+}
+
+case object Release {
+
+  def preReleaseChecks(releaseVersion: Version): State => State = { state =>
+    checkReleaseNotes(releaseVersion)(state)
+  }
+
+  def checkReleaseNotes(releaseVersion: Version): State => State = { state =>
+    val extracted = Project.extract(state)
+
+    // TODO: these could be configurable
+    val notesDir = extracted.get(baseDirectory) / "notes"
+    val acceptableNames      = Set(releaseVersion.toString, "next", "unreleased", "changelog")
+    val acceptableExtensions = Set("markdown", "md")
+
+    val notesFinder: PathFinder = (notesDir * "*") filter { file =>
+      (acceptableNames      contains file.base.toLowerCase) &&
+      (acceptableExtensions contains file.ext)
+    }
+
+    notesFinder.get match {
+      case Nil => {
+        state.log.error(s"No release notes found. Acceptable names: ${acceptableNames.mkString(", ")}. Acceptable extensions: ${acceptableExtensions.mkString(", ")}.")
+        state.log.error(s"Write release notes, commit and run release process again.")
+        state.fail
+      }
+
+      case Seq(notesFile) => {
+        val notes = IO.read(notesFile)
+
+        if (notes.isEmpty) {
+          state.log.error(s"Notes file [${notesFile}] is empty.")
+          state.log.error(s"Write release notes, commit and run release process again.")
+          state.fail
+
+        } else {
+          state.log.info(s"Taking release notes from the [${notesFile}] file:\n \n${notes}\n ")
+
+          SimpleReader.readLine("Do you want to proceed with these release notes (y/n)? [y] ") match {
+            case Some("n" | "N") => state.log.warn("Aborting release."); state.fail
+            case _ => state // go on
+          }
+        }
+      }
+
+      case multipleFiles => {
+        state.log.error("You have several release notes files:")
+        multipleFiles.foreach { f => state.log.error(s" - ${f}") }
+        state.log.error("Please, leave only one of them, commit and run release process again.")
+        state.fail
+      }
+    }
+  }
 }
