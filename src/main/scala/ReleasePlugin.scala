@@ -39,10 +39,7 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
   def nextVersionParser(current: Version): Parser[Version] = {
     import BumperParser._
 
-    if (current.isSnapshot) {
-      failure("You cannot release a snapshot. Commit or stash the changes first.")
-
-    } else if (current.isCandidate) {
+    if (current.isCandidate) {
       (Space ~>
         (candidate(current) | fin(current))
       ) ?? current.base
@@ -62,24 +59,43 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     }
   }
 
+  /* Parses arguments for the release command, but also performs additional checks  */
+  val releaseCommandArgsParser: State => Parser[Either[String, Version]] = { state =>
+
+    import VersionSettings.autoImport._
+    import GitPlugin.autoImport._
+
+    // Parser.failure doesn't work, so we pass error message the command action
+    def fail(msg: String) = success(Left(msg))
+
+    val extracted = Project.extract(state)
+    val gitV = extracted.get(git).version()
+
+    if (extracted.get(gitVersion) != gitV) {
+      fail("gitVersion is outdated. Try to reload.")
+    } else gitV match {
+      case None => fail("gitVersion is unset. Check git tags and version settings.")
+      case Some(ver) =>
+        if (ver.isSnapshot) fail("You cannot release a snapshot. Commit or stash the changes first.")
+        else nextVersionParser(ver) map Right.apply
+    }
+  }
+
   val releaseCommand = Command(
     "rel",
     ("release", "<tab>"),
     "Takes release type as an argument and starts release process. Available arguments are shown on tab-completion."
-  ){ state =>
+  )(releaseCommandArgsParser){ (state, parsed) =>
 
-    val extracted = Project.extract(state)
+    parsed match {
+      case Left(msg) => state.log.error(msg); state.fail
+      case Right(ver) => {
 
-    extracted.get(VersionSettings.autoImport.gitVersion) match {
-      case None => failure("gitVersion setting doesn't have a value")
-      case Some(current) => nextVersionParser(current)
+        state.log.info(s"Release version: [${ver}]")
+        // TODO: run release process
+        state
+      }
     }
-  }{ (state, ver) =>
-
-    state.log.info(s"Release version: [${ver}]")
-    // TODO: run release process
-
-    state
   }
 
   /* ### Settings */
