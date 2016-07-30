@@ -66,18 +66,21 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     import GitPlugin.autoImport._
 
     // Parser.failure doesn't work, so we pass error message the command action
-    def fail(msg: String) = success(Left(msg))
+    def fail(msg: String) = any ~> success(Left(msg))
 
     val extracted = Project.extract(state)
     val gitV = extracted.get(git).version()
 
-    if (extracted.get(gitVersion) != gitV) {
-      fail("gitVersion is outdated. Try to reload.")
-    } else gitV match {
+    // FIXME: commented out for development, uncomment when finished
+    // if (extracted.get(gitVersion) != gitV) {
+    //   fail("gitVersion is outdated. Try to reload.")
+    // } else
+    gitV match {
       case None => fail("gitVersion is unset. Check git tags and version settings.")
       case Some(ver) =>
-        if (ver.isSnapshot) fail("You cannot release a snapshot. Commit or stash the changes first.")
-        else nextVersionParser(ver) map Right.apply
+        // if (ver.isSnapshot) fail("You cannot release a snapshot. Commit or stash the changes first.")
+        // else
+        nextVersionParser(ver) map Right.apply
     }
   }
 
@@ -93,7 +96,6 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
 
         state.log.info(s"Release version: [${releaseVersion}]")
         Release.preReleaseChecks(releaseVersion)(state)
-        // state
       }
     }
   }
@@ -116,7 +118,7 @@ case object Release {
 
     // TODO: these could be configurable
     val notesDir = extracted.get(baseDirectory) / "notes"
-    val acceptableNames      = Set(releaseVersion.toString, "next", "unreleased", "changelog")
+    val acceptableNames      = Set(releaseVersion.toString, "changelog")
     val acceptableExtensions = Set("markdown", "md")
 
     val notesFinder: PathFinder = (notesDir * "*") filter { file =>
@@ -124,10 +126,13 @@ case object Release {
       (acceptableExtensions contains file.ext)
     }
 
+    val finalMessage = "Write release notes, commit and run release process again."
+
     notesFinder.get match {
       case Nil => {
-        state.log.error(s"No release notes found. Acceptable names: ${acceptableNames.mkString(", ")}. Acceptable extensions: ${acceptableExtensions.mkString(", ")}.")
-        state.log.error(s"Write release notes, commit and run release process again.")
+        state.log.error("No release notes found.")
+        state.log.error(s"Searched for ${acceptableNames.mkString("'", ".md', '", "'")}.")
+        state.log.error(finalMessage)
         state.fail
       }
 
@@ -136,22 +141,25 @@ case object Release {
 
         if (notes.isEmpty) {
           state.log.error(s"Notes file [${notesFile}] is empty.")
-          state.log.error(s"Write release notes, commit and run release process again.")
+          state.log.error(finalMessage)
           state.fail
 
         } else {
-          state.log.info(s"Taking release notes from the [${notesFile}] file:\n \n${notes}\n ")
+          state.log.info(s"Taking release notes from the [${notesFile}] file:\n ") //\n${notes}\n ")
+          println(notes)
 
-          SimpleReader.readLine("Do you want to proceed with these release notes (y/n)? [y] ") match {
+          SimpleReader.readLine("\n Do you want to proceed with these release notes (y/n)? [y] ") match {
             case Some("n" | "N") => state.log.warn("Aborting release."); state.fail
             case _ => state // go on
           }
+
+          // TODO: if it's changelog.md do git mv
         }
       }
 
       case multipleFiles => {
         state.log.error("You have several release notes files:")
-        multipleFiles.foreach { f => state.log.error(s" - ${f}") }
+        multipleFiles.foreach { f => state.log.error(s" - ${notesDir.name}/${f.name}") }
         state.log.error("Please, leave only one of them, commit and run release process again.")
         state.fail
       }
