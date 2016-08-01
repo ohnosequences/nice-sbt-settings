@@ -93,9 +93,21 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     parsed match {
       case Left(msg) => state.log.error(msg); state.fail
       case Right(releaseVersion) => {
+        val extracted = Project.extract(state)
 
         state.log.info(s"Release version: [${releaseVersion}]")
-        Release.preReleaseChecks(releaseVersion)(state)
+
+        val state2 = extracted.append( Seq(
+          Release.Keys.relVersion := releaseVersion,
+          Release.Keys.checkReleaseNotes := Release.checkReleaseNotes.value,
+          Release.Keys.checkSnapshotDependencies := Release.checkSnapshotDependencies.value,
+          Release.Keys.preReleaseChecks := Release.preReleaseChecks.value
+        ), state)
+
+        Project.runTask(Release.Keys.preReleaseChecks, state2) match {
+          case None => state2.log.warn("Key wasn't defined"); state2.reload
+          case Some((newState, _)) => newState.reload
+        }
       }
     }
   }
@@ -109,16 +121,45 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
 
 case object Release {
 
-  def preReleaseChecks(releaseVersion: Version): State => State = { state =>
-    checkReleaseNotes(releaseVersion)(state)
+  case object Keys {
+    lazy val relVersion = settingKey[Version]("Release version")
+
+    lazy val checkReleaseNotes = taskKey[File]("Checks precesnse of release notes and returns its file")
+    lazy val checkSnapshotDependencies = taskKey[Seq[ModuleID]]("")
+
+    lazy val preReleaseChecks = taskKey[Unit]("")
   }
 
-  def checkReleaseNotes(releaseVersion: Version): State => State = { state =>
-    val extracted = Project.extract(state)
+  def preReleaseChecks = Def.sequential(
+    Keys.checkSnapshotDependencies,
+    Keys.checkReleaseNotes
+  )
+
+
+  def checkSnapshotDependencies = Def.task {
+    val log = streams.value.log
+
+    val snapshots: Seq[ModuleID] = libraryDependencies.value.filter { mod =>
+      mod.isChanging ||
+      mod.revision.endsWith("-SNAPSHOT")
+    }
+
+    if (snapshots.nonEmpty) {
+      log.error(s"You cannot start release process with snapshot dependencies:")
+      snapshots.foreach { mod => log.error(s" - ${mod}") }
+      sys.error("Update dependencies, commit and run release process again.")
+    }
+    snapshots
+  }
+
+
+  // def checkReleaseNotes(releaseVersion: Version) = Def.task {
+  def checkReleaseNotes = Def.task {
+    val log = streams.value.log
 
     // TODO: these could be configurable
-    val notesDir = extracted.get(baseDirectory) / "notes"
-    val acceptableNames      = Set(releaseVersion.toString, "changelog")
+    val notesDir = baseDirectory.value / "notes"
+    val acceptableNames      = Set(Keys.relVersion.value.toString, "changelog")
     val acceptableExtensions = Set("markdown", "md")
 
     val notesFinder: PathFinder = (notesDir * "*") filter { file =>
@@ -130,38 +171,37 @@ case object Release {
 
     notesFinder.get match {
       case Nil => {
-        state.log.error("No release notes found.")
-        state.log.error(s"Searched for ${acceptableNames.mkString("'", ".md', '", "'")}.")
-        state.log.error(finalMessage)
-        state.fail
+        log.error("No release notes found.")
+        log.error(s"Searched for ${acceptableNames.mkString("'", ".md', '", ".md'")}.")
+        sys.error(finalMessage)
       }
 
       case Seq(notesFile) => {
         val notes = IO.read(notesFile)
 
         if (notes.isEmpty) {
-          state.log.error(s"Notes file [${notesFile}] is empty.")
-          state.log.error(finalMessage)
-          state.fail
+          log.error(s"Notes file [${notesFile}] is empty.")
+          sys.error(finalMessage)
 
         } else {
-          state.log.info(s"Taking release notes from the [${notesFile}] file:\n ") //\n${notes}\n ")
+          log.info(s"Taking release notes from the [${notesFile}] file:\n ") //\n${notes}\n ")
           println(notes)
 
           SimpleReader.readLine("\n Do you want to proceed with these release notes (y/n)? [y] ") match {
-            case Some("n" | "N") => state.log.warn("Aborting release."); state.fail
-            case _ => state // go on
+            case Some("n" | "N") => log.warn("Aborting release."); sys.error(finalMessage)
+            case _ => notesFile // go on
           }
 
           // TODO: if it's changelog.md do git mv
+          // TODO: check in the end that the releaseVersion.md file is tracked by git
+          // TODO: (optionally) symlink notes/latest.md (useful for bintray)
         }
       }
 
       case multipleFiles => {
-        state.log.error("You have several release notes files:")
-        multipleFiles.foreach { f => state.log.error(s" - ${notesDir.name}/${f.name}") }
-        state.log.error("Please, leave only one of them, commit and run release process again.")
-        state.fail
+        log.error("You have several release notes files:")
+        multipleFiles.foreach { f => log.error(s" - ${notesDir.name}/${f.name}") }
+        sys.error("Please, leave only one of them, commit and run release process again.")
       }
     }
   }
