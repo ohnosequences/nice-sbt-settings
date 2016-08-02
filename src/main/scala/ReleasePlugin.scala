@@ -149,6 +149,7 @@ case object Release {
   }
 
   def preReleaseChecks(releaseVersion: Version) = Def.sequential(
+    checkDependecyUpdates,
     checkSnapshotDependencies,
     checkReleaseNotes(releaseVersion),
     test in Test
@@ -171,6 +172,13 @@ case object Release {
     snapshots
   }
 
+  def confirmContinue(msg: String) = {
+
+    SimpleReader.readLine(msg + " [n] ") match {
+      case Some("y" | "Y") => {} // go on
+      case _ => sys.error("User chose to abort release process")
+    }
+  }
 
   def checkReleaseNotes(releaseVersion: Version) = Def.task {
     val log = streams.value.log
@@ -206,10 +214,9 @@ case object Release {
           log.info(s"Taking release notes from the [${notesFile}] file:\n ") //\n${notes}\n ")
           println(notes)
 
-          SimpleReader.readLine("\n Do you want to proceed with these release notes (y/n)? [y] ") match {
-            case Some("n" | "N") => log.warn("Aborting release."); sys.error(finalMessage)
-            case _ => notesFile // go on
-          }
+          confirmContinue("Do you want to proceed with these release notes (y/n)?")
+
+          notesFile
 
           // TODO: if it's changelog.md do git mv
           // TODO: check in the end that the releaseVersion.md file is tracked by git
@@ -225,6 +232,7 @@ case object Release {
     }
   }
 
+  /* This generates scalatest tags for marking tests (for now just release-only tests) */
   def generateTestTags: Def.Initialize[Task[Seq[File]]] = Def.task {
     val file = (sourceManaged in Test).value / "tags.scala"
 
@@ -236,6 +244,23 @@ case object Release {
     )
 
     Seq(file)
+  }
+
+  /* Almost the same as the task `dependencyUpdates`, but it outputs result as a warning
+     and asks for a confirmation if needed */
+  def checkDependecyUpdates = Def.task {
+    import com.timushev.sbt.updates._
+    val log = streams.value.log
+
+    log.info("Checking project dependency updates...")
+
+    val updatesData = UpdatesKeys.dependencyUpdatesData.value
+
+    if (updatesData.nonEmpty) {
+      log.warn( Reporter.dependencyUpdatesReport(projectID.value, updatesData) )
+      confirmContinue("Are you sure you want to continue with outdated dependencies (y/n)?")
+    } else
+      log.info("All dependencies seem to be up to date.")
   }
 
 }
