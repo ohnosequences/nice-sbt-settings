@@ -38,18 +38,27 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     testOptions in ReleaseTest -= Tests.Argument("-l", Keys.releaseOnlyTestTag.value),
     testOptions in ReleaseTest += Tests.Argument("-n", Keys.releaseOnlyTestTag.value),
 
-    Keys.checkReleaseNotes := Def.inputTaskDyn {
-      val ver = releaseArgsParser.parsed
-      checkReleaseNotes(ver)
-    }.evaluated,
     Keys.checkSnapshotDependencies := checkSnapshotDependencies.value,
-    Keys.preReleaseChecks := Def.inputTaskDyn {
-      val ver = releaseArgsParser.parsed
-      preReleaseChecks(ver)
+
+    Keys.checkReleaseNotes := Def.inputTaskDyn {
+      releaseArgsParser.parsed.fold(
+        msg => sys.error(msg),
+        ver => checkReleaseNotes(ver)
+      )
     }.evaluated,
+
+    Keys.preReleaseChecks := Def.inputTaskDyn {
+      releaseArgsParser.parsed.fold(
+        msg => sys.error(msg),
+        ver => preReleaseChecks(ver)
+      )
+    }.evaluated,
+
     Keys.runRelease := Def.inputTaskDyn {
-      val ver = releaseArgsParser.parsed
-      runRelease(ver)
+      releaseArgsParser.parsed.fold(
+        msg => sys.error(msg),
+        ver => runRelease(ver)
+      )
     }.evaluated
   )
 
@@ -106,28 +115,21 @@ case object Release {
   }
 
   /* Parses arguments for the release command, but also performs additional checks  */
-  val releaseArgsParser: Def.Initialize[Parser[Version]] = Def.setting {
-
+  val releaseArgsParser: Def.Initialize[Parser[Either[String, Version]]] = Def.setting {
     import VersionSettings.autoImport._
     import GitPlugin.autoImport._
 
-    // Parser.failure doesn't work, so we pass error message the command action
-    // def fail(msg: String) = any ~> success(Left(msg))
+    // NOTE: Parser.failure doesn't work, so we pass error message further to log properly
+    def fail(msg: String) = token("check").map(Left.apply)
 
-    // val extracted = Project.extract(state)
-    // val gitV = extracted.get(git).version()
     val gitV = GitRunner.silent(baseDirectory.value).version()
 
-    // FIXME: commented out for development, uncomment when finished
-    // if (extracted.get(gitVersion) != gitV) {
-    //   fail("gitVersion is outdated. Try to reload.")
-    // } else
-    gitV match {
-      case None => failure("gitVersion is unset. Check git tags and version settings.")
-      case Some(ver) =>
-        // if (ver.isSnapshot) fail("You cannot release a snapshot. Commit or stash the changes first.")
-        // else
-        nextVersionParser(ver) //map Right.apply
+    if (gitVersion.value != gitV) {
+      fail("gitVersion is outdated. Try to reload.")
+    } else if (gitV.isSnapshot) {
+      fail("You cannot release a snapshot. Commit or stash the changes first.")
+    } else {
+      nextVersionParser(gitV).map(Right.apply)
     }
   }
 
@@ -135,8 +137,6 @@ case object Release {
 
   case object Keys {
 
-    // lazy val releaseOnlyTestTagPackage = settingKey[String]("The package for release-only tags")
-    // lazy val releaseOnlyTestTagName = settingKey[String]("Sets the name for the tag that is used to distinguish release-only tests")
     lazy val releaseOnlyTestTag = settingKey[String]("Full name of the release-only tests tag")
 
     lazy val relVersion = settingKey[Version]("Release version")

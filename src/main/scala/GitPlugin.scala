@@ -22,17 +22,45 @@ case class GitRunner(val wd: File, val logger: ProcessLogger) {
     "--untracked-files=no"
   ).map(_.nonEmpty).getOrElse(false)
 
+  def tagList(pattern: String): Set[String] = output("tag")(
+    "--list", v.globPattern
+  ).toOption.getOrElse("").split('\n').toSet
+
   def describe(args: String*): Try[String] = output("describe")(args: _*)
 
+  // Number of commits in the given range (or since the beginning)
+  def commitsNumber(range: String = "HEAD"): Option[Int] = output("rev-list")(
+    "--count", range
+  ).toOption.map(_.toInt)
+
+  // def lastVersionTag: Option[Version] = describe(
+  //   "--match=${v.globPattern}",
+  //   "--abbrev=0"
+  // ).toOption.flatMap(Version.parse)
+
+  // This is a fallback describe-like version for when there are no any tags yet
+  // NOTE: we could use just this together with lastVersionTag for all versions (for consistency)
+  private def initialVersion: Version = {
+
+    val n = commitsNumber().map(_.toString)
+    val h = output("log")("--format=g%h", "-1").toOption
+    val s = if (isDirty) Some("SNAPSHOT") else None
+
+    Version(0,0,0, Seq(n,h,s).flatten)
+  }
+
   // describe with version pattern tag and a snapshot suffix
-  def version(args: String*): Option[Version] = describe(
-    Seq(
+  def describeVersion: Option[Version] =
+    describe(
       // NOTE: this is a glob-pattern, not a regex
-      "--match=v[0-9]*.[0-9]*.[0-9]*",
-      "--dirty=-SNAPSHOT",
-      "--always"
-    ) ++ args : _*
-  ).toOption.flatMap(Version.parse)
+      "--match=${v.globPattern}",
+      "--dirty=-SNAPSHOT"
+    ).toOption.flatMap(Version.parse)
+
+
+  // This will be used for setting sbt version setting
+  def version: Version = describeVersion.getOrElse(initialVersion)
+
 
   def remoteUrl(remote: String = "origin"): Option[URL] = output("remote")(
     "get-url",
@@ -68,11 +96,11 @@ case object GitPlugin extends sbt.AutoPlugin {
 
   case object autoImport {
 
-    lazy val git = taskKey[GitRunner]("Git runner instance with streams logging")
+    lazy val gitTask = taskKey[GitRunner]("Git runner instance with streams logging")
   }
   import autoImport._
 
   override def projectSettings: Seq[Setting[_]] = Seq(
-    git := GitRunner(baseDirectory.value, streams.value.log)
+    gitTask := GitRunner(baseDirectory.value, streams.value.log)
   )
 }

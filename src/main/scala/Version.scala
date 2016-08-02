@@ -54,6 +54,8 @@ case object v {
   // just an alias for writing v(2,1,13)("foo", "bar") or v(0,1,0).snapshot
   def apply(x: Int, y: Int, z: Int): Version = Version(x,y,z)
 
+  val globPattern = "v[0-9]*.[0-9]*.[0-9]*"
+
   case object regex {
     val version = """v?([0-9]+)\.([0-9]+)\.([0-9]+)(-.*)?""".r
 
