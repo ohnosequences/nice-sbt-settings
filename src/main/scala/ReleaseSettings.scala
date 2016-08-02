@@ -26,7 +26,7 @@ import com.timushev.sbt.updates.UpdatesKeys
 
 case object ReleaseSettings extends sbt.AutoPlugin {
 
-  override def trigger = allRequirements
+  override def trigger = noTrigger
   override def requires =
     ohnosequences.sbt.nice.DocumentationSettings &&
     ohnosequences.sbt.nice.ResolverSettings &&
@@ -39,25 +39,12 @@ case object ReleaseSettings extends sbt.AutoPlugin {
   case object autoImport {
 
     lazy val releaseStepByStep = settingKey[Boolean]("Defines whether release process will wait for confirmation after each step")
-    lazy val releaseOnlyTestTag = settingKey[String]("Sets the name for the tag that is used to distinguish release-only tests")
-    lazy val releaseOnlyTestTagPackage = settingKey[String]("The package for release-only tags")
-    lazy val testAll = taskKey[Unit]("Runs testOnly without args (runs all tests)")
   }
   import autoImport._
   import ReleaseSteps._
 
   /* ### Settings */
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6",
-
-    releaseOnlyTestTagPackage := s"${organization.value}.test.tags",
-    releaseOnlyTestTag := "ReleaseOnlyTest",
-
-    sourceGenerators in Test += generateTestTags.taskValue,
-    /* Release only test tag is excluded by default */
-    testOptions in (Test, test) += Tests.Argument("-l", s"${releaseOnlyTestTagPackage}.${releaseOnlyTestTag.value}"),
-    testAll := (testOnly in Test).toTask("").value,
-
     /* We want to increment `y` in `x.y.z` */
     releaseVersionBump := sbtrelease.Version.Bump.Minor,
 
@@ -122,7 +109,7 @@ case object ReleaseBlocks {
   */
   val packAndTest = ReleaseBlock("Packaging and running tests", Seq(
     releaseTask(Keys.`package`),
-    releaseTask(testAll)
+    releaseTask(Keys.test in Test)
   ), transit = true)
 
 
@@ -382,20 +369,6 @@ case object ReleaseSteps {
       announce = ReleaseStep(shout("\n"+ heading +"\n"+ heading.replaceAll(".", "-") +"\n  ", block.transit));
       step <- announce +: block.steps
     ) yield step
-  }
-
-  val generateTestTags = Def.task {
-    val file = (sourceManaged in Test).value / "tags.scala"
-
-    IO.write(file, s"""
-      |package ${releaseOnlyTestTagPackage}
-      |
-      |case object ${releaseOnlyTestTag.value}
-      |  extends org.scalatest.Tag(${releaseOnlyTestTagPackage}.${releaseOnlyTestTag.value})
-      |""".stripMargin
-    )
-
-    Seq(file)
   }
 
 }
