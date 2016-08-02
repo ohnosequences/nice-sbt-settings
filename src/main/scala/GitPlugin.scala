@@ -30,7 +30,7 @@ case class GitRunner(val wd: File, val logger: ProcessLogger) {
 
   // Number of commits in the given range (or since the beginning)
   def commitsNumber(range: String = "HEAD"): Option[Int] = output("rev-list")(
-    "--count", range
+    "--count", range, "--"
   ).toOption.map(_.toInt)
 
   // def lastVersionTag: Option[Version] = describe(
