@@ -9,7 +9,14 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
 
   override def trigger = allRequirements
   // TODO: almost all other plugins:
-  override def requires = empty
+  override def requires =
+    // ohnosequences.sbt.nice.DocumentationSettings &&
+    com.timushev.sbt.updates.UpdatesPlugin &&
+    ohnosequences.sbt.nice.ScalaSettings &&
+    ohnosequences.sbt.nice.TagListSettings &&
+    ohnosequences.sbt.nice.WartRemoverSettings &&
+    ohnosequences.sbt.SbtGithubReleasePlugin
+
 
 
   /* ### Settings */
@@ -149,6 +156,7 @@ case object Release {
   }
 
   def preReleaseChecks(releaseVersion: Version) = Def.sequential(
+    checkCodeNotes,
     checkDependecyUpdates,
     checkSnapshotDependencies,
     checkReleaseNotes(releaseVersion),
@@ -261,6 +269,18 @@ case object Release {
       confirmContinue("Are you sure you want to continue with outdated dependencies (y/n)?")
     } else
       log.info("All dependencies seem to be up to date.")
+  }
+
+
+  def checkCodeNotes = Def.task {
+    import com.markatta.sbttaglist.TagListPlugin._
+
+    // NOTE: this task outputs the list
+    val list = TagListKeys.tagList.value
+
+    if (list.flatMap{ _._2 }.nonEmpty) {
+      confirmContinue("Are you sure you want to continue without fixing these notes (y/n)?")
+    }
   }
 
 }
