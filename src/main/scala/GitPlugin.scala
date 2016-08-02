@@ -1,33 +1,65 @@
 package ohnosequences.sbt.nice
 
-import sbt._, Keys._
+import sbt.{ ProcessLogger => _, ProcessBuilder => _, _ }, Keys._
 import scala.sys.process._
 import scala.util._
 
+case class GitRunner(val wd: File, val logger: ProcessLogger) {
 
-case class GitRunner(wd: File) {
+  private def proc(subcmd: String)(args: Seq[String]): ProcessBuilder =
+    sys.process.Process("git" +: subcmd +: args, wd)
 
-  private def apply(cmd: String)(args: String*): Try[String] = Try {
-    sys.process.Process("git" +: cmd +: args, wd).!!.trim
+  def exitCode(subcmd: String)(args: String*): Int =
+    proc(subcmd)(args).!(logger)
+
+  // NOTE: !! throws an exception on failure, so we wrap it with Try
+  def output(subcmd: String)(args: String*): Try[String] = Try {
+    proc(subcmd)(args).!!(logger).trim
   }
 
-  def isDirty: Boolean = apply("status")(
+  def isDirty: Boolean = output("status")(
     "--porcelain",
     "--untracked-files=no"
   ).map(_.nonEmpty).getOrElse(false)
 
-  def describe(args: String*): Try[String] = apply("describe")(args: _*)
+  def describe(args: String*): Try[String] = output("describe")(args: _*)
 
   // describe with version pattern tag and a snapshot suffix
   def version(args: String*): Option[Version] = describe(
     Seq(
       // NOTE: this is a glob-pattern, not a regex
       "--match=v[0-9]*.[0-9]*.[0-9]*",
-      "--dirty=-SNAPSHOT"
+      "--dirty=-SNAPSHOT",
+      "--always"
     ) ++ args : _*
   ).toOption.flatMap(Version.parse)
+
+  def remoteUrl(remote: String = "origin"): Option[URL] = output("remote")(
+    "get-url",
+    remote
+  ).toOption.map(new URL(_))
+
+  def remoteUrlIsReadable(remote: String = "origin"): Boolean = {
+    exitCode("ls-remote")(remote) == 0
+  }
 }
 
+case object GitRunner {
+
+  val defaultLogger = ProcessLogger(
+    { msg => println("out: " + msg) },
+    { msg => println("err: " + msg) }
+  )
+
+  def apply(wd: File): GitRunner =
+    GitRunner(wd, defaultLogger)
+
+  def apply(wd: File, log: sbt.Logger): GitRunner =
+    GitRunner(wd, ProcessLogger(log.info(_), log.error(_)) )
+
+  def silent(wd: File): GitRunner =
+    GitRunner(wd, ProcessLogger({ _ => () }, { _ => () }))
+}
 
 case object GitPlugin extends sbt.AutoPlugin {
 
@@ -36,13 +68,11 @@ case object GitPlugin extends sbt.AutoPlugin {
 
   case object autoImport {
 
-    lazy val git = settingKey[GitRunner]("Defines whether release process will wait for confirmation after each step")
+    lazy val git = taskKey[GitRunner]("Git runner instance with streams logging")
   }
   import autoImport._
 
   override def projectSettings: Seq[Setting[_]] = Seq(
-    git := {
-      new GitRunner(baseDirectory.value)
-    }
+    git := GitRunner(baseDirectory.value, streams.value.log)
   )
 }

@@ -116,7 +116,7 @@ case object Release {
 
     // val extracted = Project.extract(state)
     // val gitV = extracted.get(git).version()
-    val gitV = git.value.version()
+    val gitV = GitRunner.silent(baseDirectory.value).version()
 
     // FIXME: commented out for development, uncomment when finished
     // if (extracted.get(gitVersion) != gitV) {
@@ -286,4 +286,13 @@ case object Release {
     }
   }
 
+
+  def checkGit = Def.task {
+
+    // git remote get-url
+    // git ls-remote -> $! == 0
+    // git remote update
+    // git tag -l "releaseVersion.value" -> empty
+    // git rev-list HEAD..origin/${current_branch} --count -> 0
+  }
 }

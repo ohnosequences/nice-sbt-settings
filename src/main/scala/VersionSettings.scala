@@ -23,7 +23,7 @@ case object VersionSettings extends sbt.AutoPlugin {
 
   /* ### Settings */
   override def projectSettings: Seq[Setting[_]] = Seq(
-    gitVersion := git.value.version(),
+    gitVersion := GitRunner.silent(baseDirectory.value).version(),
     fallbackVersion := v(0,0,0).snapshot, // TODO: should be something more smart
     version := gitVersion.value.getOrElse(fallbackVersion.value).toString
   )
