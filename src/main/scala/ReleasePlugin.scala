@@ -11,6 +11,29 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
   // TODO: almost all other plugins:
   override def requires = empty
 
+
+  /* ### Settings */
+  import Release._
+  override lazy val projectSettings: Seq[Setting[_]] = Seq(
+    Keys.checkReleaseNotes := Def.inputTaskDyn {
+      val ver = releaseArgsParser.parsed
+      checkReleaseNotes(ver)
+    }.evaluated,
+    Keys.checkSnapshotDependencies := checkSnapshotDependencies.value,
+    Keys.preReleaseChecks := Def.inputTaskDyn {
+      val ver = releaseArgsParser.parsed
+      preReleaseChecks(ver)
+    }.evaluated,
+    Keys.runRelease := Def.inputTaskDyn {
+      val ver = releaseArgsParser.parsed
+      runRelease(ver)
+    }.evaluated
+  )
+
+}
+
+case object Release {
+
   /* This class helps to create Version parser based on the string and a version transformation.
      Given a version `apply` method returns a parser which accepts `str` literal, but shows it in
      tab-completion together with the next (bumped) version.
@@ -60,83 +83,57 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
   }
 
   /* Parses arguments for the release command, but also performs additional checks  */
-  val releaseCommandArgsParser: State => Parser[Either[String, Version]] = { state =>
+  val releaseArgsParser: Def.Initialize[Parser[Version]] = Def.setting {
 
     import VersionSettings.autoImport._
     import GitPlugin.autoImport._
 
     // Parser.failure doesn't work, so we pass error message the command action
-    def fail(msg: String) = any ~> success(Left(msg))
+    // def fail(msg: String) = any ~> success(Left(msg))
 
-    val extracted = Project.extract(state)
-    val gitV = extracted.get(git).version()
+    // val extracted = Project.extract(state)
+    // val gitV = extracted.get(git).version()
+    val gitV = git.value.version()
 
     // FIXME: commented out for development, uncomment when finished
     // if (extracted.get(gitVersion) != gitV) {
     //   fail("gitVersion is outdated. Try to reload.")
     // } else
     gitV match {
-      case None => fail("gitVersion is unset. Check git tags and version settings.")
+      case None => failure("gitVersion is unset. Check git tags and version settings.")
       case Some(ver) =>
         // if (ver.isSnapshot) fail("You cannot release a snapshot. Commit or stash the changes first.")
         // else
-        nextVersionParser(ver) map Right.apply
+        nextVersionParser(ver) //map Right.apply
     }
   }
-
-  val releaseCommand = Command(
-    "rel",
-    ("release", "<tab>"),
-    "Takes release type as an argument and starts release process. Available arguments are shown on tab-completion."
-  )(releaseCommandArgsParser){ (state, parsed) =>
-
-    parsed match {
-      case Left(msg) => state.log.error(msg); state.fail
-      case Right(releaseVersion) => {
-        val extracted = Project.extract(state)
-
-        state.log.info(s"Release version: [${releaseVersion}]")
-
-        val state2 = extracted.append( Seq(
-          Release.Keys.relVersion := releaseVersion,
-          Release.Keys.checkReleaseNotes := Release.checkReleaseNotes.value,
-          Release.Keys.checkSnapshotDependencies := Release.checkSnapshotDependencies.value,
-          Release.Keys.preReleaseChecks := Release.preReleaseChecks.value
-        ), state)
-
-        Project.runTask(Release.Keys.preReleaseChecks, state2) match {
-          case None => state2.log.warn("Key wasn't defined"); state2.reload
-          case Some((newState, _)) => newState.reload
-        }
-      }
-    }
-  }
-
-  /* ### Settings */
-  override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    commands += releaseCommand
-  )
-
-}
-
-case object Release {
 
   case object Keys {
     lazy val relVersion = settingKey[Version]("Release version")
 
-    lazy val checkReleaseNotes = taskKey[File]("Checks precesnse of release notes and returns its file")
-    lazy val checkSnapshotDependencies = taskKey[Seq[ModuleID]]("")
+    lazy val checkReleaseNotes = inputKey[File]("Checks precense of release notes and returns its file")
+    lazy val checkSnapshotDependencies = taskKey[Seq[ModuleID]]("Checks that project doesn't have snapshot dependencies (returns their list)")
 
-    lazy val preReleaseChecks = taskKey[Unit]("")
+    lazy val preReleaseChecks = inputKey[Unit]("Runs all pre-release checks sequentially")
+
+    lazy val runRelease = inputKey[Unit]("Takes release type as an argument and starts release process. Available arguments are shown on tab-completion.")
   }
 
-  def preReleaseChecks = Def.sequential(
-    Keys.checkSnapshotDependencies,
-    Keys.checkReleaseNotes
+  def runRelease(releaseVersion: Version) = Def.task {
+    val log = streams.value.log
+
+    log.info(s"Release version: [${releaseVersion}]")
+
+    preReleaseChecks(releaseVersion).value
+  }
+
+  def preReleaseChecks(releaseVersion: Version) = Def.sequential(
+    checkSnapshotDependencies,
+    checkReleaseNotes(releaseVersion)
   )
 
 
-  def checkSnapshotDependencies = Def.task {
+  lazy val checkSnapshotDependencies = Def.task {
     val log = streams.value.log
 
     val snapshots: Seq[ModuleID] = libraryDependencies.value.filter { mod =>
@@ -153,13 +150,13 @@ case object Release {
   }
 
 
-  // def checkReleaseNotes(releaseVersion: Version) = Def.task {
-  def checkReleaseNotes = Def.task {
+  def checkReleaseNotes(releaseVersion: Version) = Def.task {
     val log = streams.value.log
 
     // TODO: these could be configurable
     val notesDir = baseDirectory.value / "notes"
-    val acceptableNames      = Set(Keys.relVersion.value.toString, "changelog")
+    // val acceptableNames      = Set(Keys.relVersion.value.toString, "changelog")
+    val acceptableNames      = Set(releaseVersion.toString, "changelog")
     val acceptableExtensions = Set("markdown", "md")
 
     val notesFinder: PathFinder = (notesDir * "*") filter { file =>
