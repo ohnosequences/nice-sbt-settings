@@ -14,7 +14,21 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
 
   /* ### Settings */
   import Release._
-  override lazy val projectSettings: Seq[Setting[_]] = Seq(
+  override def projectConfigurations: Seq[Configuration] = Seq(ReleaseTest)
+
+  override def projectSettings: Seq[Setting[_]] =
+    inConfig(ReleaseTest)(Defaults.testTasks) ++ Seq(
+
+    libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6",
+
+    Keys.releaseOnlyTestTag := "ReleaseOnlyTestTag",
+
+    sourceGenerators in Test += generateTestTags.taskValue,
+
+    testOptions in Test        += Tests.Argument("-l", Keys.releaseOnlyTestTag.value),
+    testOptions in ReleaseTest -= Tests.Argument("-l", Keys.releaseOnlyTestTag.value),
+    testOptions in ReleaseTest += Tests.Argument("-n", Keys.releaseOnlyTestTag.value),
+
     Keys.checkReleaseNotes := Def.inputTaskDyn {
       val ver = releaseArgsParser.parsed
       checkReleaseNotes(ver)
@@ -108,7 +122,14 @@ case object Release {
     }
   }
 
+  lazy val ReleaseTest = config("releaseTest").extend(Test)
+
   case object Keys {
+
+    // lazy val releaseOnlyTestTagPackage = settingKey[String]("The package for release-only tags")
+    // lazy val releaseOnlyTestTagName = settingKey[String]("Sets the name for the tag that is used to distinguish release-only tests")
+    lazy val releaseOnlyTestTag = settingKey[String]("Full name of the release-only tests tag")
+
     lazy val relVersion = settingKey[Version]("Release version")
 
     lazy val checkReleaseNotes = inputKey[File]("Checks precense of release notes and returns its file")
@@ -129,7 +150,8 @@ case object Release {
 
   def preReleaseChecks(releaseVersion: Version) = Def.sequential(
     checkSnapshotDependencies,
-    checkReleaseNotes(releaseVersion)
+    checkReleaseNotes(releaseVersion),
+    test in Test
   )
 
 
@@ -202,4 +224,18 @@ case object Release {
       }
     }
   }
+
+  def generateTestTags: Def.Initialize[Task[Seq[File]]] = Def.task {
+    val file = (sourceManaged in Test).value / "tags.scala"
+
+    val name = Keys.releaseOnlyTestTag.value
+
+    IO.write(file, s"""
+      |case object ${name} extends org.scalatest.Tag(${name})
+      |""".stripMargin
+    )
+
+    Seq(file)
+  }
+
 }
