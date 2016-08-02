@@ -5,6 +5,8 @@ package ohnosequences.sbt.nice
 
 import sbt._, Keys._, complete._, DefaultParsers._
 
+import ohnosequences.sbt.SbtGithubReleasePlugin.autoImport._
+
 case object NewReleasePlugin extends sbt.AutoPlugin {
 
   override def trigger = allRequirements
@@ -159,6 +161,7 @@ case object Release {
     checkCodeNotes,
     checkDependecyUpdates,
     checkSnapshotDependencies,
+    checkGithubCredentials,
     checkReleaseNotes(releaseVersion),
     test in Test
   )
@@ -247,7 +250,7 @@ case object Release {
     val name = Keys.releaseOnlyTestTag.value
 
     IO.write(file, s"""
-      |case object ${name} extends org.scalatest.Tag(${name})
+      |case object ${name} extends org.scalatest.Tag("${name}")
       |""".stripMargin
     )
 
