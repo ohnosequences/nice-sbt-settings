@@ -17,37 +17,30 @@ case class GitRunner(val wd: File, val logger: ProcessLogger) {
     proc(subcmd)(args).!!(logger).trim
   }
 
-  def isDirty: Boolean = output("status")(
-    "--porcelain",
-    "--untracked-files=no"
-  ).map(_.nonEmpty).getOrElse(false)
 
-  def tagList(pattern: String): Set[String] = output("tag")(
-    "--list", v.globPattern
-  ).toOption.getOrElse("").split('\n').toSet
+  def isDirty: Boolean =
+    output("status")(
+      "--porcelain",
+      "--untracked-files=no"
+    ).map(_.nonEmpty).getOrElse(false)
 
-  def describe(args: String*): Try[String] = output("describe")(args: _*)
+  def tagList(pattern: String): Set[String] =
+    output("tag")(
+      "--list", v.globPattern
+    ).toOption.getOrElse("").split('\n').toSet
 
   // Number of commits in the given range (or since the beginning)
-  def commitsNumber(range: String = "HEAD"): Option[Int] = output("rev-list")(
-    "--count", range, "--"
-  ).toOption.map(_.toInt)
+  def commitsNumber(range: String = "HEAD"): Option[Int] =
+    output("rev-list")(
+      "--count", range, "--"
+    ).toOption.map(_.toInt)
+
+  def describe(args: String*): Try[String] = output("describe")(args: _*)
 
   // def lastVersionTag: Option[Version] = describe(
   //   "--match=${v.globPattern}",
   //   "--abbrev=0"
   // ).toOption.flatMap(Version.parse)
-
-  // This is a fallback describe-like version for when there are no any tags yet
-  // NOTE: we could use just this together with lastVersionTag for all versions (for consistency)
-  private def initialVersion: Version = {
-
-    val n = commitsNumber().map(_.toString)
-    val h = output("log")("--format=g%h", "-1").toOption
-    val s = if (isDirty) Some("SNAPSHOT") else None
-
-    Version(0,0,0, Seq(n,h,s).flatten)
-  }
 
   // describe with version pattern tag and a snapshot suffix
   def describeVersion: Option[Version] =
@@ -57,19 +50,29 @@ case class GitRunner(val wd: File, val logger: ProcessLogger) {
       "--dirty=-SNAPSHOT"
     ).toOption.flatMap(Version.parse)
 
+  // This is a fallback version of git describe for when there are no any tags yet
+  // NOTE: we could use just this together with lastVersionTag for all versions (for consistency)
+  private def withDescribeSuffix(ver: Version): Version = {
+
+    val n = commitsNumber().map(_.toString)
+    val h = output("log")("--format=g%h", "-1").toOption
+    val s = if (isDirty) Some("SNAPSHOT") else None
+
+    ver( Seq(n,h,s).flatten: _* )
+  }
 
   // This will be used for setting sbt version setting
-  def version: Version = describeVersion.getOrElse(initialVersion)
+  def version: Version = describeVersion getOrElse withDescribeSuffix(v(0,0,0))
 
 
-  def remoteUrl(remote: String = "origin"): Option[URL] = output("remote")(
-    "get-url",
-    remote
-  ).toOption.map(new URL(_))
+  def remoteUrl(remote: String = "origin"): Option[URL] =
+    output("remote")(
+      "get-url",
+      remote
+    ).toOption.map(new URL(_))
 
-  def remoteUrlIsReadable(remote: String = "origin"): Boolean = {
+  def remoteUrlIsReadable(remote: String = "origin"): Boolean =
     exitCode("ls-remote")(remote) == 0
-  }
 }
 
 case object GitRunner {

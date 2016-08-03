@@ -17,6 +17,9 @@ case class Version(
 
   def base: Version = v(major, minor, bugfix)
 
+  // def apply(moreSuffixes: Seq[String]): Version =
+  //   Version(major, minor, bugfix, suffixes ++ moreSuffixes)
+
   def apply(moreSuffixes: String*): Version =
     Version(major, minor, bugfix, suffixes ++ moreSuffixes)
 
