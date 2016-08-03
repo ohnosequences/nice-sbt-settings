@@ -122,14 +122,16 @@ case object Release {
     // NOTE: Parser.failure doesn't work, so we pass error message further to log properly
     def fail(msg: String) = Space ~> token("check") map { _ => Left(msg) }
 
-    val gitV = GitRunner.silent(baseDirectory.value).version()
+    val loadedV: Version = gitVersion.value
+    val actualV: Version = GitRunner.silent(baseDirectory.value).version
 
-    if (gitVersion.value != gitV) {
-      fail("gitVersion is outdated. Try to reload.")
-    } else if (gitV.isSnapshot) {
-      fail("You cannot release a snapshot. Commit or stash the changes first.")
+    // NOTE: at the moment this parser is also a setting, so it will be loaded once and this case won't appear
+    if (loadedV != actualV) {
+      fail(s"gitVersion is outdated (${loadedV} vs. ${actualV}). Try to reload.")
+    } else if (actualV.isSnapshot) {
+      fail(s"You cannot release a snapshot (${loadedV}). Commit or stash the changes first.")
     } else {
-      nextVersionParser(gitV).map(Right.apply)
+      nextVersionParser(actualV).map(Right.apply)
     }
   }
 
