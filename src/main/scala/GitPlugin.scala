@@ -33,7 +33,7 @@ case class GitRunner(
 
   def tagList(pattern: String): Set[String] =
     output("tag")(
-      "--list", v.globPattern
+      "--list", pattern
     ).toOption.getOrElse("").split('\n').toSet
 
   // Number of commits in the given range (or since the beginning)
@@ -80,12 +80,17 @@ case class GitRunner(
     ver
   }
 
+  // Outputs short ref name
+  private def abbrevRef(ref: String): Try[String] = output("rev-parse")("--abbrev-ref", ref)
 
-  def remoteUrl(remote: String = "origin"): Option[URL] =
-    output("remote")(
-      "get-url",
-      remote
-    ).toOption.map(new URL(_))
+  def currentBranch:   Try[String] = abbrevRef("HEAD")
+  def currentUpstream: Try[String] = abbrevRef("HEAD@{upstream}")
+
+  // def remoteUrl(remote: String = "origin"): Option[URL] =
+  //   output("remote")(
+  //     "get-url",
+  //     remote
+  //   ).toOption.map(new URL(_))
 
   def remoteUrlIsReadable(remote: String = "origin"): Boolean =
     exitCode("ls-remote")(remote) == 0

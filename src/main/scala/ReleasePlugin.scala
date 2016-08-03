@@ -5,6 +5,7 @@ package ohnosequences.sbt.nice
 
 import sbt._, Keys._, complete._, DefaultParsers._
 
+import ohnosequences.sbt.nice.GitPlugin.autoImport._
 import ohnosequences.sbt.SbtGithubReleasePlugin.autoImport._
 
 case object NewReleasePlugin extends sbt.AutoPlugin {
@@ -17,6 +18,7 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     ohnosequences.sbt.nice.ScalaSettings &&
     ohnosequences.sbt.nice.TagListSettings &&
     ohnosequences.sbt.nice.WartRemoverSettings &&
+    ohnosequences.sbt.nice.GitPlugin &&
     ohnosequences.sbt.SbtGithubReleasePlugin
 
 
@@ -39,6 +41,13 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     testOptions in ReleaseTest += Tests.Argument("-n", Keys.releaseOnlyTestTag.value),
 
     Keys.checkSnapshotDependencies := checkSnapshotDependencies.value,
+
+    Keys.checkGit := Def.inputTaskDyn {
+      releaseArgsParser.parsed.fold(
+        msg => sys.error(msg),
+        ver => checkGit(ver)
+      )
+    }.evaluated,
 
     Keys.checkReleaseNotes := Def.inputTaskDyn {
       releaseArgsParser.parsed.fold(
@@ -141,8 +150,7 @@ case object Release {
 
     lazy val releaseOnlyTestTag = settingKey[String]("Full name of the release-only tests tag")
 
-    lazy val relVersion = settingKey[Version]("Release version")
-
+    lazy val checkGit = inputKey[Unit]("Checks git repository and its remote")
     lazy val checkReleaseNotes = inputKey[File]("Checks precense of release notes and returns its file")
     lazy val checkSnapshotDependencies = taskKey[Seq[ModuleID]]("Checks that project doesn't have snapshot dependencies (returns their list)")
 
@@ -163,6 +171,7 @@ case object Release {
     checkCodeNotes,
     checkDependecyUpdates,
     checkSnapshotDependencies,
+    checkGit(releaseVersion),
     checkGithubCredentials,
     checkReleaseNotes(releaseVersion),
     test in Test
@@ -289,12 +298,37 @@ case object Release {
   }
 
 
-  def checkGit = Def.task {
+  def checkGit(releaseVersion: Version) = Def.task {
+    val log = streams.value.log
+    val git = gitTask.value
 
-    // git remote get-url
-    // git ls-remote -> $! == 0
-    // git remote update
-    // git tag -l "releaseVersion.value" -> empty
-    // git rev-list HEAD..origin/${current_branch} --count -> 0
+    // TODO: probably remote should be confgurable
+    val remote = "origin"
+
+    if (!git.remoteUrlIsReadable(remote)) {
+      sys.error("Remote [${remote}] is not set or is not accessible.")
+    } else {
+      log.info(s"Updating remote [${remote}].")
+      git.output("remote")("update")
+    }
+
+    val tagName = "v" + releaseVersion
+    if (git.tagList(tagName).nonEmpty) {
+      sys.error(s"Git tag ${tagName} already exists. You cannot release this version.")
+    }
+
+    val current:  String = git.currentBranch.getOrElse("HEAD")
+    val upstream: String = git.currentUpstream.getOrElse {
+      sys.error("Couldn't get current branch upstream.")
+    }
+    val commitsBehind: Int = git.commitsNumber(s"${current}..${upstream}").getOrElse {
+      sys.error("Couldn't compare current branch with its upstream.")
+    }
+
+    if (commitsBehind > 0) {
+      sys.error(s"Local branch [${current}] is ${commitsBehind} commits behind [${upstream}]. You need to pull changes.")
+    } else {
+      log.info(s"Local branch [${current}] seems to be up to date with its remote upstream.")
+    }
   }
 }
