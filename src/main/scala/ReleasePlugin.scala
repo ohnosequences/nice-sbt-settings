@@ -120,7 +120,7 @@ case object Release {
     import GitPlugin.autoImport._
 
     // NOTE: Parser.failure doesn't work, so we pass error message further to log properly
-    def fail(msg: String) = token("check").map(Left.apply)
+    def fail(msg: String) = Space ~> token("check") map { _ => Left(msg) }
 
     val gitV = GitRunner.silent(baseDirectory.value).version()
 

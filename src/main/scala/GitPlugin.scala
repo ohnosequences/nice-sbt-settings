@@ -4,17 +4,24 @@ import sbt.{ ProcessLogger => _, ProcessBuilder => _, _ }, Keys._
 import scala.sys.process._
 import scala.util._
 
-case class GitRunner(val wd: File, val logger: ProcessLogger) {
+case class GitRunner(
+  val wd: File,
+  // NOTE: this allows to pass context to the logger (like the current command failing)
+  val logger: String => ProcessLogger
+) {
 
   private def proc(subcmd: String)(args: Seq[String]): ProcessBuilder =
     sys.process.Process("git" +: subcmd +: args, wd)
 
-  def exitCode(subcmd: String)(args: String*): Int =
-    proc(subcmd)(args).!(logger)
+  def exitCode(subcmd: String)(args: String*): Int = {
+    val cmd = proc(subcmd)(args)
+    cmd.!(logger(cmd.toString))
+  }
 
   // NOTE: !! throws an exception on failure, so we wrap it with Try
   def output(subcmd: String)(args: String*): Try[String] = Try {
-    proc(subcmd)(args).!!(logger).trim
+    val cmd = proc(subcmd)(args)
+    cmd.!!(logger(cmd.toString)).trim
   }
 
 
@@ -45,24 +52,33 @@ case class GitRunner(val wd: File, val logger: ProcessLogger) {
   // describe with version pattern tag and a snapshot suffix
   def describeVersion: Option[Version] =
     describe(
-      // NOTE: this is a glob-pattern, not a regex
-      "--match=${v.globPattern}",
-      "--dirty=-SNAPSHOT"
-    ).toOption.flatMap(Version.parse)
+      s"--match=${v.globPattern}",
+      "--dirty=-SNAPSHOT",
+      "--always"
+    ).toOption.flatMap { str =>
+      Version.parse(str).orElse {
+        logger("git.describeVersion").err(s"Failed to parse a version from '${str}'")
+        None
+      }
+    }
 
   // This is a fallback version of git describe for when there are no any tags yet
   // NOTE: we could use just this together with lastVersionTag for all versions (for consistency)
   private def withDescribeSuffix(ver: Version): Version = {
 
-    val n = commitsNumber().map(_.toString)
-    val h = output("log")("--format=g%h", "-1").toOption
-    val s = if (isDirty) Some("SNAPSHOT") else None
+    val number = commitsNumber().map(_.toString)
+    val hash   = output("log")("--format=g%h", "-1").toOption
+    val snapsh = if (isDirty) Some("SNAPSHOT") else None
 
-    ver( Seq(n,h,s).flatten: _* )
+    ver( Seq(number, hash, snapsh).flatten: _* )
   }
 
   // This will be used for setting sbt version setting
-  def version: Version = describeVersion getOrElse withDescribeSuffix(v(0,0,0))
+  def version: Version = describeVersion.getOrElse {
+    val ver = withDescribeSuffix(v(0,0,0))
+    logger("git.version").out(s"Using fallback version: ${ver}")
+    ver
+  }
 
 
   def remoteUrl(remote: String = "origin"): Option[URL] =
@@ -77,19 +93,27 @@ case class GitRunner(val wd: File, val logger: ProcessLogger) {
 
 case object GitRunner {
 
-  val defaultLogger = ProcessLogger(
-    { msg => println("out: " + msg) },
-    { msg => println("err: " + msg) }
-  )
+  val defaultLogger: String => ProcessLogger = { ctx =>
+    ProcessLogger(
+      { msg => println(s"out: ${msg} (from '${ctx}')") },
+      { msg => println(s"err: ${msg} (from '${ctx}')") }
+    )
+  }
 
   def apply(wd: File): GitRunner =
     GitRunner(wd, defaultLogger)
 
   def apply(wd: File, log: sbt.Logger): GitRunner =
-    GitRunner(wd, ProcessLogger(log.info(_), log.error(_)) )
+    GitRunner(wd, { ctx =>
+        ProcessLogger(
+          msg => log.info(s"${msg} (from ${ctx})"),
+          msg => log.warn(s"${msg} (from ${ctx})")
+        )
+      }
+    )
 
   def silent(wd: File): GitRunner =
-    GitRunner(wd, ProcessLogger({ _ => () }, { _ => () }))
+    GitRunner(wd, _ => ProcessLogger({ _ => () }, { _ => () }))
 }
 
 case object GitPlugin extends sbt.AutoPlugin {
