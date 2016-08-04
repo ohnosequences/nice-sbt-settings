@@ -84,7 +84,7 @@ case object Release {
   /* Asks user for the confirmation to continue */
   private def confirmContinue(msg: String): Unit = {
 
-    SimpleReader.readLine(msg + " [n] ") match {
+    SimpleReader.readLine(s"\n${msg} [n] ") match {
       case Some("y" | "Y") => {} // go on
       case _ => sys.error("User chose to abort release process")
     }
@@ -167,7 +167,7 @@ case object Release {
     // NOTE: this task outputs the list
     val list = TagListKeys.tagList.value
     if (list.flatMap{ _._2 }.nonEmpty) {
-      confirmContinue("Are you sure you want to continue without fixing these notes (y/n)?")
+      confirmContinue("Are you sure you want to continue without fixing it (y/n)?")
     }
   }
 
@@ -256,31 +256,26 @@ case object Release {
 
       case Seq(notesFile) => {
         val notes = IO.read(notesFile)
+        val notesPath = notesFile.relativeTo(baseDirectory.value).getOrElse(notesFile.getPath)
 
         if (notes.isEmpty) {
-          log.error(s"Notes file [${notesFile}] is empty.")
+          log.error(s"Notes file [${notesPath}] is empty.")
           sys.error(finalMessage)
 
         } else {
-          log.info(s"Taking release notes from the [${notesFile}] file:\n ") //\n${notes}\n ")
-          log.info("")
+          log.info(s"Taking release notes from the [${notesPath}] file:")
           println(notes)
-          log.info("")
 
           confirmContinue("Do you want to proceed with these release notes (y/n)?")
 
           if (notesFile.base == releaseVersion) Right(notesFile)
           else Left(notesFile)
-
-          // TODO: if it's changelog.md do git mv
-          // TODO: check in the end that the releaseVersion.md file is tracked by git
-          // TODO: (optionally) symlink notes/latest.md (useful for bintray)
         }
       }
 
       case multipleFiles => {
         log.error("You have several release notes files:")
-        multipleFiles.foreach { f => log.error(s" - ${notesDir.name}/${f.name}") }
+        multipleFiles.foreach { f => log.error(s" - notes/${f.name}") }
         sys.error("Please, leave only one of them, commit and run release process again.")
       }
     }
@@ -293,15 +288,14 @@ case object Release {
     // Either take the version-named file or rename the changelog-file and commit it
     val notesFile = checkReleaseNotes(releaseVersion).value match {
       case Right(file) => file
-      case Left(changelog) => {
+      case Left(changelogFile) => {
         val versionFile = baseDirectory.value / "notes" / s"${releaseVersion}.markdown"
-
-        git.mv(changelog, versionFile)
-        git.commit(s"Release notes for v${releaseVersion}", Set(versionFile))
-
+        git.mv(changelogFile, versionFile)
+        git.commit(s"Release notes for v${releaseVersion}", Set(changelogFile, versionFile))
         versionFile
       }
     }
+    // TODO: (optionally) symlink notes/latest.md (useful for bintray)
 
     log.info(s"Creating release git tag [v${releaseVersion}].")
     git.createTag(notesFile, releaseVersion)

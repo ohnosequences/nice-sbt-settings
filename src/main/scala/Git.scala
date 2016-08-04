@@ -105,7 +105,7 @@ case class GitRunner(
   def commit(msg: String, files: Set[File]) =
     output("commit")(Seq(
       "--no-verify", // bypasses pre- and post-commit hooks
-      "--message=${msg}",
+      s"--message=${msg}",
       "--") ++ files.map(_.getPath) : _*
     )
 
