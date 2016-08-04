@@ -90,6 +90,13 @@ case object Release {
     }
   }
 
+  private def announce(msg: String): DefTask[Unit] = Def.task {
+    val log = streams.value.log
+    log.info("")
+    log.info(msg)
+    log.info("")
+  }
+
 
   def runRelease(releaseVersion: Version): DefTask[Unit] = Def.task {
     val log = streams.value.log
@@ -101,20 +108,27 @@ case object Release {
 
   /* We try to check as much as possible _before_ making any release-related changes. If these checks are not passed, it doesn't make sense to start release process at all */
   def preReleaseChecks(releaseVersion: Version): DefTask[Unit] = Def.sequential(
+    announce("Checking git repository..."),
     checkGit(releaseVersion),
     checkGithubCredentials,
+
+    announce("Checking code notes..."),
     checkCodeNotes,
+
+    announce("Checking project dependencies..."),
     checkDependencies,
     sbt.Keys.update,
+
+    announce("Running non-release tests..."),
     test in Test,
+
+    announce("Preparing release notes and creating git tag..."),
     prepareReleaseNotesAndTag(releaseVersion)
   )
 
 
   def checkGit(releaseVersion: Version): DefTask[Unit] = Def.task {
     val log = streams.value.log
-    log.info("\nChecking git repository.")
-
     val git = gitTask.value
 
     if (git.isDirty) {
@@ -150,12 +164,8 @@ case object Release {
   }
 
   def checkCodeNotes: DefTask[Unit] = Def.task {
-    val log = streams.value.log
-    log.info("\nChecking code notes.")
-
     // NOTE: this task outputs the list
     val list = TagListKeys.tagList.value
-
     if (list.flatMap{ _._2 }.nonEmpty) {
       confirmContinue("Are you sure you want to continue without fixing these notes (y/n)?")
     }
@@ -177,8 +187,6 @@ case object Release {
     import com.timushev.sbt.updates._, versions.{ Version => UpdVer }, UpdatesKeys._
     val log = streams.value.log
 
-    log.info("\nChecking project dependencies.")
-
     val snapshots: Seq[ModuleID] = snapshotDependencies.value
 
     if (snapshots.nonEmpty) {
@@ -199,13 +207,27 @@ case object Release {
   }
 
 
+  /* This generates scalatest tags for marking tests (for now just release-only tests) */
+  def generateTestTags: DefTask[Seq[File]] = Def.task {
+    val file = (sourceManaged in Test).value / "tags.scala"
+
+    val name = Keys.releaseOnlyTestTag.value
+
+    IO.write(file, s"""
+      |case object ${name} extends org.scalatest.Tag("${name}")
+      |""".stripMargin
+    )
+
+    Seq(file)
+  }
+
+
   /* This task checks the precense of release notes file and returns either
      - Left[File] if the the file needs to be renamed
      - Right[File] otherwise
   */
   def checkReleaseNotes(releaseVersion: Version): DefTask[Either[File, File]] = Def.task {
     val log = streams.value.log
-    log.info("\nChecking release notes.")
 
     val notesDir = baseDirectory.value / "notes"
 
@@ -228,7 +250,7 @@ case object Release {
           alternativeNames.map(_+".md") +
           s"${releaseVersion}.markdown"
         }
-        log.error(s"""No release notes found. Place them in the notes/ directory with one of the following names: ${acceptableNames.mkString("'", "', '", "'.")}.""")
+        log.error(s"""No release notes found. Place them in the notes/ directory with one of the following names: ${acceptableNames.mkString("'", "', '", "'")}.""")
         sys.error(finalMessage)
       }
 
@@ -264,27 +286,8 @@ case object Release {
     }
   }
 
-  /* This generates scalatest tags for marking tests (for now just release-only tests) */
-  def generateTestTags: DefTask[Seq[File]] = Def.task {
-    val file = (sourceManaged in Test).value / "tags.scala"
-
-    val name = Keys.releaseOnlyTestTag.value
-
-    IO.write(file, s"""
-      |case object ${name} extends org.scalatest.Tag("${name}")
-      |""".stripMargin
-    )
-
-    Seq(file)
-  }
-
-
   def prepareReleaseNotesAndTag(releaseVersion: Version): DefTask[Unit] = Def.task {
     val log = streams.value.log
-
-    val tagName = "v" + releaseVersion
-    log.info(s"\nCreating release git tag [${tagName}].")
-
     val git = gitTask.value
 
     // Either take the version-named file or rename the changelog-file and commit it
@@ -300,6 +303,7 @@ case object Release {
       }
     }
 
+    log.info(s"Creating release git tag [v${releaseVersion}].")
     git.createTag(notesFile, releaseVersion)
   }
 
