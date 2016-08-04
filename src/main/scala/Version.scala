@@ -76,7 +76,7 @@ case object Version {
         maj.toInt,
         min.toInt,
         bug.toInt,
-        suff.split('-').filter(_.nonEmpty)
+        Option(suff).getOrElse("").split('-').filter(_.nonEmpty)
       )
     )
     case _ => None
