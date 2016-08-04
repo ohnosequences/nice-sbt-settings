@@ -31,7 +31,6 @@ case object ReleaseSettings extends sbt.AutoPlugin {
     ohnosequences.sbt.nice.DocumentationSettings &&
     ohnosequences.sbt.nice.ResolverSettings &&
     ohnosequences.sbt.nice.ScalaSettings &&
-    ohnosequences.sbt.nice.TagListSettings &&
     ohnosequences.sbt.nice.WartRemoverSettings &&
     ohnosequences.sbt.SbtGithubReleasePlugin &&
     sbtrelease.ReleasePlugin

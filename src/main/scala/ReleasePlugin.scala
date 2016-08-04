@@ -7,7 +7,7 @@ import sbt._, Keys._, complete._, DefaultParsers._
 import ohnosequences.sbt.SbtGithubReleasePlugin.autoImport._
 import VersionSettings.autoImport._
 import GitPlugin.autoImport._
-
+import com.markatta.sbttaglist.TagListPlugin._
 
 case object NewReleasePlugin extends sbt.AutoPlugin {
   import Release._
@@ -18,7 +18,6 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     // ohnosequences.sbt.nice.DocumentationSettings &&
     com.timushev.sbt.updates.UpdatesPlugin &&
     ohnosequences.sbt.nice.ScalaSettings &&
-    ohnosequences.sbt.nice.TagListSettings &&
     ohnosequences.sbt.nice.WartRemoverSettings &&
     ohnosequences.sbt.nice.GitPlugin &&
     ohnosequences.sbt.SbtGithubReleasePlugin
@@ -44,7 +43,8 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
   override def projectConfigurations: Seq[Configuration] = Seq(ReleaseTest)
 
   override def projectSettings: Seq[Setting[_]] =
-    inConfig(ReleaseTest)(Defaults.testTasks) ++ Seq(
+    inConfig(ReleaseTest)(Defaults.testTasks) ++
+    tagListSettings ++ Seq(
 
     libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6",
 
@@ -55,6 +55,7 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     testOptions in Test        += Tests.Argument("-l", Keys.releaseOnlyTestTag.value),
     testOptions in ReleaseTest -= Tests.Argument("-l", Keys.releaseOnlyTestTag.value),
     testOptions in ReleaseTest += Tests.Argument("-n", Keys.releaseOnlyTestTag.value),
+
 
     Keys.checkSnapshotDependencies := checkSnapshotDependencies.value,
 
