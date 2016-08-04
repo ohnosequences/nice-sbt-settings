@@ -92,8 +92,8 @@ case class GitRunner(
   //     remote
   //   ).toOption.map(new URL(_))
 
-  def remoteUrlIsReadable(remote: String = "origin"): Boolean =
-    exitCode("ls-remote")(remote) == 0
+  def remoteUrlIsReadable(remote: String = "origin", ref: String = currentBranch.getOrElse("")): Boolean =
+    exitCode("ls-remote")(remote, ref) == 0
 }
 
 case object GitRunner {
@@ -111,8 +111,8 @@ case object GitRunner {
   def apply(wd: File, log: sbt.Logger): GitRunner =
     GitRunner(wd, { ctx =>
         ProcessLogger(
-          msg => log.info(s"${msg} (from ${ctx})"),
-          msg => log.warn(s"${msg} (from ${ctx})")
+          msg => log.debug(s"${msg} (from ${ctx})"),
+          msg =>  log.warn(s"${msg} (from ${ctx})")
         )
       }
     )

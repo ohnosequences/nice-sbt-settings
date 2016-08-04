@@ -4,9 +4,10 @@
 package ohnosequences.sbt.nice
 
 import sbt._, Keys._, complete._, DefaultParsers._
-
-import ohnosequences.sbt.nice.GitPlugin.autoImport._
 import ohnosequences.sbt.SbtGithubReleasePlugin.autoImport._
+import VersionSettings.autoImport._
+import GitPlugin.autoImport._
+
 
 case object NewReleasePlugin extends sbt.AutoPlugin {
 
@@ -42,11 +43,9 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
 
     Keys.checkSnapshotDependencies := checkSnapshotDependencies.value,
 
-    Keys.checkGit := Def.inputTaskDyn {
-      releaseArgsParser.parsed.fold(
-        msg => sys.error(msg),
-        ver => checkGit(ver)
-      )
+    Keys.checkGit := Def.inputTask {
+      val ver = versionArgParser.parsed
+      checkGit(ver)
     }.evaluated,
 
     Keys.checkReleaseNotes := Def.inputTaskDyn {
@@ -123,10 +122,24 @@ case object Release {
     }
   }
 
+  def versionParser: Parser[Version] = {
+    StringBasic flatMap { str =>
+      Version.parse(str) match {
+        case None => failure("Coundn't parse version")
+        case Some(ver) => success(ver)
+      }
+    }
+  }
+
+  def versionArgParser = Def.setting {
+    Space ~> (
+      nextVersionParser(gitVersion.value) |
+      versionParser
+    )
+  }
+
   /* Parses arguments for the release command, but also performs additional checks  */
   val releaseArgsParser: Def.Initialize[Parser[Either[String, Version]]] = Def.setting {
-    import VersionSettings.autoImport._
-    import GitPlugin.autoImport._
 
     // NOTE: Parser.failure doesn't work, so we pass error message further to log properly
     def fail(msg: String) = Space ~> token("check") map { _ => Left(msg) }
