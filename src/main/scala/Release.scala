@@ -21,7 +21,7 @@ case object Release {
     lazy val snapshotDependencies = taskKey[Seq[ModuleID]]("Returns the list of dependencies with changing/snapshot versions")
     lazy val checkDependencies = taskKey[Unit]("Checks that there are no snapshot or outdated dependencies")
 
-    lazy val preReleaseChecks = inputKey[Unit]("Runs all pre-release checks sequentially")
+    lazy val releasePrepare = inputKey[Unit]("Runs all pre-release checks sequentially")
 
     lazy val runRelease = inputKey[Unit]("Takes release type as an argument and starts release process. Available arguments are shown on tab-completion.")
   }
@@ -98,16 +98,16 @@ case object Release {
   }
 
 
-  def runRelease(releaseVersion: Version): DefTask[Unit] = Def.task {
-    val log = streams.value.log
-
-    log.info(s"Release version: [${releaseVersion}]")
-
-    preReleaseChecks(releaseVersion).value
+  /* This is the action of the release command. It cannot be a task, because after release preparation we need to reload the state to update the version setting. */
+  def releaseProcess(state: State, releaseVersion: Version): State = {
+    s"releasePrepare ${releaseVersion}" ::
+    "reload" ::
+    "show version" ::
+    state
   }
 
   /* We try to check as much as possible _before_ making any release-related changes. If these checks are not passed, it doesn't make sense to start release process at all */
-  def preReleaseChecks(releaseVersion: Version): DefTask[Unit] = Def.sequential(
+  def releasePrepare(releaseVersion: Version): DefTask[Unit] = Def.sequential(
     announce("Checking git repository..."),
     checkGit(releaseVersion),
     checkGithubCredentials,
@@ -297,8 +297,8 @@ case object Release {
     }
     // TODO: (optionally) symlink notes/latest.md (useful for bintray)
 
-    log.info(s"Creating release git tag [v${releaseVersion}].")
     git.createTag(notesFile, releaseVersion)
+    log.info(s"Created git tag [v${releaseVersion}].")
   }
 
 }
