@@ -94,6 +94,7 @@ case object Release {
     checkGithubCredentials,
     checkCodeNotes,
     checkDependencies,
+    sbt.Keys.update,
     checkReleaseNotes(releaseVersion),
     test in Test
   )
@@ -118,32 +119,28 @@ case object Release {
 
   /* Almost the same as the task `dependencyUpdates`, but it outputs result as a warning
      and asks for a confirmation if needed */
-  def checkDependencies = Def.task {
+  def checkDependencies = Def.taskDyn {
     import com.timushev.sbt.updates._, versions.{ Version => UpdVer }, UpdatesKeys._
     val log = streams.value.log
 
-    log.info("\nChecking project dependencies")
+    log.info("\nChecking project dependencies.")
 
     val snapshots: Seq[ModuleID] = snapshotDependencies.value
-    val updatesData: Map[ModuleID, SortedSet[UpdVer]] = dependencyUpdatesData.value
 
     if (snapshots.nonEmpty) {
       log.error(s"You cannot start release process with snapshot dependencies:")
       snapshots.foreach { mod => log.error(s" - ${mod}") }
-
-      val snapshotUpdates = updatesData.filterKeys(snapshots.contains)
-      if (snapshotUpdates.nonEmpty) {
-        log.info(s"\nSome updates for the snapshot dependencies are available:")
-        log.info( Reporter.dependencyUpdatesReport(projectID.value, snapshotUpdates) )
-      }
       sys.error("Update dependencies, commit and run release process again.")
 
-    } else if (updatesData.nonEmpty) {
-      log.warn( Reporter.dependencyUpdatesReport(projectID.value, updatesData) )
-      confirmContinue("Are you sure you want to continue with outdated dependencies (y/n)?")
+    } else Def.task {
 
-    } else {
-      log.info("All dependencies seem to be up to date")
+      val updatesData: Map[ModuleID, SortedSet[UpdVer]] = dependencyUpdatesData.value
+
+      if (updatesData.nonEmpty) {
+        log.warn( Reporter.dependencyUpdatesReport(projectID.value, updatesData) )
+        confirmContinue("Are you sure you want to continue with outdated dependencies (y/n)?")
+
+      } else log.info("All dependencies seem to be up to date.")
     }
   }
 
