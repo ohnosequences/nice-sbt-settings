@@ -213,6 +213,8 @@ case object Release {
 
   def checkCodeNotes = Def.task {
     import com.markatta.sbttaglist.TagListPlugin._
+    val log = streams.value.log
+    log.info("\nChecking code notes.")
 
     // NOTE: this task outputs the list
     val list = TagListKeys.tagList.value
