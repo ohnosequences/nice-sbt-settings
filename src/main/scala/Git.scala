@@ -36,6 +36,10 @@ case class GitRunner(
       "--list", pattern
     ).toOption.getOrElse("").split('\n').toSet
 
+  // Creates an annotated tag object with notes from the given file
+  def createTag(annot: File, ver: Version) =
+    output("tag")("--annotate", s"--file=${annot.getPath}", s"v${ver}")
+
   // Number of commits in the given range (or since the beginning)
   def commitsNumber(range: String = "HEAD"): Option[Int] =
     output("rev-list")(
@@ -94,6 +98,17 @@ case class GitRunner(
 
   def remoteUrlIsReadable(remote: String = "origin", ref: String = currentBranch.getOrElse("")): Boolean =
     exitCode("ls-remote")(remote, ref) == 0
+
+  def mv(from: File, to: File) =
+    output("mv")("-k", from.getPath, to.getPath)
+
+  def commit(msg: String, files: Set[File]) =
+    output("commit")(Seq(
+      "--no-verify", // bypasses pre- and post-commit hooks
+      "--message=${msg}",
+      "--") ++ files.map(_.getPath) : _*
+    )
+
 }
 
 case object GitRunner {

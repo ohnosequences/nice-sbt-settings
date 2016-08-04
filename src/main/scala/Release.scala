@@ -17,8 +17,7 @@ case object Release {
     lazy val releaseOnlyTestTag = settingKey[String]("Full name of the release-only tests tag")
 
     lazy val checkGit = inputKey[Unit]("Checks git repository and its remote")
-    lazy val checkReleaseNotes = inputKey[File]("Checks precense of release notes and returns its file")
-
+    lazy val checkReleaseNotes = inputKey[Either[File, File]]("Checks precense of release notes and returns its file")
     lazy val snapshotDependencies = taskKey[Seq[ModuleID]]("Returns the list of dependencies with changing/snapshot versions")
     lazy val checkDependencies = taskKey[Unit]("Checks that there are no snapshot or outdated dependencies")
 
@@ -107,8 +106,8 @@ case object Release {
     checkCodeNotes,
     checkDependencies,
     sbt.Keys.update,
-    checkReleaseNotes(releaseVersion),
-    test in Test
+    test in Test,
+    prepareReleaseNotesAndTag(releaseVersion)
   )
 
 
@@ -200,27 +199,36 @@ case object Release {
   }
 
 
-  def checkReleaseNotes(releaseVersion: Version): DefTask[File] = Def.task {
+  /* This task checks the precense of release notes file and returns either
+     - Left[File] if the the file needs to be renamed
+     - Right[File] otherwise
+  */
+  def checkReleaseNotes(releaseVersion: Version): DefTask[Either[File, File]] = Def.task {
     val log = streams.value.log
     log.info("\nChecking release notes.")
 
-    // TODO: these could be configurable
     val notesDir = baseDirectory.value / "notes"
-    // val acceptableNames      = Set(Keys.relVersion.value.toString, "changelog")
-    val acceptableNames      = Set(releaseVersion.toString, "changelog")
+
+    // TODO: these could be configurable
+    val alternativeNames     = Set("Changelog")
     val acceptableExtensions = Set("markdown", "md")
 
     val notesFinder: PathFinder = (notesDir * "*") filter { file =>
-      (acceptableNames      contains file.base.toLowerCase) &&
-      (acceptableExtensions contains file.ext)
+      (acceptableExtensions contains file.ext) && (
+        (file.base == releaseVersion) ||
+        (alternativeNames.map(_.toLowerCase) contains file.base.toLowerCase)
+      )
     }
 
     val finalMessage = "Write release notes, commit and run release process again."
 
     notesFinder.get match {
       case Nil => {
-        log.error("No release notes found.")
-        log.error(s"Searched for ${acceptableNames.mkString("'", ".md', '", ".md'")}.")
+        val acceptableNames = {
+          alternativeNames.map(_+".md") +
+          s"${releaseVersion}.markdown"
+        }
+        log.error(s"""No release notes found. Place them in the notes/ directory with one of the following names: ${acceptableNames.mkString("'", "', '", "'.")}.""")
         sys.error(finalMessage)
       }
 
@@ -239,7 +247,8 @@ case object Release {
 
           confirmContinue("Do you want to proceed with these release notes (y/n)?")
 
-          notesFile
+          if (notesFile.base == releaseVersion) Right(notesFile)
+          else Left(notesFile)
 
           // TODO: if it's changelog.md do git mv
           // TODO: check in the end that the releaseVersion.md file is tracked by git
@@ -267,6 +276,31 @@ case object Release {
     )
 
     Seq(file)
+  }
+
+
+  def prepareReleaseNotesAndTag(releaseVersion: Version): DefTask[Unit] = Def.task {
+    val log = streams.value.log
+
+    val tagName = "v" + releaseVersion
+    log.info(s"\nCreating release git tag [${tagName}].")
+
+    val git = gitTask.value
+
+    // Either take the version-named file or rename the changelog-file and commit it
+    val notesFile = checkReleaseNotes(releaseVersion).value match {
+      case Right(file) => file
+      case Left(changelog) => {
+        val versionFile = baseDirectory.value / "notes" / s"${releaseVersion}.markdown"
+
+        git.mv(changelog, versionFile)
+        git.commit(s"Release notes for v${releaseVersion}", Set(versionFile))
+
+        versionFile
+      }
+    }
+
+    git.createTag(notesFile, releaseVersion)
   }
 
 }
