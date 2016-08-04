@@ -10,6 +10,7 @@ import GitPlugin.autoImport._
 
 
 case object NewReleasePlugin extends sbt.AutoPlugin {
+  import Release._
 
   override def trigger = allRequirements
   // TODO: almost all other plugins:
@@ -23,9 +24,23 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     ohnosequences.sbt.SbtGithubReleasePlugin
 
 
+  private def inputTask[X, Y](parser: Def.Initialize[Parser[X]])
+    (taskDef: X => Def.Initialize[Task[Y]]): Def.Initialize[InputTask[Y]] =
+      Def.inputTaskDyn {
+        val arg = parser.parsed
+        taskDef(arg)
+      }
+
+  private def versionBumperArg = Def.setting {
+    Space ~> versionBumperParser(gitVersion.value)
+  }
+
+  private def versionNumberArg = Def.setting {
+    Space ~> versionNumberParser
+  }
+
 
   /* ### Settings */
-  import Release._
   override def projectConfigurations: Seq[Configuration] = Seq(ReleaseTest)
 
   override def projectSettings: Seq[Setting[_]] =
@@ -43,31 +58,11 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
 
     Keys.checkSnapshotDependencies := checkSnapshotDependencies.value,
 
-    Keys.checkGit := Def.inputTask {
-      val ver = versionArgParser.parsed
-      checkGit(ver)
-    }.evaluated,
+    Keys.checkGit          := inputTask(versionNumberArg)(checkGit).evaluated,
+    Keys.checkReleaseNotes := inputTask(versionNumberArg)(checkReleaseNotes).evaluated,
+    Keys.preReleaseChecks  := inputTask(versionNumberArg)(preReleaseChecks).evaluated,
 
-    Keys.checkReleaseNotes := Def.inputTaskDyn {
-      releaseArgsParser.parsed.fold(
-        msg => sys.error(msg),
-        ver => checkReleaseNotes(ver)
-      )
-    }.evaluated,
-
-    Keys.preReleaseChecks := Def.inputTaskDyn {
-      releaseArgsParser.parsed.fold(
-        msg => sys.error(msg),
-        ver => preReleaseChecks(ver)
-      )
-    }.evaluated,
-
-    Keys.runRelease := Def.inputTaskDyn {
-      releaseArgsParser.parsed.fold(
-        msg => sys.error(msg),
-        ver => runRelease(ver)
-      )
-    }.evaluated
+    Keys.runRelease := inputTask(versionBumperArg)(runRelease).evaluated
   )
 
 }
@@ -99,7 +94,7 @@ case object Release {
     val fin       = BumperParser("final",     { _.base })
   }
 
-  def nextVersionParser(current: Version): Parser[Version] = {
+  def versionBumperParser(current: Version): Parser[Version] = {
     import BumperParser._
 
     if (current.isCandidate) {
@@ -116,40 +111,17 @@ case object Release {
     }
   }
 
-  def versionParser: Parser[Version] = {
+  /* This one just tries to parse version number from arbitrary input */
+  def versionNumberParser: Parser[Version] = {
+    // TODO: rewrite with proper combinators and use it in Version.parse (will give better errors than just a regex matching)
     StringBasic flatMap { str =>
       Version.parse(str) match {
-        case None => failure("Coundn't parse version")
+        case None => failure(s"Coundn't parse version from '${str}'")
         case Some(ver) => success(ver)
       }
     }
   }
 
-  def versionArgParser = Def.setting {
-    Space ~> (
-      nextVersionParser(gitVersion.value) |
-      versionParser
-    )
-  }
-
-  /* Parses arguments for the release command, but also performs additional checks  */
-  val releaseArgsParser: Def.Initialize[Parser[Either[String, Version]]] = Def.setting {
-
-    // NOTE: Parser.failure doesn't work, so we pass error message further to log properly
-    def fail(msg: String) = Space ~> token("check") map { _ => Left(msg) }
-
-    val loadedV: Version = gitVersion.value
-    val actualV: Version = GitRunner.silent(baseDirectory.value).version
-
-    // NOTE: at the moment this parser is also a setting, so it will be loaded once and this case won't appear
-    if (loadedV != actualV) {
-      fail(s"gitVersion is outdated (${loadedV} vs. ${actualV}). Try to reload.")
-    } else if (actualV.isSnapshot) {
-      fail(s"You cannot release a snapshot (${loadedV}). Commit or stash the changes first.")
-    } else {
-      Space ~> nextVersionParser(actualV).map(Right.apply)
-    }
-  }
 
   lazy val ReleaseTest = config("releaseTest").extend(Test)
 
@@ -175,11 +147,11 @@ case object Release {
   }
 
   def preReleaseChecks(releaseVersion: Version) = Def.sequential(
+    checkGit(releaseVersion),
+    checkGithubCredentials,
     checkCodeNotes,
     checkDependecyUpdates,
     checkSnapshotDependencies,
-    checkGit(releaseVersion),
-    checkGithubCredentials,
     checkReleaseNotes(releaseVersion),
     test in Test
   )
@@ -309,18 +281,20 @@ case object Release {
     val log = streams.value.log
     val git = gitTask.value
 
-    // TODO: probably remote should be confgurable
-    val remote = "origin"
+    if (git.isDirty) {
+      sys.error("You have uncommited changes. Commit or stash them first.")
+    }
 
-    if (!git.remoteUrlIsReadable(remote)) {
-      sys.error("Remote [${remote}] is not set or is not accessible.")
-    } else {
-      log.info(s"Updating remote [${remote}].")
-      git.output("remote")("update")
+    // TODO: probably remote name should be configurable
+    val remoteName = "origin"
+
+    log.info(s"Updating remote [${remoteName}].")
+    if (git.exitCode("remote")("update", remoteName) != 0) {
+      sys.error(s"Remote [${remoteName}] is not set or is not accessible.")
     }
 
     val tagName = "v" + releaseVersion
-    if (git.tagList(tagName).nonEmpty) {
+    if (git.tagList(tagName) contains tagName) {
       sys.error(s"Git tag ${tagName} already exists. You cannot release this version.")
     }
 
