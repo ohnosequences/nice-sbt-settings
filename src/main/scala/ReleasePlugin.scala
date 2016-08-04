@@ -57,7 +57,7 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     testOptions in ReleaseTest += Tests.Argument("-n", Keys.releaseOnlyTestTag.value),
 
 
-    Keys.checkSnapshotDependencies := checkSnapshotDependencies.value,
+    Keys.checkDependencies := checkDependencies.value,
 
     Keys.checkGit          := inputTask(versionNumberArg)(checkGit).evaluated,
     Keys.checkReleaseNotes := inputTask(versionNumberArg)(checkReleaseNotes).evaluated,

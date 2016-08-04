@@ -4,6 +4,7 @@ import sbt._, Keys._, complete._, DefaultParsers._
 import ohnosequences.sbt.SbtGithubReleasePlugin.autoImport._
 import VersionSettings.autoImport._
 import GitPlugin.autoImport._
+import scala.collection.immutable.SortedSet
 
 
 case object Release {
@@ -70,7 +71,9 @@ case object Release {
 
     lazy val checkGit = inputKey[Unit]("Checks git repository and its remote")
     lazy val checkReleaseNotes = inputKey[File]("Checks precense of release notes and returns its file")
-    lazy val checkSnapshotDependencies = taskKey[Seq[ModuleID]]("Checks that project doesn't have snapshot dependencies (returns their list)")
+
+    lazy val snapshotDependencies = taskKey[Seq[ModuleID]]("Returns the list of dependencies with changing/snapshot versions")
+    lazy val checkDependencies = taskKey[Unit]("Checks that there are no snapshot or outdated dependencies")
 
     lazy val preReleaseChecks = inputKey[Unit]("Runs all pre-release checks sequentially")
 
@@ -85,33 +88,25 @@ case object Release {
     preReleaseChecks(releaseVersion).value
   }
 
+  /* We try to check as much as possible _before_ making any release-related changes. If these checks are not passed, it doesn't make sense to start release process at all */
   def preReleaseChecks(releaseVersion: Version) = Def.sequential(
     checkGit(releaseVersion),
     checkGithubCredentials,
     checkCodeNotes,
-    checkDependecyUpdates,
-    checkSnapshotDependencies,
+    checkDependencies,
     checkReleaseNotes(releaseVersion),
     test in Test
   )
 
-
-  lazy val checkSnapshotDependencies = Def.task {
-    val log = streams.value.log
-
-    val snapshots: Seq[ModuleID] = libraryDependencies.value.filter { mod =>
+  /* Returns the list of dependencies with changing/snapshot versions */
+  def snapshotDependencies: Def.Initialize[Task[Seq[ModuleID]]] = Def.task {
+    libraryDependencies.value.filter { mod =>
       mod.isChanging ||
       mod.revision.endsWith("-SNAPSHOT")
     }
-
-    if (snapshots.nonEmpty) {
-      log.error(s"You cannot start release process with snapshot dependencies:")
-      snapshots.foreach { mod => log.error(s" - ${mod}") }
-      sys.error("Update dependencies, commit and run release process again.")
-    }
-    snapshots
   }
 
+  /* Asks user for the confirmation to continue */
   def confirmContinue(msg: String) = {
 
     SimpleReader.readLine(msg + " [n] ") match {
@@ -119,6 +114,39 @@ case object Release {
       case _ => sys.error("User chose to abort release process")
     }
   }
+
+
+  /* Almost the same as the task `dependencyUpdates`, but it outputs result as a warning
+     and asks for a confirmation if needed */
+  def checkDependencies = Def.task {
+    import com.timushev.sbt.updates._, versions.{ Version => UpdVer }, UpdatesKeys._
+    val log = streams.value.log
+
+    log.info("\nChecking project dependencies")
+
+    val snapshots: Seq[ModuleID] = snapshotDependencies.value
+    val updatesData: Map[ModuleID, SortedSet[UpdVer]] = dependencyUpdatesData.value
+
+    if (snapshots.nonEmpty) {
+      log.error(s"You cannot start release process with snapshot dependencies:")
+      snapshots.foreach { mod => log.error(s" - ${mod}") }
+
+      val snapshotUpdates = updatesData.filterKeys(snapshots.contains)
+      if (snapshotUpdates.nonEmpty) {
+        log.info(s"\nSome updates for the snapshot dependencies are available:")
+        log.info( Reporter.dependencyUpdatesReport(projectID.value, snapshotUpdates) )
+      }
+      sys.error("Update dependencies, commit and run release process again.")
+
+    } else if (updatesData.nonEmpty) {
+      log.warn( Reporter.dependencyUpdatesReport(projectID.value, updatesData) )
+      confirmContinue("Are you sure you want to continue with outdated dependencies (y/n)?")
+
+    } else {
+      log.info("All dependencies seem to be up to date")
+    }
+  }
+
 
   def checkReleaseNotes(releaseVersion: Version) = Def.task {
     val log = streams.value.log
@@ -185,24 +213,6 @@ case object Release {
 
     Seq(file)
   }
-
-  /* Almost the same as the task `dependencyUpdates`, but it outputs result as a warning
-     and asks for a confirmation if needed */
-  def checkDependecyUpdates = Def.task {
-    import com.timushev.sbt.updates._
-    val log = streams.value.log
-
-    log.info("Checking project dependency updates...")
-
-    val updatesData = UpdatesKeys.dependencyUpdatesData.value
-
-    if (updatesData.nonEmpty) {
-      log.warn( Reporter.dependencyUpdatesReport(projectID.value, updatesData) )
-      confirmContinue("Are you sure you want to continue with outdated dependencies (y/n)?")
-    } else
-      log.info("All dependencies seem to be up to date.")
-  }
-
 
   def checkCodeNotes = Def.task {
     import com.markatta.sbttaglist.TagListPlugin._
