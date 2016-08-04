@@ -44,8 +44,6 @@ case object ReleaseSettings extends sbt.AutoPlugin {
 
   /* ### Settings */
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    /* We want to increment `y` in `x.y.z` */
-    releaseVersionBump := sbtrelease.Version.Bump.Minor,
 
     /* By default you want to have full controll over the release process: */
     releaseStepByStep := true,
@@ -66,16 +64,14 @@ case object ReleaseSettings extends sbt.AutoPlugin {
       import ReleaseBlocks._
 
       constructReleaseProcess(
-        initChecks,
+        ???,
         Seq(
           packAndTest,
-          askVersionsAndCheckNotes,
           genMdDocs,
           genApiDocs,
           publishArtifacts,
           commitAndTag,
           githubRelease,
-          nextVersion,
           githubPush
         )
       )
@@ -87,20 +83,6 @@ case object ReleaseBlocks {
   import ReleaseSteps._
   import ReleaseSettings.autoImport._
 
-  /* #### Initial checks
-
-     - check that release doesn't have snapshot or outdated dependencies
-     - check that we can use Github api for publishing notes
-     - warn if we have `TODO` or `FIXME` notes
-  */
-  val initChecks = ReleaseBlock("Initial checks", Seq(
-    checkNoSnapshotDeps,
-    checkDependecyUpdates,
-    checkTagList,
-    releaseTask(checkGithubCredentials)
-  ), transit = true)
-
-
   /* #### Packaging and running tests
 
      - try to pack
@@ -109,19 +91,6 @@ case object ReleaseBlocks {
   val packAndTest = ReleaseBlock("Packaging and running tests", Seq(
     releaseTask(Keys.`package`),
     releaseTask(Keys.test in Test)
-  ), transit = true)
-
-
-  /* #### Setting release version
-
-     - inquire the current and the next release versions
-     - set the current one (no commiting)
-     - check and confirm release notes for this version
-  */
-  val askVersionsAndCheckNotes = ReleaseBlock("Setting release version", Seq(
-    inquireVersions.action,
-    tempSetVersion,
-    checkReleaseNotes
   ), transit = true)
 
 
@@ -167,13 +136,6 @@ case object ReleaseBlocks {
       st
     },
     releaseTask(releaseOnGithub)
-  ))
-
-
-  /* #### Setting and committing next version */
-  val nextVersion = ReleaseBlock("Setting and committing next version", Seq(
-    setNextVersion.action,
-    commitNextReleaseVersion
   ))
 
 
@@ -248,80 +210,6 @@ case object ReleaseSteps {
     ReleaseStateTransformations.reapply(Seq(
       version in ThisBuild := v
     ), st)
-  }
-
-  /* Almost the same as the standard release step, but it doesn't use our modified commitMessage task */
-  lazy val commitNextReleaseVersion = { st: State =>
-    val extracted = Project.extract(st)
-    val v = st.get(versions).
-      getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))._2
-    commitFiles("Setting version to '" +v+ "'", extracted get releaseVersionFile)(st)
-  }
-
-  /* Checks that you have written release notes in `notes/<version>.markdown` files and shows them */
-  lazy val checkReleaseNotes = { st: State =>
-    val extracted = Project.extract(st)
-    val v = extracted get (version in ThisBuild)
-    val note: File = (extracted get baseDirectory) / "notes" / (v+".markdown")
-    if (!note.exists || IO.read(note).isEmpty)
-      sys.error(s"Aborting release. File [notes/${v}.markdown] doesn't exist or is empty. You forgot to write release notes.")
-    else {
-      st.log.info(s"\nTaking release notes from the [notes/${v}.markdown] file:\n \n${IO.read(note)}\n ")
-      SimpleReader.readLine("Do you want to proceed with these release notes (y/n)? [y] ") match {
-        case Some("n" | "N") => sys.error("Aborting release. Go write better release notes.")
-        case _ => // go on
-      }
-      st
-    }
-  }
-
-  /* I took it from sb-release plugin, to make it strict: no releases with snapshot deps */
-  lazy val checkNoSnapshotDeps = { st: State =>
-    val extracted = Project.extract(st)
-    val ref = extracted.get(thisProjectRef)
-    val (newSt, snapshotDeps) = extracted.runTask(releaseSnapshotDependencies in ref, st)
-    if (snapshotDeps.nonEmpty) {
-      st.log.error("Snapshot dependencies detected:\n" + snapshotDeps.mkString("\n"))
-      sys.error("Aborting release due to snapshot dependencies.")
-    }
-    newSt
-  }
-
-  /* Almost the same as the task `dependencyUpdates`, but it outputs result as a warning
-     and asks for a confirmation if needed */
-  lazy val checkDependecyUpdates = { st: State =>
-    import com.timushev.sbt.updates.Reporter._
-    val extracted = Project.extract(st)
-    val ref = extracted.get(thisProjectRef)
-    st.log.info("Checking project dependency updates...")
-
-    val (newSt, data) = extracted.runTask(UpdatesKeys.dependencyUpdatesData in ref, st)
-
-    if (data.nonEmpty) {
-      val report = dependencyUpdatesReport(extracted.get(projectID), data)
-      newSt.log.warn(report)
-      SimpleReader.readLine("Are you sure you want to continue with outdated dependencies (y/n)? [y] ") match {
-        case Some("n" | "N") => sys.error("Aborting release due to outdated project dependencies")
-        case _ => // go on
-      }
-    } else newSt.log.info("All dependencies seem to be up to date")
-
-    newSt
-  }
-
-  /* Almost the same as the task `dependencyUpdates`, but it outputs result as a warning
-     and asks for a confirmation if needed */
-  lazy val checkTagList = { st: State =>
-    val extracted = Project.extract(st)
-    val ref = extracted.get(thisProjectRef)
-    val (newSt, list) = extracted.runTask(TagListKeys.tagList in ref, st)
-    if (list.flatMap{ _._2 }.nonEmpty) {
-      SimpleReader.readLine("Are you sure you want to continue without fixing this (y/n)? [y] ") match {
-        case Some("n" | "N") => sys.error("Aborting release due to some fixme-notes in the code")
-        case _ => // go on
-      }
-    }
-    newSt
   }
 
   /* Announcing release blocks */
