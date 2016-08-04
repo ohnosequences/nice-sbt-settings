@@ -4,10 +4,30 @@ import sbt._, Keys._, complete._, DefaultParsers._
 import ohnosequences.sbt.SbtGithubReleasePlugin.autoImport._
 import VersionSettings.autoImport._
 import GitPlugin.autoImport._
+import com.markatta.sbttaglist.TagListPlugin._
 import scala.collection.immutable.SortedSet
 
 
 case object Release {
+
+  lazy val ReleaseTest = config("releaseTest").extend(Test)
+
+  case object Keys {
+
+    lazy val releaseOnlyTestTag = settingKey[String]("Full name of the release-only tests tag")
+
+    lazy val checkGit = inputKey[Unit]("Checks git repository and its remote")
+    lazy val checkReleaseNotes = inputKey[File]("Checks precense of release notes and returns its file")
+
+    lazy val snapshotDependencies = taskKey[Seq[ModuleID]]("Returns the list of dependencies with changing/snapshot versions")
+    lazy val checkDependencies = taskKey[Unit]("Checks that there are no snapshot or outdated dependencies")
+
+    lazy val preReleaseChecks = inputKey[Unit]("Runs all pre-release checks sequentially")
+
+    lazy val runRelease = inputKey[Unit]("Takes release type as an argument and starts release process. Available arguments are shown on tab-completion.")
+  }
+
+  type DefTask[X] = Def.Initialize[Task[X]]
 
   /* This class helps to create Version parser based on the string and a version transformation.
      Given a version `apply` method returns a parser which accepts `str` literal, but shows it in
@@ -62,25 +82,17 @@ case object Release {
     }
   }
 
+  /* Asks user for the confirmation to continue */
+  private def confirmContinue(msg: String): Unit = {
 
-  lazy val ReleaseTest = config("releaseTest").extend(Test)
-
-  case object Keys {
-
-    lazy val releaseOnlyTestTag = settingKey[String]("Full name of the release-only tests tag")
-
-    lazy val checkGit = inputKey[Unit]("Checks git repository and its remote")
-    lazy val checkReleaseNotes = inputKey[File]("Checks precense of release notes and returns its file")
-
-    lazy val snapshotDependencies = taskKey[Seq[ModuleID]]("Returns the list of dependencies with changing/snapshot versions")
-    lazy val checkDependencies = taskKey[Unit]("Checks that there are no snapshot or outdated dependencies")
-
-    lazy val preReleaseChecks = inputKey[Unit]("Runs all pre-release checks sequentially")
-
-    lazy val runRelease = inputKey[Unit]("Takes release type as an argument and starts release process. Available arguments are shown on tab-completion.")
+    SimpleReader.readLine(msg + " [n] ") match {
+      case Some("y" | "Y") => {} // go on
+      case _ => sys.error("User chose to abort release process")
+    }
   }
 
-  def runRelease(releaseVersion: Version) = Def.task {
+
+  def runRelease(releaseVersion: Version): DefTask[Unit] = Def.task {
     val log = streams.value.log
 
     log.info(s"Release version: [${releaseVersion}]")
@@ -89,7 +101,7 @@ case object Release {
   }
 
   /* We try to check as much as possible _before_ making any release-related changes. If these checks are not passed, it doesn't make sense to start release process at all */
-  def preReleaseChecks(releaseVersion: Version) = Def.sequential(
+  def preReleaseChecks(releaseVersion: Version): DefTask[Unit] = Def.sequential(
     checkGit(releaseVersion),
     checkGithubCredentials,
     checkCodeNotes,
@@ -99,134 +111,11 @@ case object Release {
     test in Test
   )
 
-  /* Returns the list of dependencies with changing/snapshot versions */
-  def snapshotDependencies: Def.Initialize[Task[Seq[ModuleID]]] = Def.task {
-    libraryDependencies.value.filter { mod =>
-      mod.isChanging ||
-      mod.revision.endsWith("-SNAPSHOT")
-    }
-  }
 
-  /* Asks user for the confirmation to continue */
-  def confirmContinue(msg: String) = {
-
-    SimpleReader.readLine(msg + " [n] ") match {
-      case Some("y" | "Y") => {} // go on
-      case _ => sys.error("User chose to abort release process")
-    }
-  }
-
-
-  /* Almost the same as the task `dependencyUpdates`, but it outputs result as a warning
-     and asks for a confirmation if needed */
-  def checkDependencies = Def.taskDyn {
-    import com.timushev.sbt.updates._, versions.{ Version => UpdVer }, UpdatesKeys._
+  def checkGit(releaseVersion: Version): DefTask[Unit] = Def.task {
     val log = streams.value.log
+    log.info("\nChecking git repository.")
 
-    log.info("\nChecking project dependencies.")
-
-    val snapshots: Seq[ModuleID] = snapshotDependencies.value
-
-    if (snapshots.nonEmpty) {
-      log.error(s"You cannot start release process with snapshot dependencies:")
-      snapshots.foreach { mod => log.error(s" - ${mod}") }
-      sys.error("Update dependencies, commit and run release process again.")
-
-    } else Def.task {
-
-      val updatesData: Map[ModuleID, SortedSet[UpdVer]] = dependencyUpdatesData.value
-
-      if (updatesData.nonEmpty) {
-        log.warn( Reporter.dependencyUpdatesReport(projectID.value, updatesData) )
-        confirmContinue("Are you sure you want to continue with outdated dependencies (y/n)?")
-
-      } else log.info("All dependencies seem to be up to date.")
-    }
-  }
-
-
-  def checkReleaseNotes(releaseVersion: Version) = Def.task {
-    val log = streams.value.log
-
-    // TODO: these could be configurable
-    val notesDir = baseDirectory.value / "notes"
-    // val acceptableNames      = Set(Keys.relVersion.value.toString, "changelog")
-    val acceptableNames      = Set(releaseVersion.toString, "changelog")
-    val acceptableExtensions = Set("markdown", "md")
-
-    val notesFinder: PathFinder = (notesDir * "*") filter { file =>
-      (acceptableNames      contains file.base.toLowerCase) &&
-      (acceptableExtensions contains file.ext)
-    }
-
-    val finalMessage = "Write release notes, commit and run release process again."
-
-    notesFinder.get match {
-      case Nil => {
-        log.error("No release notes found.")
-        log.error(s"Searched for ${acceptableNames.mkString("'", ".md', '", ".md'")}.")
-        sys.error(finalMessage)
-      }
-
-      case Seq(notesFile) => {
-        val notes = IO.read(notesFile)
-
-        if (notes.isEmpty) {
-          log.error(s"Notes file [${notesFile}] is empty.")
-          sys.error(finalMessage)
-
-        } else {
-          log.info(s"Taking release notes from the [${notesFile}] file:\n ") //\n${notes}\n ")
-          println(notes)
-
-          confirmContinue("Do you want to proceed with these release notes (y/n)?")
-
-          notesFile
-
-          // TODO: if it's changelog.md do git mv
-          // TODO: check in the end that the releaseVersion.md file is tracked by git
-          // TODO: (optionally) symlink notes/latest.md (useful for bintray)
-        }
-      }
-
-      case multipleFiles => {
-        log.error("You have several release notes files:")
-        multipleFiles.foreach { f => log.error(s" - ${notesDir.name}/${f.name}") }
-        sys.error("Please, leave only one of them, commit and run release process again.")
-      }
-    }
-  }
-
-  /* This generates scalatest tags for marking tests (for now just release-only tests) */
-  def generateTestTags: Def.Initialize[Task[Seq[File]]] = Def.task {
-    val file = (sourceManaged in Test).value / "tags.scala"
-
-    val name = Keys.releaseOnlyTestTag.value
-
-    IO.write(file, s"""
-      |case object ${name} extends org.scalatest.Tag("${name}")
-      |""".stripMargin
-    )
-
-    Seq(file)
-  }
-
-  def checkCodeNotes = Def.task {
-    import com.markatta.sbttaglist.TagListPlugin._
-    val log = streams.value.log
-    log.info("\nChecking code notes.")
-
-    // NOTE: this task outputs the list
-    val list = TagListKeys.tagList.value
-
-    if (list.flatMap{ _._2 }.nonEmpty) {
-      confirmContinue("Are you sure you want to continue without fixing these notes (y/n)?")
-    }
-  }
-
-
-  def checkGit(releaseVersion: Version) = Def.task {
-    val log = streams.value.log
     val git = gitTask.value
 
     if (git.isDirty) {
@@ -260,4 +149,124 @@ case object Release {
       log.info(s"Local branch [${current}] seems to be up to date with its remote upstream.")
     }
   }
+
+  def checkCodeNotes: DefTask[Unit] = Def.task {
+    val log = streams.value.log
+    log.info("\nChecking code notes.")
+
+    // NOTE: this task outputs the list
+    val list = TagListKeys.tagList.value
+
+    if (list.flatMap{ _._2 }.nonEmpty) {
+      confirmContinue("Are you sure you want to continue without fixing these notes (y/n)?")
+    }
+  }
+
+  /* Returns the list of dependencies with changing/snapshot versions */
+  def snapshotDependencies: DefTask[Seq[ModuleID]] = Def.task {
+
+    libraryDependencies.value.filter { mod =>
+      mod.isChanging ||
+      mod.revision.endsWith("-SNAPSHOT")
+    }
+  }
+
+
+  /* Almost the same as the task `dependencyUpdates`, but it outputs result as a warning
+     and asks for a confirmation if needed */
+  def checkDependencies: DefTask[Unit] = Def.taskDyn {
+    import com.timushev.sbt.updates._, versions.{ Version => UpdVer }, UpdatesKeys._
+    val log = streams.value.log
+
+    log.info("\nChecking project dependencies.")
+
+    val snapshots: Seq[ModuleID] = snapshotDependencies.value
+
+    if (snapshots.nonEmpty) {
+      log.error(s"You cannot start release process with snapshot dependencies:")
+      snapshots.foreach { mod => log.error(s" - ${mod}") }
+      sys.error("Update dependencies, commit and run release process again.")
+
+    } else Def.task {
+
+      val updatesData: Map[ModuleID, SortedSet[UpdVer]] = dependencyUpdatesData.value
+
+      if (updatesData.nonEmpty) {
+        log.warn( Reporter.dependencyUpdatesReport(projectID.value, updatesData) )
+        confirmContinue("Are you sure you want to continue with outdated dependencies (y/n)?")
+
+      } else log.info("All dependencies seem to be up to date.")
+    }
+  }
+
+
+  def checkReleaseNotes(releaseVersion: Version): DefTask[File] = Def.task {
+    val log = streams.value.log
+    log.info("\nChecking release notes.")
+
+    // TODO: these could be configurable
+    val notesDir = baseDirectory.value / "notes"
+    // val acceptableNames      = Set(Keys.relVersion.value.toString, "changelog")
+    val acceptableNames      = Set(releaseVersion.toString, "changelog")
+    val acceptableExtensions = Set("markdown", "md")
+
+    val notesFinder: PathFinder = (notesDir * "*") filter { file =>
+      (acceptableNames      contains file.base.toLowerCase) &&
+      (acceptableExtensions contains file.ext)
+    }
+
+    val finalMessage = "Write release notes, commit and run release process again."
+
+    notesFinder.get match {
+      case Nil => {
+        log.error("No release notes found.")
+        log.error(s"Searched for ${acceptableNames.mkString("'", ".md', '", ".md'")}.")
+        sys.error(finalMessage)
+      }
+
+      case Seq(notesFile) => {
+        val notes = IO.read(notesFile)
+
+        if (notes.isEmpty) {
+          log.error(s"Notes file [${notesFile}] is empty.")
+          sys.error(finalMessage)
+
+        } else {
+          log.info(s"Taking release notes from the [${notesFile}] file:\n ") //\n${notes}\n ")
+          log.info("")
+          println(notes)
+          log.info("")
+
+          confirmContinue("Do you want to proceed with these release notes (y/n)?")
+
+          notesFile
+
+          // TODO: if it's changelog.md do git mv
+          // TODO: check in the end that the releaseVersion.md file is tracked by git
+          // TODO: (optionally) symlink notes/latest.md (useful for bintray)
+        }
+      }
+
+      case multipleFiles => {
+        log.error("You have several release notes files:")
+        multipleFiles.foreach { f => log.error(s" - ${notesDir.name}/${f.name}") }
+        sys.error("Please, leave only one of them, commit and run release process again.")
+      }
+    }
+  }
+
+  /* This generates scalatest tags for marking tests (for now just release-only tests) */
+  def generateTestTags: DefTask[Seq[File]] = Def.task {
+    val file = (sourceManaged in Test).value / "tags.scala"
+
+    val name = Keys.releaseOnlyTestTag.value
+
+    IO.write(file, s"""
+      |case object ${name} extends org.scalatest.Tag("${name}")
+      |""".stripMargin
+    )
+
+    Seq(file)
+  }
+
 }
