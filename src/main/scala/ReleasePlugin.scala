@@ -103,21 +103,15 @@ case object Release {
     import BumperParser._
 
     if (current.isCandidate) {
-      (Space ~>
-        (candidate(current) | fin(current))
-      ) ?? current.base
+      (candidate(current) | fin(current)) ?? current.base
 
     } else if (current.isMilestone) {
-      (Space ~>
-        (milestone(current) | fin(current))
-      ) ?? current.base
+      (milestone(current) | fin(current)) ?? current.base
 
     } else {
-      Space ~> {
-        bugfix(current) |
-        (minor(current) | major(current)).flatMap { next =>
-          (Space ~> (milestone(next) | candidate(next) | fin(next))) ?? next
-        }
+      bugfix(current) |
+      (minor(current) | major(current)).flatMap { next =>
+        (Space ~> (milestone(next) | candidate(next) | fin(next))) ?? next
       }
     }
   }
@@ -153,7 +147,7 @@ case object Release {
     } else if (actualV.isSnapshot) {
       fail(s"You cannot release a snapshot (${loadedV}). Commit or stash the changes first.")
     } else {
-      nextVersionParser(actualV).map(Right.apply)
+      Space ~> nextVersionParser(actualV).map(Right.apply)
     }
   }
 
