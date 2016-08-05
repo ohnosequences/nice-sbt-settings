@@ -21,7 +21,8 @@ case object Release {
     lazy val snapshotDependencies = taskKey[Seq[ModuleID]]("Returns the list of dependencies with changing/snapshot versions")
     lazy val checkDependencies = taskKey[Unit]("Checks that there are no snapshot or outdated dependencies")
 
-    lazy val releasePrepare = inputKey[Unit]("Runs all pre-release checks sequentially")
+    lazy val releaseChecks = inputKey[Unit]("Runs all pre-release checks sequentially")
+    lazy val releasePrepare = taskKey[Unit]("Runs all pre-release checks sequentially")
 
     lazy val runRelease = inputKey[Unit]("Takes release type as an argument and starts release process. Available arguments are shown on tab-completion.")
   }
@@ -98,33 +99,30 @@ case object Release {
   }
 
 
-  // A shortcut to run a task from a command
-  private def runTask(task: TaskKey[_]): State => State = { state =>
-    val (newState, _) = Project.extract(state).runTask(task, state)
-    newState
-  }
-  // A shortcut to apply settings from a command
-  private def applySettings(settings: Setting[_]): State => State = { state =>
-    Project.extract(state).append(settings, state)
+  implicit class StateOps(val state: State) extends AnyVal {
+
+    /* A shortcut to apply settings from a command */
+    def upd(settings: Setting[_]): State = {
+      Project.extract(state).append(settings, state)
+    }
+
+    /* A shortcut to run a task by its key. Result is rejected. */
+    def run(task: TaskKey[_]): State = {
+      val (newState, _) = Project.extract(state).runTask(task, state)
+      newState
+    }
   }
 
   /* This is the action of the release command. It cannot be a task, because after release preparation we need to reload the state to update the version setting. */
   def releaseProcess(state: State, releaseVersion: Version): State = {
-    // NOTE: we need a TaskKey to call runTask, so we create it locally
-    val prepare = TaskKey.local[Unit]
     val git = GitRunner(Project.extract(state).get(baseDirectory), state.log)
 
-    val action = Function.chain(
-      Seq(
-        applySettings( prepare := releasePrepare(releaseVersion) ),
-        runTask(prepare),
-        applySettings( gitVersion := git.version ),
-        runTask(publishLocal),
-        runTask(test in ReleaseTest)
-      )
-    )
-
-    action(state)
+    state
+      .upd( Keys.releasePrepare := releasePrepare(releaseVersion) )
+      .run( Keys.releasePrepare )
+      .upd( gitVersion := git.version )
+      .run( publishLocal )
+      .run( test in ReleaseTest )
   }
 
   /* We try to check as much as possible _before_ making any release-related changes. If these checks are not passed, it doesn't make sense to start release process at all */
