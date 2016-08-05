@@ -98,12 +98,33 @@ case object Release {
   }
 
 
+  // A shortcut to run a task from a command
+  private def runTask(task: TaskKey[_]): State => State = { state =>
+    val (newState, _) = Project.extract(state).runTask(task, state)
+    newState
+  }
+  // A shortcut to apply settings from a command
+  private def applySettings(settings: Setting[_]): State => State = { state =>
+    Project.extract(state).append(settings, state)
+  }
+
   /* This is the action of the release command. It cannot be a task, because after release preparation we need to reload the state to update the version setting. */
   def releaseProcess(state: State, releaseVersion: Version): State = {
-    s"releasePrepare ${releaseVersion}" ::
-    "reload" ::
-    "show version" ::
-    state
+    // NOTE: we need a TaskKey to call runTask, so we create it locally
+    val prepare = TaskKey.local[Unit]
+    val git = GitRunner(Project.extract(state).get(baseDirectory), state.log)
+
+    val action = Function.chain(
+      Seq(
+        applySettings( prepare := releasePrepare(releaseVersion) ),
+        runTask(prepare),
+        applySettings( gitVersion := git.version ),
+        runTask(publishLocal),
+        runTask(test in ReleaseTest)
+      )
+    )
+
+    action(state)
   }
 
   /* We try to check as much as possible _before_ making any release-related changes. If these checks are not passed, it doesn't make sense to start release process at all */
