@@ -228,12 +228,14 @@ case object Release {
   def generateTestTags: DefTask[Seq[File]] = Def.task {
     val file = (sourceManaged in Test).value / "tags.scala"
 
-    val name = Keys.releaseOnlyTestTag.value
+    val parts = Keys.releaseOnlyTestTag.value.split('.')
+    val pkg = parts.init.mkString(".")
+    val obj = parts.last
 
     IO.write(file, s"""
-      |package ohnosequences.test.tags
+      |package ${pkg}
       |
-      |case object ${name} extends org.scalatest.Tag("${name}")
+      |case object ${obj} extends org.scalatest.Tag("${pkg}.${obj}")
       |""".stripMargin
     )
 

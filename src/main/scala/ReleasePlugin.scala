@@ -48,7 +48,7 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
 
     libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6",
 
-    Keys.releaseOnlyTestTag := "ReleaseOnlyTestTag",
+    Keys.releaseOnlyTestTag := s"${organization.value}.test.ReleaseOnlyTest",
 
     sourceGenerators in Test += generateTestTags.taskValue,
 
