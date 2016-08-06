@@ -101,12 +101,19 @@ case object Release {
 
   /* This is the action of the release command. It cannot be a task, because after release preparation we need to reload the state to update the version setting. */
   def releaseProcess(state: State, releaseVersion: Version): State = {
-    "show version" ::
-    s"releaseChecks ${releaseVersion}" ::
-    "reload" ::
-    "show version" ::
-    "publishLocal" ::
-    "releaseTest:test" ::
+    import sbt.CommandStrings._
+    implicit def keyAsInput(tk: Scoped): String = tk.key.label
+    def spaced(strs: String*): String = strs.mkString(" ")
+
+    // Here everything is converted to strings and prepended to remainingCommands of the state (it's the same if you manually entered those strings in the sbt console one by one)
+    LoadProject :: // = reload
+    spaced(ShowCommand, version) ::
+    spaced(Keys.releaseChecks, releaseVersion.toString) ::
+    LoadProject :: // = reload
+    spaced(ShowCommand, version) ::
+    // TODO: these should be in a separate task which handles failures:
+    publishLocal ::
+    (test in ReleaseTest) ::
     state
   }
 
