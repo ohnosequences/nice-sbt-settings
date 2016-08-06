@@ -64,7 +64,7 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     Keys.releaseChecks     := inputTask(versionNumberArg)(releasePrepare).evaluated,
 
     // Keys.runRelease := inputTask(versionBumperArg)(runRelease).evaluated
-    commands += Command("rel")(_ => versionBumperArg.value)(releaseProcess)
+    commands += Command("relrel")(_ => versionBumperArg.value)(releaseProcess)
   )
 
 }

@@ -99,31 +99,17 @@ case object Release {
   }
 
 
-  implicit class StateOps(val state: State) extends AnyVal {
-
-    /* A shortcut to apply settings from a command */
-    def upd(settings: Setting[_]): State = {
-      Project.extract(state).append(settings, state)
-    }
-
-    /* A shortcut to run a task by its key. Result is rejected. */
-    def run(task: TaskKey[_]): State = {
-      val (newState, _) = Project.extract(state).runTask(task, state)
-      newState
-    }
-  }
-
   /* This is the action of the release command. It cannot be a task, because after release preparation we need to reload the state to update the version setting. */
   def releaseProcess(state: State, releaseVersion: Version): State = {
-    val git = GitRunner(Project.extract(state).get(baseDirectory), state.log)
-
+    "show version" ::
+    s"releaseChecks ${releaseVersion}" ::
+    "reload" ::
+    "show version" ::
+    "publishLocal" ::
+    "releaseTest:test" ::
     state
-      .upd( Keys.releasePrepare := releasePrepare(releaseVersion) )
-      .run( Keys.releasePrepare )
-      .upd( gitVersion := git.version )
-      .run( publishLocal )
-      .run( test in ReleaseTest )
   }
+
 
   /* We try to check as much as possible _before_ making any release-related changes. If these checks are not passed, it doesn't make sense to start release process at all */
   def releasePrepare(releaseVersion: Version): DefTask[Unit] = Def.sequential(
@@ -233,6 +219,8 @@ case object Release {
     val name = Keys.releaseOnlyTestTag.value
 
     IO.write(file, s"""
+      |package ohnosequences.test.tags
+      |
       |case object ${name} extends org.scalatest.Tag("${name}")
       |""".stripMargin
     )
