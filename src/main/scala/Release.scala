@@ -106,7 +106,6 @@ case object Release {
     def spaced(strs: String*): String = strs.mkString(" ")
 
     // Here everything is converted to strings and prepended to remainingCommands of the state (it's the same if you manually entered those strings in the sbt console one by one)
-    LoadProject :: // = reload
     spaced(ShowCommand, version) ::
     spaced(Keys.releaseChecks, releaseVersion.toString) ::
     LoadProject :: // = reload
@@ -145,6 +144,12 @@ case object Release {
 
     if (git.isDirty) {
       sys.error("You have uncommited changes. Commit or stash them first.")
+    }
+
+    val loaded = gitVersion.value
+    val actual = git.version
+    if (loaded != actual) {
+      sys.error(s"Current version ${loaded} is outdated (should be ${actual}). Reload and start release process again.")
     }
 
     // TODO: probably remote name should be configurable
