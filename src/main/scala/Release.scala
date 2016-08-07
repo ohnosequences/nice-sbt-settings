@@ -28,8 +28,6 @@ case object Release {
 
     lazy val prepareRelease = inputKey[Unit]("Runs all pre-release checks sequentially")
     lazy val    makeRelease = inputKey[Unit]("Publishes the release")
-
-    lazy val runRelease = inputKey[Unit]("Takes release type as an argument and starts release process. Available arguments are shown on tab-completion.")
   }
 
   type DefTask[X] = Def.Initialize[Task[X]]
@@ -396,7 +394,7 @@ case object Release {
   }
 
 
-  lazy val releaseCommand = Command("relrel")(releaseCommandArgsParser)(releaseCommandAction)
+  lazy val releaseCommand = Command("release")(releaseCommandArgsParser)(releaseCommandAction)
 
   private def releaseCommandArgsParser(state: State): Parser[Version] = {
     val ver = Project.extract(state).get(gitVersion)
