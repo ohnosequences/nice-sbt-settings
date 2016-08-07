@@ -11,7 +11,7 @@ import scala.util._
 case object VersionSettings extends sbt.AutoPlugin {
 
   override def trigger = allRequirements
-  override def requires = GitPlugin
+  override def requires = empty
 
   case object autoImport {
 
@@ -21,12 +21,11 @@ case object VersionSettings extends sbt.AutoPlugin {
     lazy val gitVersionT = taskKey[Version]("Version based on git describe (as a task)")
   }
   import autoImport._
-  import GitPlugin.autoImport._
 
   /* ### Settings */
   override def projectSettings: Seq[Setting[_]] = Seq(
-    gitVersionT := GitRunner(baseDirectory.value, streams.value.log).version,
-    gitVersion  := GitRunner(baseDirectory.value, sLog.value).version,
+    gitVersionT := Git(baseDirectory.value, streams.value.log).version,
+    gitVersion  := Git(baseDirectory.value, sLog.value).version,
     version := gitVersion.value.toString
   )
 

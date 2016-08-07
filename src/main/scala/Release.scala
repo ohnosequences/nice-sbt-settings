@@ -3,13 +3,12 @@ package ohnosequences.sbt.nice
 import sbt._, Keys._, complete._, DefaultParsers._
 import ohnosequences.sbt.SbtGithubReleasePlugin.autoImport._
 import VersionSettings.autoImport._
-import GitPlugin.autoImport._
 import com.markatta.sbttaglist.TagListPlugin._
 import scala.collection.immutable.SortedSet
 import org.kohsuke.github.GHRelease
 import laughedelic.literator.plugin.LiteratorPlugin.autoImport._
 import java.nio.file.Files
-import GitRunner._
+import Git._
 
 
 case object Release {
@@ -129,7 +128,7 @@ case object Release {
 
   def checkGit(releaseVersion: Version): DefTask[Unit] = Def.task {
     val log = streams.value.log
-    val git = gitTask.value
+    val git = Git.task.value
 
     if (git.isDirty) {
       sys.error("You have uncommited changes. Commit or stash them first.")
@@ -291,7 +290,7 @@ case object Release {
 
   def prepareReleaseNotesAndTag(releaseVersion: Version): DefTask[Unit] = Def.task {
     val log = streams.value.log
-    val git = gitTask.value
+    val git = Git.task.value
 
     // Either take the version-named file or rename the changelog-file and commit it
     val notesFile = checkReleaseNotes(releaseVersion).value match {
@@ -312,7 +311,7 @@ case object Release {
 
   /* This task pushes current branch and tag to the remote */
   def pushHeadAndTag: DefTask[Unit] = Def.task {
-    val git = gitTask.value
+    val git = Git.task.value
     val tagName = "v" + git.version
 
     git.push()(HEAD, tagName).get
@@ -335,7 +334,7 @@ case object Release {
   // TODO: destination (gh-pages) could be configurable, probably with a help of sbt-site
   def publishApiDocs: DefTask[Unit] = Def.taskDyn {
     val log = streams.value.log
-    val git = gitTask.value
+    val git = Git.task.value
 
     val url = git.remoteUrl(origin).getOrElse {
       sys.error(s"Couldn't get remote [${origin}] url")
@@ -365,7 +364,7 @@ case object Release {
       Files.deleteIfExists(destLatest.toPath)
       Files.createSymbolicLink(destLatest.toPath, destVer.toPath)
 
-      val ghpagesGit = GitRunner(ghpagesDir, streams.value.log)
+      val ghpagesGit = Git(ghpagesDir, streams.value.log)
       ghpagesGit.commit(s"API docs v${git.version}", Set(destVer, destLatest))
       ghpagesGit.push(url)(HEAD)
     }
@@ -373,7 +372,7 @@ case object Release {
 
   def makeRelease(releaseVersion: Version): DefTask[Unit] = Def.taskDyn {
     val log = streams.value.log
-    val git = gitTask.value
+    val git = Git.task.value
 
     if (git.version != releaseVersion) {
       sys.error(s"This task should be run after ${Keys.prepareRelease.key.label} and reload. Versions don't coincide: git version is [${git.version}], should be [${releaseVersion}].")

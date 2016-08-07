@@ -1,15 +1,15 @@
 package ohnosequences.sbt.nice
 
-import sbt.{ ProcessLogger => _, ProcessBuilder => _, _ }
+import sbt.{ ProcessLogger => _, ProcessBuilder => _, _ }, Keys._
 import scala.sys.process._
 import scala.util._
 
-case class GitRunner(
+case class Git(
   val wd: File,
   // NOTE: this allows to pass context to the logger (like the current command failing)
   val logger: String => ProcessLogger
 ) {
-  import GitRunner._
+  import Git._
 
   private def proc(subcmd: String)(args: Seq[String]): ProcessBuilder =
     sys.process.Process("git" +: subcmd +: args, wd)
@@ -25,6 +25,7 @@ case class GitRunner(
     cmd.!!(logger(cmd.toString)).trim
   }
 
+  // TODO: make all these methods implicit ops
 
   def isDirty: Boolean =
     output("status")(
@@ -114,25 +115,29 @@ case class GitRunner(
     output("push")((remote +: refs): _*)
 }
 
-case object GitRunner {
+case object Git {
 
   // Constants:
   val HEAD = "HEAD"
   val origin = "origin"
 
+  /* Usage in task definitions: val git = Git.task.value */
+  def task: Def.Initialize[Task[Git]] = Def.task {
+    Git(baseDirectory.value, streams.value.log)
+  }
 
   val defaultLogger: String => ProcessLogger = { ctx =>
     ProcessLogger(
-      { msg => println(s"out: ${msg} (from '${ctx}')") },
-      { msg => println(s"err: ${msg} (from '${ctx}')") }
+      msg => println(s"out: ${msg} (from ${ctx})"),
+      msg => println(s"err: ${msg} (from ${ctx})")
     )
   }
 
-  def apply(wd: File): GitRunner =
-    GitRunner(wd, defaultLogger)
+  def apply(wd: File): Git =
+    Git(wd, defaultLogger)
 
-  def apply(wd: File, log: sbt.Logger): GitRunner =
-    GitRunner(wd, { ctx =>
+  def apply(wd: File, log: sbt.Logger): Git =
+    Git(wd, { ctx =>
         ProcessLogger(
           msg => log.debug(s"${msg} (from ${ctx})"),
           msg =>  log.warn(s"${msg} (from ${ctx})")
@@ -140,7 +145,7 @@ case object GitRunner {
       }
     )
 
-  def silent(wd: File): GitRunner =
-    GitRunner(wd, _ => ProcessLogger({ _ => () }, { _ => () }))
+  def silent(wd: File): Git =
+    Git(wd, _ => ProcessLogger({ _ => () }, { _ => () }))
 
 }

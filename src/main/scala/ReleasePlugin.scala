@@ -6,7 +6,6 @@ package ohnosequences.sbt.nice
 import sbt._, Keys._, complete._, DefaultParsers._
 import ohnosequences.sbt.SbtGithubReleasePlugin.autoImport._
 import VersionSettings.autoImport._
-import GitPlugin.autoImport._
 import com.markatta.sbttaglist.TagListPlugin._
 
 case object NewReleasePlugin extends sbt.AutoPlugin {
@@ -15,11 +14,8 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
   override def trigger = allRequirements
   // TODO: almost all other plugins:
   override def requires =
-    // ohnosequences.sbt.nice.DocumentationSettings &&
     com.timushev.sbt.updates.UpdatesPlugin &&
-    ohnosequences.sbt.nice.ScalaSettings &&
     ohnosequences.sbt.nice.WartRemoverSettings &&
-    ohnosequences.sbt.nice.GitPlugin &&
     laughedelic.literator.plugin.LiteratorPlugin &&
     ohnosequences.sbt.SbtGithubReleasePlugin
 
