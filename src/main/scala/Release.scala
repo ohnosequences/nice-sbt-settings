@@ -7,6 +7,8 @@ import GitPlugin.autoImport._
 import com.markatta.sbttaglist.TagListPlugin._
 import scala.collection.immutable.SortedSet
 import org.kohsuke.github.GHRelease
+import laughedelic.literator.plugin.LiteratorPlugin.autoImport._
+import java.nio.file.Files
 import GitRunner._
 
 
@@ -22,6 +24,8 @@ case object Release {
     lazy val checkReleaseNotes = inputKey[Either[File, File]]("Checks precense of release notes and returns its file")
     lazy val snapshotDependencies = taskKey[Seq[ModuleID]]("Returns the list of dependencies with changing/snapshot versions")
     lazy val checkDependencies = taskKey[Unit]("Checks that there are no snapshot or outdated dependencies")
+
+    lazy val publishApiDocs = taskKey[Unit]("Publishes API docs to the gh-pages branch of the repo")
 
     lazy val prepareRelease = inputKey[Unit]("Runs all pre-release checks sequentially")
     lazy val    makeRelease = inputKey[Unit]("Publishes the release")
@@ -314,7 +318,60 @@ case object Release {
     git.push()(HEAD, tagName).get
   }
 
-  def makeRelease(releaseVersion: Version): DefTask[GHRelease] = Def.taskDyn {
+  /* Cleans previously generated docs and re-generates them again */
+  def generateLiteratorDocs: DefTask[Unit] = Def.taskDyn {
+
+    Defaults.doClean(docsOutputDirs.value, Seq())
+    Def.task { generateDocs.value }
+  }
+
+  /* This task
+     - clones `gh-pages` branch in a temporary directory
+     - generates api docs with the standard sbt task `docs`
+     - copies it to `docs/api/<version>`
+     - symlinks `docs/api/latest` to it
+     - commits and pushes `gh-pages` branch
+  */
+  // TODO: destination (gh-pages) could be configurable, probably with a help of sbt-site
+  def publishApiDocs: DefTask[Unit] = Def.taskDyn {
+    val log = streams.value.log
+    val git = gitTask.value
+
+    val url = git.remoteUrl(origin).getOrElse {
+      sys.error(s"Couldn't get remote [${origin}] url")
+    }
+
+    val ghpagesDir = IO.createTemporaryDirectory
+
+    if (git.exitCode("clone")("--branch", "gh-pages", "--single-branch", url, ghpagesDir.getPath) != 0) {
+      log.error("Couldn't publish API docs, because this repo doesn't have gh-pages branch.")
+      log.error(s"Create the branch and rerun the [${Keys.publishApiDocs.key.label}] command.")
+      sys.error("gh-pages branch doesn't exist")
+      // TODO: create it if it doesn't exist (don't forget --orphan)
+
+    } else Def.task {
+      doc.in(Compile).value
+
+      val docTarget  = target.in(Compile, doc).value
+
+      val destBase   = ghpagesDir / "docs" / "api"
+      val destVer    = destBase / version.value
+
+      // if (destVer.exists) destVer.delete() // doesn't work for non-empty directories
+      // it's the shortest way to move that directory
+      docTarget.renameTo(destVer)
+
+      val destLatest = destBase / "latest"
+      Files.deleteIfExists(destLatest.toPath)
+      Files.createSymbolicLink(destLatest.toPath, destVer.toPath)
+
+      val ghpagesGit = GitRunner(ghpagesDir, streams.value.log)
+      ghpagesGit.commit(s"API docs v${git.version}", Set(destVer, destLatest))
+      ghpagesGit.push(url)(HEAD)
+    }
+  }
+
+  def makeRelease(releaseVersion: Version): DefTask[Unit] = Def.taskDyn {
     val log = streams.value.log
     val git = gitTask.value
 
@@ -331,10 +388,11 @@ case object Release {
 
       announce("Publishing release on Github..."),
       pushHeadAndTag,
-      releaseOnGithub
+      releaseOnGithub,
 
-      // announce("Generating documentation...")
-      // TODO
+      announce("Generating documentation..."),
+      generateLiteratorDocs,
+      publishApiDocs
     )
   }
 

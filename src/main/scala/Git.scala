@@ -91,11 +91,11 @@ case class GitRunner(
   def currentBranch:   Try[String] = abbrevRef(HEAD)
   def currentUpstream: Try[String] = abbrevRef(HEAD+"@{upstream}")
 
-  // def remoteUrl(remote: String = origin): Option[URL] =
-  //   output("remote")(
-  //     "get-url",
-  //     remote
-  //   ).toOption.map(new URL(_))
+  def remoteUrl(remote: String = origin): Option[String] =
+    output("remote")(
+      "get-url",
+      remote
+    ).toOption
 
   def remoteUrlIsReadable(remote: String = origin, ref: String = currentBranch.getOrElse("")): Boolean =
     exitCode("ls-remote")(remote, ref) == 0

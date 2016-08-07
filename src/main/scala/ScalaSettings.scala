@@ -7,8 +7,6 @@ package ohnosequences.sbt.nice
 import sbt._
 import Keys._
 
-import DocumentationSettings._
-
 object ScalaSettings extends sbt.AutoPlugin {
 
   override def requires = plugins.JvmPlugin

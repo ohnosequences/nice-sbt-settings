@@ -20,6 +20,7 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     ohnosequences.sbt.nice.ScalaSettings &&
     ohnosequences.sbt.nice.WartRemoverSettings &&
     ohnosequences.sbt.nice.GitPlugin &&
+    laughedelic.literator.plugin.LiteratorPlugin &&
     ohnosequences.sbt.SbtGithubReleasePlugin
 
 
