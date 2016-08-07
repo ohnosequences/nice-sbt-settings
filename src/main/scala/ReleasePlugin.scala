@@ -23,22 +23,6 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     ohnosequences.sbt.SbtGithubReleasePlugin
 
 
-  private def inputTask[X, Y](parser: Def.Initialize[Parser[X]])
-    (taskDef: X => Def.Initialize[Task[Y]]): Def.Initialize[InputTask[Y]] =
-      Def.inputTaskDyn {
-        val arg = parser.parsed
-        taskDef(arg)
-      }
-
-  private def versionBumperArg = Def.setting {
-    Space ~> versionBumperParser(gitVersion.value)
-  }
-
-  private def versionNumberArg = Def.setting {
-    Space ~> versionNumberParser
-  }
-
-
   /* ### Settings */
   override def projectConfigurations: Seq[Configuration] = Seq(ReleaseTest)
 
@@ -63,8 +47,24 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     Keys.checkReleaseNotes := inputTask(versionNumberArg)(checkReleaseNotes).evaluated,
     Keys.releaseChecks     := inputTask(versionNumberArg)(releasePrepare).evaluated,
 
-    // Keys.runRelease := inputTask(versionBumperArg)(runRelease).evaluated
-    commands += Command("relrel")(_ => versionBumperArg.value)(releaseProcess)
+    commands += Command("relrel")(releaseCommandArgsParser)(releaseProcess)
   )
+
+
+  private def versionNumberArg = Def.setting {
+    Space ~> versionNumberParser
+  }
+
+  private def inputTask[X, Y](parser: Def.Initialize[Parser[X]])
+    (taskDef: X => Def.Initialize[Task[Y]]): Def.Initialize[InputTask[Y]] =
+      Def.inputTaskDyn {
+        val arg = parser.parsed
+        taskDef(arg)
+      }
+
+  private def releaseCommandArgsParser(state: State): Parser[Version] = {
+    val ver = Project.extract(state).get(gitVersion)
+    Space ~> versionBumperParser(ver)
+  }
 
 }
