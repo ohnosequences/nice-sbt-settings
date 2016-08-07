@@ -3,6 +3,8 @@
     + The one for Java-only projects: add `enablePlugins(JavaOnlySettings)` to enable it
     + #39: New `StatikaBundleSettings` plugin, which adds dependency on Statika (version is configurable with `statikaVersion`) and uses [sbt-buildinfo](https://github.com/sbt/sbt-buildinfo) to generate the artifact metadata for statika bundles. Add `enablePlugins(StatikaBundleSettings)` to enable it.
   - #45: The new `AssemblySettings` auto-plugin loads fat-jar related settings automatically, but to publish the generated artifact, you need to add `addFatArtifactPublishing(<config>)` setting to your `build.sbt` explicitly (default `<config>` is `Compile`).
+  - #35: The new `VersionSettings` auto-plugin sets `version` setting based on `git describe` and provides a `gitVersion` setting returning `Version` type.
+  - #49: Release part was completely reworked and rewritten without using sbt-release. The new `release` command provides tab-completion for available release versions you can do from the current `gitVersion`. This makes it much easier to make releases without handling versions manually.
 
 
 * Upgrades (#43, #44, #46, #48):
