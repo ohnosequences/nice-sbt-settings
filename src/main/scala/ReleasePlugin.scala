@@ -45,9 +45,10 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
 
     Keys.checkGit          := inputTask(versionNumberArg)(checkGit).evaluated,
     Keys.checkReleaseNotes := inputTask(versionNumberArg)(checkReleaseNotes).evaluated,
-    Keys.releaseChecks     := inputTask(versionNumberArg)(releasePrepare).evaluated,
+    Keys.prepareRelease    := inputTask(versionNumberArg)(prepareRelease).evaluated,
+    Keys.makeRelease       := inputTask(versionNumberArg)(makeRelease).evaluated,
 
-    commands += Command("relrel")(releaseCommandArgsParser)(releaseProcess)
+    commands += releaseCommand
   )
 
 
@@ -61,10 +62,5 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
         val arg = parser.parsed
         taskDef(arg)
       }
-
-  private def releaseCommandArgsParser(state: State): Parser[Version] = {
-    val ver = Project.extract(state).get(gitVersion)
-    Space ~> versionBumperParser(ver)
-  }
 
 }

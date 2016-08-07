@@ -9,6 +9,7 @@ case class GitRunner(
   // NOTE: this allows to pass context to the logger (like the current command failing)
   val logger: String => ProcessLogger
 ) {
+  import GitRunner._
 
   private def proc(subcmd: String)(args: Seq[String]): ProcessBuilder =
     sys.process.Process("git" +: subcmd +: args, wd)
@@ -41,7 +42,7 @@ case class GitRunner(
     output("tag")("--annotate", s"--file=${annot.getPath}", s"v${ver}")
 
   // Number of commits in the given range (or since the beginning)
-  def commitsNumber(range: String = "HEAD"): Option[Int] =
+  def commitsNumber(range: String = HEAD): Option[Int] =
     output("rev-list")(
       "--count", range, "--"
     ).toOption.map(_.toInt)
@@ -87,16 +88,16 @@ case class GitRunner(
   // Outputs short ref name
   private def abbrevRef(ref: String): Try[String] = output("rev-parse")("--abbrev-ref", ref)
 
-  def currentBranch:   Try[String] = abbrevRef("HEAD")
-  def currentUpstream: Try[String] = abbrevRef("HEAD@{upstream}")
+  def currentBranch:   Try[String] = abbrevRef(HEAD)
+  def currentUpstream: Try[String] = abbrevRef(HEAD+"@{upstream}")
 
-  // def remoteUrl(remote: String = "origin"): Option[URL] =
+  // def remoteUrl(remote: String = origin): Option[URL] =
   //   output("remote")(
   //     "get-url",
   //     remote
   //   ).toOption.map(new URL(_))
 
-  def remoteUrlIsReadable(remote: String = "origin", ref: String = currentBranch.getOrElse("")): Boolean =
+  def remoteUrlIsReadable(remote: String = origin, ref: String = currentBranch.getOrElse("")): Boolean =
     exitCode("ls-remote")(remote, ref) == 0
 
   def mv(from: File, to: File) =
@@ -109,9 +110,16 @@ case class GitRunner(
       "--") ++ files.map(_.getPath) : _*
     )
 
+  def push(remote: String = origin)(refs: String*) =
+    output("push")((remote +: refs): _*)
 }
 
 case object GitRunner {
+
+  // Constants:
+  val HEAD = "HEAD"
+  val origin = "origin"
+
 
   val defaultLogger: String => ProcessLogger = { ctx =>
     ProcessLogger(
@@ -134,4 +142,5 @@ case object GitRunner {
 
   def silent(wd: File): GitRunner =
     GitRunner(wd, _ => ProcessLogger({ _ => () }, { _ => () }))
+
 }

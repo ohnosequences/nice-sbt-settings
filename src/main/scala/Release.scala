@@ -6,6 +6,8 @@ import VersionSettings.autoImport._
 import GitPlugin.autoImport._
 import com.markatta.sbttaglist.TagListPlugin._
 import scala.collection.immutable.SortedSet
+import org.kohsuke.github.GHRelease
+import GitRunner._
 
 
 case object Release {
@@ -21,8 +23,8 @@ case object Release {
     lazy val snapshotDependencies = taskKey[Seq[ModuleID]]("Returns the list of dependencies with changing/snapshot versions")
     lazy val checkDependencies = taskKey[Unit]("Checks that there are no snapshot or outdated dependencies")
 
-    lazy val releaseChecks = inputKey[Unit]("Runs all pre-release checks sequentially")
-    lazy val releasePrepare = taskKey[Unit]("Runs all pre-release checks sequentially")
+    lazy val prepareRelease = inputKey[Unit]("Runs all pre-release checks sequentially")
+    lazy val    makeRelease = inputKey[Unit]("Publishes the release")
 
     lazy val runRelease = inputKey[Unit]("Takes release type as an argument and starts release process. Available arguments are shown on tab-completion.")
   }
@@ -99,26 +101,8 @@ case object Release {
   }
 
 
-  /* This is the action of the release command. It cannot be a task, because after release preparation we need to reload the state to update the version setting. */
-  def releaseProcess(state: State, releaseVersion: Version): State = {
-    import sbt.CommandStrings._
-    implicit def keyAsInput(tk: Scoped): String = tk.key.label
-    def spaced(strs: String*): String = strs.mkString(" ")
-
-    // Here everything is converted to strings and prepended to remainingCommands of the state (it's the same if you manually entered those strings in the sbt console one by one)
-    spaced(ShowCommand, version) ::
-    spaced(Keys.releaseChecks, releaseVersion.toString) ::
-    LoadProject :: // = reload
-    spaced(ShowCommand, version) ::
-    // TODO: these should be in a separate task which handles failures:
-    publishLocal ::
-    (test in ReleaseTest) ::
-    state
-  }
-
-
   /* We try to check as much as possible _before_ making any release-related changes. If these checks are not passed, it doesn't make sense to start release process at all */
-  def releasePrepare(releaseVersion: Version): DefTask[Unit] = Def.sequential(
+  def prepareRelease(releaseVersion: Version): DefTask[Unit] = Def.sequential(
     announce("Checking git repository..."),
     checkGit(releaseVersion),
     checkGithubCredentials,
@@ -131,6 +115,7 @@ case object Release {
     sbt.Keys.update,
 
     announce("Running non-release tests..."),
+    clean,
     test in Test,
 
     announce("Preparing release notes and creating git tag..."),
@@ -153,11 +138,9 @@ case object Release {
     }
 
     // TODO: probably remote name should be configurable
-    val remoteName = "origin"
-
-    log.info(s"Updating remote [${remoteName}].")
-    if (git.exitCode("remote")("update", remoteName) != 0) {
-      sys.error(s"Remote [${remoteName}] is not set or is not accessible.")
+    log.info(s"Updating remote [${origin}].")
+    if (git.exitCode("remote")("update", origin) != 0) {
+      sys.error(s"Remote [${origin}] is not set or is not accessible.")
     }
 
     val tagName = "v" + releaseVersion
@@ -165,7 +148,7 @@ case object Release {
       sys.error(s"Git tag ${tagName} already exists. You cannot release this version.")
     }
 
-    val current:  String = git.currentBranch.getOrElse("HEAD")
+    val current:  String = git.currentBranch.getOrElse(HEAD)
     val upstream: String = git.currentUpstream.getOrElse {
       sys.error("Couldn't get current branch upstream.")
     }
@@ -321,5 +304,60 @@ case object Release {
     git.createTag(notesFile, releaseVersion)
     log.info(s"Created git tag [v${releaseVersion}].")
   }
+
+
+  /* This task pushes current branch and tag to the remote */
+  def pushHeadAndTag: DefTask[Unit] = Def.task {
+    val git = gitTask.value
+    val tagName = "v" + git.version
+
+    git.push()(HEAD, tagName).get
+  }
+
+  def makeRelease(releaseVersion: Version): DefTask[GHRelease] = Def.taskDyn {
+    val log = streams.value.log
+    val git = gitTask.value
+
+    if (git.version != releaseVersion) {
+      sys.error(s"This task should be run after ${Keys.prepareRelease.key.label} and reload. Versions don't coincide: git version is [${git.version}], should be [${releaseVersion}].")
+    }
+
+    Def.sequential(
+      announce("Publishing release artifact..."),
+      publish,
+
+      announce("Running release tests..."),
+      (test in ReleaseTest),
+
+      announce("Publishing release on Github..."),
+      pushHeadAndTag,
+      releaseOnGithub
+
+      // announce("Generating documentation...")
+      // TODO
+    )
+  }
+
+
+  lazy val releaseCommand = Command("relrel")(releaseCommandArgsParser)(releaseCommandAction)
+
+  private def releaseCommandArgsParser(state: State): Parser[Version] = {
+    val ver = Project.extract(state).get(gitVersion)
+    Space ~> versionBumperParser(ver)
+  }
+
+  /* This is the action of the release command. It cannot be a task, because after release preparation we need to reload the state to update the version setting. */
+  def releaseCommandAction(state: State, releaseVersion: Version): State = {
+    import sbt.CommandStrings._
+    implicit def keyAsInput(tk: Scoped): String = tk.key.label
+    def spaced(strs: String*): String = strs.mkString(" ")
+
+    // Here everything is converted to strings and prepended to remainingCommands of the state (it's the same if you manually entered those strings in the sbt console one by one)
+    spaced(Keys.prepareRelease, releaseVersion.toString) ::
+    LoadProject :: // = reload
+    spaced(Keys.makeRelease, releaseVersion.toString) ::
+    state
+  }
+
 
 }
