@@ -133,24 +133,28 @@ case object Release {
     val git = Git.task.value
 
     if (git.isDirty) {
-      sys.error("You have uncommited changes. Commit or stash them first.")
+      log.error("You have uncommited changes. Commit or stash them first.")
+      sys.error("Git repository is not clean.")
     }
 
     val loaded = gitVersion.value
     val actual = git.version
     if (loaded != actual) {
-      sys.error(s"Current version ${loaded} is outdated (should be ${actual}). Reload and start release process again.")
+      log.error(s"Current version ${loaded} is outdated (should be ${actual}). Reload and start release process again.")
+      sys.error("Outdated version setting.")
     }
 
     // TODO: probably remote name should be configurable
     log.info(s"Updating remote [${origin}].")
     if (git.exitCode("remote")("update", origin) != 0) {
-      sys.error(s"Remote [${origin}] is not set or is not accessible.")
+      log.error(s"Remote [${origin}] is not set or is not accessible. Check your git-config or internet connection.")
+      sys.error("Remote repository is not accessible.")
     }
 
     val tagName = "v" + releaseVersion
     if (git.tagList(tagName) contains tagName) {
-      sys.error(s"Git tag ${tagName} already exists. You cannot release this version.")
+      log.error(s"Git tag ${tagName} already exists. You cannot release this version.")
+      sys.error("Git tag already exists.")
     }
 
     val current:  String = git.currentBranch.getOrElse(HEAD)
@@ -162,9 +166,10 @@ case object Release {
     }
 
     if (commitsBehind > 0) {
-      sys.error(s"Local branch [${current}] is ${commitsBehind} commits behind [${upstream}]. You need to pull changes.")
+      log.error(s"Local branch [${current}] is ${commitsBehind} commits behind [${upstream}]. You need to pull the changes.")
+      sys.error("Local branch state is outdated.")
     } else {
-      log.info(s"Local branch [${current}] seems to be up to date with its remote upstream.")
+      log.info(s"Local branch [${current}] is up to date with its remote upstream.")
     }
   }
 
@@ -197,7 +202,8 @@ case object Release {
     if (snapshots.nonEmpty) {
       log.error(s"You cannot start release process with snapshot dependencies:")
       snapshots.foreach { mod => log.error(s" - ${mod}") }
-      sys.error("Update dependencies, commit and run release process again.")
+      log.error("Update dependencies, commit and run release process again.")
+      sys.error("Project has unstable dependencies.")
 
     } else Def.task {
 
@@ -246,7 +252,7 @@ case object Release {
 
     val notesFinder: PathFinder = (notesDir * "*") filter { file =>
       (acceptableExtensions contains file.ext) && (
-        (file.base == releaseVersion) ||
+        (file.base == releaseVersion.toString) ||
         (alternativeNames.map(_.toLowerCase) contains file.base.toLowerCase)
       )
     }
@@ -260,7 +266,8 @@ case object Release {
           s"${releaseVersion}.markdown"
         }
         log.error(s"""No release notes found. Place them in the notes/ directory with one of the following names: ${acceptableNames.mkString("'", "', '", "'")}.""")
-        sys.error(finalMessage)
+        log.error(finalMessage)
+        sys.error("Absent release notes.")
       }
 
       case Seq(notesFile) => {
@@ -269,7 +276,8 @@ case object Release {
 
         if (notes.isEmpty) {
           log.error(s"Notes file [${notesPath}] is empty.")
-          sys.error(finalMessage)
+          log.error(finalMessage)
+          sys.error("Empty release notes.")
 
         } else {
           log.info(s"Taking release notes from the [${notesPath}] file:")
@@ -285,7 +293,8 @@ case object Release {
       case multipleFiles => {
         log.error("You have several release notes files:")
         multipleFiles.foreach { f => log.error(s" - notes/${f.name}") }
-        sys.error("Please, leave only one of them, commit and run release process again.")
+        log.error("Please, leave only one of them, commit and run release process again.")
+        sys.error("Multiple release notes.")
       }
     }
   }
@@ -377,7 +386,9 @@ case object Release {
     val git = Git.task.value
 
     if (git.version != releaseVersion) {
-      sys.error(s"This task should be run after ${Keys.prepareRelease.key.label} and reload. Versions don't coincide: git version is [${git.version}], should be [${releaseVersion}].")
+      log.error(s"This task should be run after ${Keys.prepareRelease.key.label} and reload.")
+      log.error(s" Versions don't coincide: git version is [${git.version}], should be [${releaseVersion}].")
+      sys.error("Outdated version setting.")
     }
 
     Def.sequential(
