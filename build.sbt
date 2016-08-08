@@ -14,7 +14,7 @@ addSbtPlugin("com.eed3si9n"      % "sbt-assembly"       % "0.14.3")  // https://
 addSbtPlugin("com.timushev.sbt"  % "sbt-updates"        % "0.1.10")  // https://github.com/rtimush/sbt-updates
 addSbtPlugin("laughedelic"       % "literator"          % "0.7.0")   // https://github.com/laughedelic/literator
 addSbtPlugin("com.markatta"      % "taglist-plugin"     % "1.3.1")   // https://github.com/johanandren/sbt-taglist
-addSbtPlugin("org.wartremover"   % "sbt-wartremover"    % "1.0.1")   // https://github.com/puffnfresh/wartremover
+addSbtPlugin("org.wartremover"   % "sbt-wartremover"    % "1.1.0")   // https://github.com/puffnfresh/wartremover
 addSbtPlugin("com.eed3si9n"      % "sbt-buildinfo"      % "0.6.1")   // https://github.com/sbt/sbt-buildinfo
 
 wartremoverErrors in (Compile, compile) := Seq()

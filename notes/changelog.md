@@ -13,6 +13,6 @@
   - [sbt-release](https://github.com/sbt/sbt-release): `1.0.1 -> 1.0.3`
   - [sbt-assembly](https://github.com/sbt/sbt-assembly): `0.14.0 -> 0.14.3`
   - [sbt-updates](https://github.com/rtimush/sbt-updates): `0.1.9 -> 0.1.10`
-  - [sbt-wartremover](https://github.com/puffnfresh/wartremover): `0.14 -> 1.0.1`. Default list of warts now is [`Warts.unsafe`](https://github.com/puffnfresh/wartremover#unsafe)
+  - [sbt-wartremover](https://github.com/puffnfresh/wartremover): `0.14 -> 1.1.0`. Default list of warts now is [`Warts.unsafe`](https://github.com/puffnfresh/wartremover#unsafe)
 
 See the full list of the merged pull-requests for this version: [v0.8.0 milestone](https://github.com/ohnosequences/nice-sbt-settings/issues?q=milestone%3Av0.8.0).
