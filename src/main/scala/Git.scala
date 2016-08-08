@@ -121,7 +121,7 @@ case class Git(
   }
 
   def push(remote: String = origin)(refs: String*) =
-    output("push")(remote +: refs : _*)
+    output("push")("--porcelain" +: remote +: refs : _*)
 }
 
 case object Git {
