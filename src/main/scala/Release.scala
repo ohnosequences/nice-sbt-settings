@@ -212,9 +212,9 @@ case object Release {
   def generateTestTags: DefTask[Seq[File]] = Def.task {
     val file = (sourceManaged in Test).value / "tags.scala"
 
-    val parts = Keys.releaseOnlyTestTag.value.split('.')
-    val pkg = parts.init.mkString(".")
-    val obj = parts.last
+    lazy val parts = Keys.releaseOnlyTestTag.value.split('.')
+    lazy val pkg = parts.init.mkString(".")
+    lazy val obj = parts.last
 
     IO.write(file, s"""
       |package ${pkg}
