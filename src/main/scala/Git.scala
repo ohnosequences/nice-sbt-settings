@@ -104,15 +104,24 @@ case class Git(
   def mv(from: File, to: File) =
     output("mv")("-k", from.getPath, to.getPath)
 
-  def commit(msg: String, files: Set[File]) =
-    output("commit")(Seq(
+  def unstage(files: File*) =
+    output("reset")(HEAD +: "--" +: files.map(_.getPath) : _*)
+
+  def stage(files: File*) =
+    output("add")("--" +: files.map(_.getPath) : _*)
+
+  /* This is more than just commit, it unstages everything that is staged now, stages only the given files and commits them (this way even files that are not in the index yet will be commited) */
+  def commit(msg: String)(files: File*) = {
+    unstage()
+    stage(files: _*)
+    output("commit")(
       "--no-verify", // bypasses pre- and post-commit hooks
-      s"--message=${msg}",
-      "--") ++ files.map(_.getPath) : _*
+      s"--message=${msg}", "--"
     )
+  }
 
   def push(remote: String = origin)(refs: String*) =
-    output("push")((remote +: refs): _*)
+    output("push")(remote +: refs : _*)
 }
 
 case object Git {

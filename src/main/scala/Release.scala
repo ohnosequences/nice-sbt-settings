@@ -309,7 +309,7 @@ case object Release {
       case Left(changelogFile) => {
         val versionFile = baseDirectory.value / "notes" / s"${releaseVersion}.markdown"
         git.mv(changelogFile, versionFile)
-        git.commit(s"Release notes for v${releaseVersion}", Set(changelogFile, versionFile))
+        git.commit(s"Release notes for v${releaseVersion}")(changelogFile, versionFile)
         versionFile
       }
     }
@@ -376,8 +376,8 @@ case object Release {
       Files.createSymbolicLink(destLatest.toPath, destVer.toPath)
 
       val ghpagesGit = Git(ghpagesDir, streams.value.log)
-      ghpagesGit.commit(s"API docs v${git.version}", Set(destVer, destLatest))
-      ghpagesGit.push(url)(HEAD)
+      ghpagesGit.commit(s"API docs v${git.version}")(destVer, destLatest)
+      ghpagesGit.push()(HEAD)
     }
   }
 
