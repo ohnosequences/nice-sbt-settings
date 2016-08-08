@@ -88,9 +88,13 @@ case object Release {
   /* Asks user for the confirmation to continue */
   private def confirmContinue(msg: String): Unit = {
 
-    SimpleReader.readLine(s"\n${msg} [n] ") match {
-      case Some("y" | "Y") => {} // go on
-      case _ => sys.error("User chose to abort release process")
+    SimpleReader.readLine(s"\n${msg} (y/n) ").map(_.toLowerCase) match {
+      case Some("y") => {} // go on
+      case Some("n") => sys.error("User chose to abort release process")
+      case _ => {
+        println("Didn't understand your answer. Try again.")
+        confirmContinue(msg)
+      }
     }
   }
 
@@ -168,7 +172,7 @@ case object Release {
     // NOTE: this task outputs the list
     val list = TagListKeys.tagList.value
     if (list.flatMap{ _._2 }.nonEmpty) {
-      confirmContinue("Are you sure you want to continue without fixing it (y/n)?")
+      confirmContinue("Are you sure you want to continue without fixing it?")
     }
   }
 
@@ -201,7 +205,7 @@ case object Release {
 
       if (updatesData.nonEmpty) {
         log.warn( Reporter.dependencyUpdatesReport(projectID.value, updatesData) )
-        confirmContinue("Are you sure you want to continue with outdated dependencies (y/n)?")
+        confirmContinue("Are you sure you want to continue with outdated dependencies?")
 
       } else log.info("All dependencies seem to be up to date.")
     }
@@ -237,7 +241,7 @@ case object Release {
     val notesDir = baseDirectory.value / "notes"
 
     // TODO: these could be configurable
-    val alternativeNames     = Set("Changelog")
+    val alternativeNames     = Set("Changelog", "Next")
     val acceptableExtensions = Set("markdown", "md")
 
     val notesFinder: PathFinder = (notesDir * "*") filter { file =>
@@ -271,7 +275,7 @@ case object Release {
           log.info(s"Taking release notes from the [${notesPath}] file:")
           println(notes)
 
-          confirmContinue("Do you want to proceed with these release notes (y/n)?")
+          confirmContinue("Do you want to proceed with these release notes?")
 
           if (notesFile.base == releaseVersion) Right(notesFile)
           else Left(notesFile)
