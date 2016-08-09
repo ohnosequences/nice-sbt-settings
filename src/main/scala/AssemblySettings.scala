@@ -14,7 +14,6 @@ case object AssemblySettings extends sbt.AutoPlugin {
 
   override def trigger = allRequirements
   override def requires =
-    plugins.JvmPlugin &&
     sbtassembly.AssemblyPlugin &&
     ResolverSettings
 
