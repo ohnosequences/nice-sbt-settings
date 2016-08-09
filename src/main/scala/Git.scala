@@ -181,8 +181,9 @@ case object Git {
       unstage()
       stage(files: _*)
       commit(
-        "--no-verify", // bypasses pre- and post-commit hooks
-        s"--message=${msg}", "--"
+        "--no-verify" +: // bypasses pre- and post-commit hooks
+        s"--message=${msg}" +:
+        "--" +: files.map(_.getPath) : _*
       )
     }
   }

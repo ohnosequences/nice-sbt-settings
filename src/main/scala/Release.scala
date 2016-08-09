@@ -368,6 +368,7 @@ case object Release {
 
     val ghpagesDir = IO.createTemporaryDirectory
 
+    log.info("Cloning gh-pages branch in a temporary directory...")
     if (git.silent.clone("--branch", "gh-pages", "--single-branch", url, ghpagesDir.getPath).exitCode != 0) {
       log.error("Couldn't clone gh-pages branch, probably this repo doesn't have it yet.")
       log.error(s"Check it and rerun the [${Keys.publishApiDocs.key.label}] command.")
@@ -375,14 +376,12 @@ case object Release {
       // TODO: create it if it doesn't exist (don't forget --orphan)
 
     } else Def.task {
-      doc.in(Compile).value
-
-      val docTarget  = target.in(Compile, doc).value
+      val docTarget = doc.in(Compile).value
 
       val destBase   = ghpagesDir / "docs" / "api"
       val destVer    = destBase / version.value
 
-      // if (destVer.exists) destVer.delete() // doesn't work for non-empty directories
+      if (destVer.exists) Defaults.doClean(Seq(destVer), Seq())
       // it's the shortest way to move that directory
       docTarget.renameTo(destVer)
 
@@ -390,6 +389,7 @@ case object Release {
       Files.deleteIfExists(destLatest.toPath)
       Files.createSymbolicLink(destLatest.toPath, destVer.toPath)
 
+      log.info("Publishing API docs...")
       val ghpagesGit = Git(ghpagesDir, streams.value.log)
       ghpagesGit.stageAndCommit(s"API docs v${git.version}")(destVer, destLatest)
       ghpagesGit.push(remoteName)(HEAD)
