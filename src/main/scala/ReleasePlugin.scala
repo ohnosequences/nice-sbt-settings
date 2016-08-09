@@ -36,6 +36,10 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     testOptions in ReleaseTest -= Tests.Argument("-l", Keys.releaseOnlyTestTag.value),
     testOptions in ReleaseTest += Tests.Argument("-n", Keys.releaseOnlyTestTag.value),
 
+    publishArtifact in (ReleaseTest, packageBin) := false,
+    publishArtifact in (ReleaseTest, packageDoc) := false,
+    publishArtifact in (ReleaseTest, packageSrc) := false,
+
     sourceGenerators in Test += generateTestTags.taskValue,
 
     Keys.publishApiDocs := publishApiDocs.value,

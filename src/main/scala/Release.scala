@@ -409,9 +409,10 @@ case object Release {
     Def.sequential(
       announce("Publishing release artifact..."),
       publish,
+      publish.in(ReleaseTest),
 
       announce("Running release tests..."),
-      (test in ReleaseTest),
+      test.in(ReleaseTest),
 
       announce("Publishing release on Github..."),
       pushHeadAndTag,
