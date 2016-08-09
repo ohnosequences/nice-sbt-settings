@@ -14,6 +14,7 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
   override def trigger = allRequirements
   // TODO: almost all other plugins:
   override def requires =
+    plugins.JvmPlugin &&
     com.timushev.sbt.updates.UpdatesPlugin &&
     ohnosequences.sbt.nice.WartRemoverSettings &&
     laughedelic.literator.plugin.LiteratorPlugin &&
@@ -27,7 +28,7 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     inConfig(ReleaseTest)(Defaults.testTasks) ++
     tagListSettings ++ Seq(
 
-    libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6",
+    libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6" % Test,
 
     Keys.releaseOnlyTestTag := s"${organization.value}.test.ReleaseOnlyTest",
 
