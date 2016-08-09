@@ -10,8 +10,10 @@ import ohnosequences.sbt.SbtS3Resolver.autoImport._
 
 object ResolverSettings extends sbt.AutoPlugin {
 
-  override def requires = ohnosequences.sbt.SbtS3Resolver
   override def trigger = allRequirements
+  override def requires =
+    plugins.JvmPlugin &&
+    ohnosequences.sbt.SbtS3Resolver
 
   case object autoImport {
 

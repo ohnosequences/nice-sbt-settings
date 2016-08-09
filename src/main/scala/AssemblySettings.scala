@@ -12,10 +12,11 @@ import AssemblyKeys._
 
 case object AssemblySettings extends sbt.AutoPlugin {
 
+  override def trigger = allRequirements
   override def requires =
+    plugins.JvmPlugin &&
     sbtassembly.AssemblyPlugin &&
     ResolverSettings
-  override def trigger = allRequirements
 
   case object autoImport {
 
@@ -26,12 +27,15 @@ case object AssemblySettings extends sbt.AutoPlugin {
 
     /* Note, that these settings are not included by default. To turn them on them, add to your
        `build.sbt` `addFatArtifactPublishing()` line (without any prefix) */
-    def addFatArtifactPublishing(conf: Configuration = Compile): Seq[Setting[_]] = Seq(
+    def addFatArtifactPublishingIn(conf: Configuration): Seq[Setting[_]] = Seq(
       artifact in (conf, assembly) := {
         val art = (artifact in (conf, assembly)).value
         art.copy( classifier = Some(fatArtifactClassifier.value) )
       }
-    ) ++ addArtifact(artifact in (conf, assembly), assembly)
+    ) ++
+    inConfig(conf)(
+      addArtifact(artifact in (conf, assembly), assembly)
+    )
   }
   import autoImport._
 
