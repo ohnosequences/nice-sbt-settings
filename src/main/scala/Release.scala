@@ -223,7 +223,7 @@ case object Release {
 
   /* This generates scalatest tags for marking tests (for now just release-only tests) */
   def generateTestTags: DefTask[Seq[File]] = Def.task {
-    val file = (sourceManaged in Test).value / "tags.scala"
+    val file = sourceManaged.in(Test).value / "test" / "releaseOnlyTag.scala"
 
     lazy val parts = Keys.releaseOnlyTestTag.value.split('.')
     lazy val pkg = parts.init.mkString(".")
@@ -368,7 +368,7 @@ case object Release {
 
     val ghpagesDir = IO.createTemporaryDirectory
 
-    log.info("Cloning gh-pages branch in a temporary directory...")
+    log.info(s"Cloning gh-pages branch in a temporary directory ${ghpagesDir}")
     if (git.silent.clone("--branch", "gh-pages", "--single-branch", url, ghpagesDir.getPath).exitCode != 0) {
       log.error("Couldn't clone gh-pages branch, probably this repo doesn't have it yet.")
       log.error(s"Check it and rerun the [${Keys.publishApiDocs.key.label}] command.")
@@ -391,8 +391,8 @@ case object Release {
 
       log.info("Publishing API docs...")
       val ghpagesGit = Git(ghpagesDir, streams.value.log)
-      ghpagesGit.stageAndCommit(s"API docs v${git.version}")(destVer, destLatest)
-      ghpagesGit.push(remoteName)(HEAD)
+      ghpagesGit.stageAndCommit(s"API docs v${git.version}")(destVer, destLatest).output.get
+      ghpagesGit.push(remoteName)(HEAD).output.get
     }
   }
 

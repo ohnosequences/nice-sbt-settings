@@ -178,9 +178,8 @@ case object Git {
 
     /* This is more than just commit, it unstages everything that is staged now, stages only the given files and commits them (this way even files that are not in the index yet will be commited) */
     def stageAndCommit(msg: String)(files: File*) = {
-      unstage()
       stage(files: _*)
-      commit(
+      git.cmd("commit")(
         "--no-verify" +: // bypasses pre- and post-commit hooks
         s"--message=${msg}" +:
         "--" +: files.map(_.getPath) : _*

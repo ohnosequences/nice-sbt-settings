@@ -5,36 +5,40 @@
 package ohnosequences.sbt.nice
 
 import sbt._, Keys._
-import sbtbuildinfo._, BuildInfoKeys._
+import AssemblySettings.autoImport._
 
 object StatikaBundleSettings extends sbt.AutoPlugin {
 
   // NOTE: it means that the plugin has to be manually activated: `enablePlugin(JavaOnlySettings)`
   override def trigger  = noTrigger
-  override def requires =
-    sbtbuildinfo.BuildInfoPlugin &&
-    AssemblySettings
+  override def requires = AssemblySettings
 
   case object autoImport {
 
-    lazy val statikaVersion = settingKey[String]("Statika library version")
-  }
-  import autoImport._
-
-  /* ### Settings */
-  override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    statikaVersion := "2.0.0-M5",
-    libraryDependencies += "ohnosequences" %% "statika" % statikaVersion.value,
-
-    buildInfoPackage := "generated.metadata",
-    buildInfoObject  := normalizedName.value,
-    buildInfoOptions := Seq(BuildInfoOption.Traits("ohnosequences.statika.AnyArtifactMetadata")),
-    buildInfoKeys    := Seq[BuildInfoKey](
-      organization,
-      version,
-      "artifact" -> normalizedName.value,
-      "artifactUrl" -> AssemblySettings.autoImport.fatArtifactUrl.value
+    def generateStatikaMetadataIn(conf: Configuration): Seq[Setting[_]] = Seq(
+      sourceGenerators in conf += generateStatikaMetadataTask(conf).taskValue
     )
-  )
+  }
 
+  def generateStatikaMetadataTask(conf: Configuration) = Def.task {
+    val file = sourceManaged.in(conf).value / "statikaMetadata.scala"
+
+    lazy val parts = organization.value.split('.') ++ normalizedName.value.split('.')
+    lazy val pkg = (parts.init ++ Seq("generated", "metadata")).mkString(".")
+    lazy val obj = parts.last.replaceAll("-", "_")
+
+    IO.write(file, s"""
+      |package ${pkg}
+      |
+      |case object ${obj} extends ohnosequences.statika.AnyArtifactMetadata {
+      |  val organization: String = "${organization.value}"
+      |  val artifact: String     = "${normalizedName.value}"
+      |  val version: String      = "${version.value}"
+      |  val artifactUrl: String  = "${fatArtifactUrl.value}"
+      |}
+      |""".stripMargin
+    )
+
+    Seq(file)
+  }
 }

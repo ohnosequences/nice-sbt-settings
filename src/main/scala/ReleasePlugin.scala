@@ -31,11 +31,11 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
 
     Keys.releaseOnlyTestTag := s"${organization.value}.test.ReleaseOnlyTest",
 
-    sourceGenerators in Test += generateTestTags.taskValue,
-
     testOptions in Test        += Tests.Argument("-l", Keys.releaseOnlyTestTag.value),
     testOptions in ReleaseTest -= Tests.Argument("-l", Keys.releaseOnlyTestTag.value),
     testOptions in ReleaseTest += Tests.Argument("-n", Keys.releaseOnlyTestTag.value),
+
+    sourceGenerators in Test += generateTestTags.taskValue,
 
     Keys.publishApiDocs := publishApiDocs.value,
 
