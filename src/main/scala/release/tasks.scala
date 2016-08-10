@@ -29,6 +29,11 @@ case object tasks {
     }
   }
 
+  private def withConfirmation[T](msg: String)(taskDef: DefTask[T]): DefTask[T] = Def.taskDyn {
+    confirmContinue(msg)
+    taskDef
+  }
+
   private def announce(msg: String): DefTask[Unit] = Def.task {
     val log = streams.value.log
     log.info("")
@@ -276,9 +281,15 @@ case object tasks {
       pushHeadAndTag,
       releaseOnGithub,
 
-      announce("Generating documentation..."),
-      generateLiteratorDocs,
-      publishApiDocs
+      announce("Release has successfully finished!"),
+
+      withConfirmation(
+        "Do you want to generate and publish Literator source docs?"
+      )(publishLiteratorDocs)
+
+      // withConfirmation(
+      //   "Do you want to generate and publish API docs to gh-pages?"
+      // )(publishApiDocs)
     )
   }
 
@@ -302,7 +313,7 @@ case object tasks {
   }
 
   /* Cleans previously generated docs and re-generates them again */
-  def generateLiteratorDocs: DefTask[Unit] = Def.taskDyn {
+  def publishLiteratorDocs: DefTask[Unit] = Def.taskDyn {
 
     val outputDir = docsOutputDirs.value
     Defaults.doClean(outputDir, Seq())
