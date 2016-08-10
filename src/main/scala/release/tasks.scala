@@ -254,6 +254,35 @@ case object tasks {
   }
 
 
+  /* After release is prepared this sequence is going to actually make the release (publish, etc.) */
+  def makeRelease(releaseVersion: Version): DefTask[Unit] = Def.taskDyn {
+    val log = streams.value.log
+    val git = Git.task.value
+
+    if (git.version != releaseVersion) {
+      log.error(s"This task should be run after ${keys.prepareRelease.key.label} and reload.")
+      log.error(s" Versions don't coincide: git version is [${git.version}], should be [${releaseVersion}].")
+      sys.error("Outdated version setting.")
+    }
+
+    Def.sequential(
+      announce("Publishing release artifacts..."),
+      publish.in(keys.Release),
+
+      announce("Running release tests..."),
+      test.in(keys.Release),
+
+      announce("Publishing release on Github..."),
+      pushHeadAndTag,
+      releaseOnGithub,
+
+      announce("Generating documentation..."),
+      generateLiteratorDocs,
+      publishApiDocs
+    )
+  }
+
+
   /* This task pushes current branch and tag to the remote */
   def pushHeadAndTag: DefTask[Unit] = Def.task {
     val git = Git.task.value
@@ -325,33 +354,6 @@ case object tasks {
       ghpagesGit.stageAndCommit(s"API docs v${git.version}")(destVer, destLatest).output.get
       ghpagesGit.push(remoteName)(HEAD).output.get
     }
-  }
-
-  def makeRelease(releaseVersion: Version): DefTask[Unit] = Def.taskDyn {
-    val log = streams.value.log
-    val git = Git.task.value
-
-    if (git.version != releaseVersion) {
-      log.error(s"This task should be run after ${keys.prepareRelease.key.label} and reload.")
-      log.error(s" Versions don't coincide: git version is [${git.version}], should be [${releaseVersion}].")
-      sys.error("Outdated version setting.")
-    }
-
-    Def.sequential(
-      announce("Publishing release artifacts..."),
-      publish.in(keys.Release),
-
-      announce("Running release tests..."),
-      test.in(keys.Release),
-
-      announce("Publishing release on Github..."),
-      pushHeadAndTag,
-      releaseOnGithub,
-
-      announce("Generating documentation..."),
-      generateLiteratorDocs,
-      publishApiDocs
-    )
   }
 
 }

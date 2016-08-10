@@ -7,7 +7,7 @@ package ohnosequences.sbt.nice
 import sbt._, Keys._
 import AssemblySettings.autoImport._
 
-object StatikaBundleSettings extends sbt.AutoPlugin {
+case object StatikaBundleSettings extends sbt.AutoPlugin {
 
   // NOTE: it means that the plugin has to be manually activated: `enablePlugin(JavaOnlySettings)`
   override def trigger  = noTrigger
@@ -20,7 +20,7 @@ object StatikaBundleSettings extends sbt.AutoPlugin {
     )
   }
 
-  def generateStatikaMetadataTask(conf: Configuration) = Def.task {
+  def generateStatikaMetadataTask(conf: Configuration): DefTask[Seq[File]] = Def.task {
     val file = sourceManaged.in(conf).value / "statikaMetadata.scala"
 
     lazy val parts = organization.value.split('.') ++ normalizedName.value.split('.')

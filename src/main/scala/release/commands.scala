@@ -1,7 +1,7 @@
 package ohnosequences.sbt.nice.release
 
 import ohnosequences.sbt.nice._
-import sbt._, Keys._, complete._, DefaultParsers._
+import sbt._, Keys._, complete._, DefaultParsers._, CommandStrings._
 
 
 case object commands {
@@ -15,7 +15,7 @@ case object commands {
 
   /* This is the action of the release command. It cannot be a task, because after release preparation we need to reload the state to update the version setting. */
   def releaseCommandAction(state: State, releaseVersion: Version): State = {
-    import sbt.CommandStrings._
+
     implicit def keyAsInput(tk: Scoped): String = tk.key.label
     def spaced(strs: String*): String = strs.mkString(" ")
 

@@ -19,7 +19,7 @@ case object JavaOnlySettings extends sbt.AutoPlugin {
   }
   import autoImport._
 
-  override lazy val projectSettings: Seq[Setting[_]] = Seq(
+  override def projectSettings: Seq[Setting[_]] = Seq(
     // default is Java 8
     javaVersion := "1.8",
 

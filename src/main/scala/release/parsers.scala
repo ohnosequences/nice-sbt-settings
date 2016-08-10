@@ -58,4 +58,6 @@ case object parsers {
     }
   }
 
+  def asArgument[T](parser: Parser[T]): Parser[T] = { Space ~> parser }
+
 }

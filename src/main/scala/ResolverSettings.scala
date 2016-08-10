@@ -8,7 +8,7 @@ import sbt._, Keys._
 
 import ohnosequences.sbt.SbtS3Resolver.autoImport._
 
-object ResolverSettings extends sbt.AutoPlugin {
+case object ResolverSettings extends sbt.AutoPlugin {
 
   override def trigger = allRequirements
   override def requires =

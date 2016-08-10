@@ -7,13 +7,13 @@ package ohnosequences.sbt.nice
 import sbt._
 import Keys._
 
-object ScalaSettings extends sbt.AutoPlugin {
+case object ScalaSettings extends sbt.AutoPlugin {
 
   override def requires = plugins.JvmPlugin
   override def trigger = allRequirements
 
   /* ### Settings */
-  override lazy val projectSettings: Seq[Setting[_]] = Seq(
+  override def projectSettings: Seq[Setting[_]] = Seq(
     /* This doesn't allow any conflicts in dependencies: */
     conflictManager := ConflictManager.strict,
 

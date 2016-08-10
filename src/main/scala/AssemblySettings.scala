@@ -32,7 +32,7 @@ case object AssemblySettings extends sbt.AutoPlugin {
   import autoImport._
 
   /* ### Settings */
-  override lazy val projectSettings: Seq[Setting[_]] = Seq(
+  override def projectSettings: Seq[Setting[_]] = Seq(
     // suffix for the fat artifact:
     fatArtifactClassifier := "fat",
     // turning off tests in assembly:
@@ -61,22 +61,24 @@ case object AssemblySettings extends sbt.AutoPlugin {
       ).mkString("/")
     },
 
-    fatArtifactUpload := {
-      lazy val fatJar = assembly.value
-
-      lazy val uri = new URI(fatArtifactUrl.value).normalize
-      lazy val bucket = uri.getHost
-      lazy val key    = uri.getPath.stripPrefix("/")
-
-      streams.value.log.info(s"Publishing assembled artifact to [${uri.toString}]...")
-      new AmazonS3Client(s3credentials.value).putObject(bucket, key, fatJar)
-
-      // NOTE: This is just another way to upload an object
-      // TODO: Would be nice to have some progress reporting, but the default one doesn't do anything "/
-      // val transfer = new TransferManager(s3credentials.value).upload(bucket, key, fatJar)
-      // transfer.addProgressListener(new com.amazonaws.event.ProgressTracker())
-      // transfer.waitForCompletion()
-    }
+    fatArtifactUpload := fatArtifactUploadTask.value
   )
+
+  def fatArtifactUploadTask: DefTask[Unit] = Def.task {
+    lazy val fatJar = assembly.value
+
+    lazy val uri = new URI(fatArtifactUrl.value).normalize
+    lazy val bucket = uri.getHost
+    lazy val key    = uri.getPath.stripPrefix("/")
+
+    streams.value.log.info(s"Publishing assembled artifact to [${uri.toString}]...")
+    new AmazonS3Client(s3credentials.value).putObject(bucket, key, fatJar)
+
+    // NOTE: This is just another way to upload an object
+    // TODO: Would be nice to have some progress reporting, but the default one doesn't do anything "/
+    // val transfer = new TransferManager(s3credentials.value).upload(bucket, key, fatJar)
+    // transfer.addProgressListener(new com.amazonaws.event.ProgressTracker())
+    // transfer.waitForCompletion()
+  }
 
 }

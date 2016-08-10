@@ -57,27 +57,25 @@ case object ReleasePlugin extends sbt.AutoPlugin {
     keys.publishApiDocs := tasks.publishApiDocs.value,
 
     keys.snapshotDependencies := tasks.snapshotDependencies.value,
-    keys.checkDependencies := tasks.checkDependencies.value,
+    keys.checkDependencies    := tasks.checkDependencies.value,
 
-    keys.checkGit          := inputTask(versionNumberArg)(tasks.checkGit).evaluated,
-    keys.checkReleaseNotes := inputTask(versionNumberArg)(tasks.checkReleaseNotes).evaluated,
+    keys.checkGit          := versionInputTask(tasks.checkGit).evaluated,
+    keys.checkReleaseNotes := versionInputTask(tasks.checkReleaseNotes).evaluated,
 
-    keys.prepareRelease    := inputTask(versionNumberArg)(tasks.prepareRelease).evaluated,
-    keys.makeRelease       := inputTask(versionNumberArg)(tasks.makeRelease).evaluated,
+    keys.prepareRelease    := versionInputTask(tasks.prepareRelease).evaluated,
+    keys.makeRelease       := versionInputTask(tasks.makeRelease).evaluated,
 
     sbt.Keys.commands += release.commands.releaseCommand
   )
 
 
-  private def versionNumberArg = Def.setting {
-    Space ~> parsers.versionNumberParser
-  }
+  // Just a shortcut to define all input tasks that take version as an argument
+  private def versionInputTask[Y](taskDef: Version => Def.Initialize[Task[Y]]):
+    Def.Initialize[InputTask[Y]] = Def.inputTaskDyn {
+      import parsers._
 
-  private def inputTask[X, Y](parser: Def.Initialize[Parser[X]])
-    (taskDef: X => Def.Initialize[Task[Y]]): Def.Initialize[InputTask[Y]] =
-      Def.inputTaskDyn {
-        val arg = parser.parsed
-        taskDef(arg)
-      }
+      val arg = asArgument(versionNumberParser).parsed
+      taskDef(arg)
+    }
 
 }
