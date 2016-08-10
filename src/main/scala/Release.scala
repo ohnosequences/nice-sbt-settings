@@ -8,6 +8,7 @@ import scala.collection.immutable.SortedSet
 import org.kohsuke.github.GHRelease
 import laughedelic.literator.plugin.LiteratorPlugin.autoImport._
 import java.nio.file.Files
+import AssemblySettings.autoImport._
 import Git._
 
 
@@ -407,9 +408,9 @@ case object Release {
     }
 
     Def.sequential(
-      announce("Publishing release artifact..."),
+      announce("Publishing release artifacts..."),
       publish,
-      publish.in(ReleaseTest),
+      publishFatArtifact,
 
       announce("Running release tests..."),
       test.in(ReleaseTest),
