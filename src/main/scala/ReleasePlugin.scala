@@ -8,8 +8,7 @@ import ohnosequences.sbt.SbtGithubReleasePlugin.autoImport._
 import VersionSettings.autoImport._
 import com.markatta.sbttaglist.TagListPlugin._
 
-case object NewReleasePlugin extends sbt.AutoPlugin {
-  import Release._
+case object ReleasePlugin extends sbt.AutoPlugin {
 
   override def trigger = allRequirements
   // TODO: almost all other plugins:
@@ -20,6 +19,12 @@ case object NewReleasePlugin extends sbt.AutoPlugin {
     laughedelic.literator.plugin.LiteratorPlugin &&
     ohnosequences.sbt.SbtGithubReleasePlugin
 
+  case object autoImport {
+    val Release = ohnosequences.sbt.nice.Release
+    val ReleaseTest = Release.ReleaseTest
+  }
+
+  import Release._
 
   /* ### Settings */
   override def projectConfigurations: Seq[Configuration] = Seq(ReleaseTest)
