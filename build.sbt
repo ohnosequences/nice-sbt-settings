@@ -15,7 +15,11 @@ addSbtPlugin("com.timushev.sbt"  % "sbt-updates"        % "0.1.10")  // https://
 addSbtPlugin("laughedelic"       % "literator"          % "0.7.0")   // https://github.com/laughedelic/literator
 addSbtPlugin("com.markatta"      % "taglist-plugin"     % "1.3.1")   // https://github.com/johanandren/sbt-taglist
 addSbtPlugin("org.wartremover"   % "sbt-wartremover"    % "1.1.0")   // https://github.com/puffnfresh/wartremover
-// addSbtPlugin("com.eed3si9n"      % "sbt-buildinfo"      % "0.6.1")   // https://github.com/sbt/sbt-buildinfo
+
+libraryDependencies ++= Seq(
+  // NOTE: it's an old version of aws-sdk, but this is what we use in ivy-s3-resolver. It should be updated there first.
+  "com.amazonaws" % "aws-java-sdk-s3" % "1.10.47"
+)
 
 wartremoverErrors in (Compile, compile) := Seq()
 // wartremoverWarnings ++= Warts.allBut(Wart.NoNeedForMonad)
