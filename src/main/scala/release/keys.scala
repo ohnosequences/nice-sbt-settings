@@ -1,11 +1,10 @@
 package ohnosequences.sbt.nice.release
 
 import sbt._
-// import ohnosequences.sbt.nice._
 
 case object keys {
 
-  lazy val ReleaseTest = config("releaseTest").extend(Test)
+  lazy val Release = config("release").extend(Test)
 
   lazy val releaseOnlyTestTag = settingKey[String]("Full name of the release-only tests tag")
   lazy val publishFatArtifact = settingKey[Boolean]("Determines whether publish in release will also upload fat-jar")

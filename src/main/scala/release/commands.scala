@@ -8,7 +8,7 @@ case object commands {
 
   lazy val releaseCommand = Command("release")(releaseCommandArgsParser)(releaseCommandAction)
 
-  private def releaseCommandArgsParser(state: State): Parser[Version] = {
+  def releaseCommandArgsParser(state: State): Parser[Version] = {
     val git = Git(Project.extract(state).get(baseDirectory), state.log)
     Space ~> parsers.versionBumperParser(git.version)
   }

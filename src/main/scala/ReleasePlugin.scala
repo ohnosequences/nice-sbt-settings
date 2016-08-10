@@ -27,10 +27,10 @@ case object ReleasePlugin extends sbt.AutoPlugin {
   import autoImport._
 
   /* ### Settings */
-  override def projectConfigurations: Seq[Configuration] = Seq(ReleaseTest)
+  override def projectConfigurations: Seq[Configuration] = Seq(Release)
 
   override def projectSettings: Seq[Setting[_]] =
-    inConfig(ReleaseTest)(Defaults.testTasks) ++
+    inConfig(Release)(Defaults.testTasks) ++
     tagListSettings ++ Seq(
 
     libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6" % Test,
@@ -38,17 +38,17 @@ case object ReleasePlugin extends sbt.AutoPlugin {
     keys.releaseOnlyTestTag := s"${organization.value}.test.ReleaseOnlyTest",
 
     testOptions in Test        += Tests.Argument("-l", keys.releaseOnlyTestTag.value),
-    testOptions in ReleaseTest -= Tests.Argument("-l", keys.releaseOnlyTestTag.value),
-    testOptions in ReleaseTest += Tests.Argument("-n", keys.releaseOnlyTestTag.value),
+    testOptions in Release -= Tests.Argument("-l", keys.releaseOnlyTestTag.value),
+    testOptions in Release += Tests.Argument("-n", keys.releaseOnlyTestTag.value),
 
     sourceGenerators in Test += tasks.generateTestTags.taskValue,
 
-    keys.publishFatArtifact in ReleaseTest := false,
+    keys.publishFatArtifact in Release := false,
 
-    publish in ReleaseTest := Def.taskDyn {
+    publish in Release := Def.taskDyn {
       publish.value
 
-      if (keys.publishFatArtifact.in(ReleaseTest).value)
+      if (keys.publishFatArtifact.in(Release).value)
         Def.task { fatArtifactUpload.value }
       else
         Def.task { streams.value.log.info("Skipping fat-jar publishing.") }

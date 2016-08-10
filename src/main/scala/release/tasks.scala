@@ -339,10 +339,10 @@ case object tasks {
 
     Def.sequential(
       announce("Publishing release artifacts..."),
-      publish.in(keys.ReleaseTest),
+      publish.in(keys.Release),
 
       announce("Running release tests..."),
-      test.in(keys.ReleaseTest),
+      test.in(keys.Release),
 
       announce("Publishing release on Github..."),
       pushHeadAndTag,
