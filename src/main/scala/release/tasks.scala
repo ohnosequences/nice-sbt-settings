@@ -1,4 +1,6 @@
-package ohnosequences.sbt.nice
+package ohnosequences.sbt.nice.release
+
+import ohnosequences.sbt.nice._
 
 import sbt._, Keys._, complete._, DefaultParsers._
 import ohnosequences.sbt.SbtGithubReleasePlugin.autoImport._
@@ -12,80 +14,7 @@ import AssemblySettings.autoImport._
 import Git._
 
 
-case object Release {
-
-  lazy val ReleaseTest = config("releaseTest").extend(Test)
-
-  case object Keys {
-
-    lazy val releaseOnlyTestTag = settingKey[String]("Full name of the release-only tests tag")
-    lazy val publishFatArtifact = settingKey[Boolean]("Determines whether publish in release will also upload fat-jar")
-
-    lazy val checkGit = inputKey[Unit]("Checks git repository and its remote")
-    lazy val checkReleaseNotes = inputKey[Either[File, File]]("Checks precense of release notes and returns its file")
-    lazy val snapshotDependencies = taskKey[Seq[ModuleID]]("Returns the list of dependencies with changing/snapshot versions")
-    lazy val checkDependencies = taskKey[Unit]("Checks that there are no snapshot or outdated dependencies")
-
-    lazy val publishApiDocs = taskKey[Unit]("Publishes API docs to the gh-pages branch of the repo")
-
-    lazy val prepareRelease = inputKey[Unit]("Runs all pre-release checks sequentially")
-    lazy val    makeRelease = inputKey[Unit]("Publishes the release")
-  }
-
-  type DefTask[X] = Def.Initialize[Task[X]]
-
-  /* This class helps to create Version parser based on the string and a version transformation.
-     Given a version `apply` method returns a parser which accepts `str` literal, but shows it in
-     tab-completion together with the next (bumped) version.
-  */
-  case class BumperParser(str: String, bump: Version => Version) {
-
-    def apply(ver: Version): Parser[Version] = {
-      val next = bump(ver)
-      tokenDisplay(
-        str ^^^ next,
-        s"(${next}) ${str}"
-      )
-    }
-  }
-
-  case object BumperParser {
-
-    val major     = BumperParser("major",     { _.bumpMajor })
-    val minor     = BumperParser("minor",     { _.bumpMinor })
-    val bugfix    = BumperParser("bugfix",    { _.bumpBugfix })
-    val milestone = BumperParser("milestone", { _.bumpMilestone })
-    val candidate = BumperParser("candidate", { _.bumpCandidate })
-    val fin       = BumperParser("final",     { _.base })
-  }
-
-  def versionBumperParser(current: Version): Parser[Version] = {
-    import BumperParser._
-
-    if (current.isCandidate) {
-      (candidate(current) | fin(current)) ?? current.base
-
-    } else if (current.isMilestone) {
-      (milestone(current) | fin(current)) ?? current.base
-
-    } else {
-      bugfix(current) |
-      (minor(current) | major(current)).flatMap { next =>
-        (Space ~> (milestone(next) | candidate(next) | fin(next))) ?? next
-      }
-    }
-  }
-
-  /* This one just tries to parse version number from arbitrary input */
-  def versionNumberParser: Parser[Version] = {
-    // TODO: rewrite with proper combinators and use it in Version.parse (will give better errors than just a regex matching)
-    StringBasic flatMap { str =>
-      Version.parse(str) match {
-        case None => failure(s"Coundn't parse version from '${str}'")
-        case Some(ver) => success(ver)
-      }
-    }
-  }
+case object tasks {
 
   /* Asks user for the confirmation to continue */
   private def confirmContinue(msg: String): Unit = {
@@ -119,11 +48,11 @@ case object Release {
 
     announce("Checking project dependencies..."),
     checkDependencies,
-    sbt.Keys.update,
+    update,
 
     announce("Running non-release tests..."),
     clean,
-    test in Test,
+    test.in(Test),
 
     announce("Preparing release notes and creating git tag..."),
     prepareReleaseNotesAndTag(releaseVersion)
@@ -227,7 +156,7 @@ case object Release {
   def generateTestTags: DefTask[Seq[File]] = Def.task {
     val file = sourceManaged.in(Test).value / "test" / "releaseOnlyTag.scala"
 
-    lazy val parts = Keys.releaseOnlyTestTag.value.split('.')
+    lazy val parts = keys.releaseOnlyTestTag.value.split('.')
     lazy val pkg = parts.init.mkString(".")
     lazy val obj = parts.last
 
@@ -373,7 +302,7 @@ case object Release {
     log.info(s"Cloning gh-pages branch in a temporary directory ${ghpagesDir}")
     if (git.silent.clone("--branch", "gh-pages", "--single-branch", url, ghpagesDir.getPath).exitCode != 0) {
       log.error("Couldn't clone gh-pages branch, probably this repo doesn't have it yet.")
-      log.error(s"Check it and rerun the [${Keys.publishApiDocs.key.label}] command.")
+      log.error(s"Check it and rerun the [${keys.publishApiDocs.key.label}] command.")
       sys.error("gh-pages branch doesn't exist")
       // TODO: create it if it doesn't exist (don't forget --orphan)
 
@@ -403,17 +332,17 @@ case object Release {
     val git = Git.task.value
 
     if (git.version != releaseVersion) {
-      log.error(s"This task should be run after ${Keys.prepareRelease.key.label} and reload.")
+      log.error(s"This task should be run after ${keys.prepareRelease.key.label} and reload.")
       log.error(s" Versions don't coincide: git version is [${git.version}], should be [${releaseVersion}].")
       sys.error("Outdated version setting.")
     }
 
     Def.sequential(
       announce("Publishing release artifacts..."),
-      publish.in(ReleaseTest),
+      publish.in(keys.ReleaseTest),
 
       announce("Running release tests..."),
-      test.in(ReleaseTest),
+      test.in(keys.ReleaseTest),
 
       announce("Publishing release on Github..."),
       pushHeadAndTag,
@@ -424,27 +353,5 @@ case object Release {
       publishApiDocs
     )
   }
-
-
-  lazy val releaseCommand = Command("release")(releaseCommandArgsParser)(releaseCommandAction)
-
-  private def releaseCommandArgsParser(state: State): Parser[Version] = {
-    val ver = Project.extract(state).get(gitVersion)
-    Space ~> versionBumperParser(ver)
-  }
-
-  /* This is the action of the release command. It cannot be a task, because after release preparation we need to reload the state to update the version setting. */
-  def releaseCommandAction(state: State, releaseVersion: Version): State = {
-    import sbt.CommandStrings._
-    implicit def keyAsInput(tk: Scoped): String = tk.key.label
-    def spaced(strs: String*): String = strs.mkString(" ")
-
-    // Here everything is converted to strings and prepended to remainingCommands of the state (it's the same if you manually entered those strings in the sbt console one by one)
-    spaced(Keys.prepareRelease, releaseVersion.toString) ::
-    LoadProject :: // = reload
-    spaced(Keys.makeRelease, releaseVersion.toString) ::
-    state
-  }
-
 
 }

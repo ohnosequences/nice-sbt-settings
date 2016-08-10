@@ -9,6 +9,8 @@ import VersionSettings.autoImport._
 import AssemblySettings.autoImport._
 import com.markatta.sbttaglist.TagListPlugin._
 
+import ohnosequences.sbt.nice.release._
+
 case object ReleasePlugin extends sbt.AutoPlugin {
 
   override def trigger = allRequirements
@@ -21,12 +23,8 @@ case object ReleasePlugin extends sbt.AutoPlugin {
     laughedelic.literator.plugin.LiteratorPlugin &&
     ohnosequences.sbt.SbtGithubReleasePlugin
 
-  case object autoImport {
-    val Release = ohnosequences.sbt.nice.Release
-    val ReleaseTest = Release.ReleaseTest
-  }
-
-  import Release._
+  val autoImport = ohnosequences.sbt.nice.release.keys
+  import autoImport._
 
   /* ### Settings */
   override def projectConfigurations: Seq[Configuration] = Seq(ReleaseTest)
@@ -37,42 +35,42 @@ case object ReleasePlugin extends sbt.AutoPlugin {
 
     libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6" % Test,
 
-    Keys.releaseOnlyTestTag := s"${organization.value}.test.ReleaseOnlyTest",
+    keys.releaseOnlyTestTag := s"${organization.value}.test.ReleaseOnlyTest",
 
-    testOptions in Test        += Tests.Argument("-l", Keys.releaseOnlyTestTag.value),
-    testOptions in ReleaseTest -= Tests.Argument("-l", Keys.releaseOnlyTestTag.value),
-    testOptions in ReleaseTest += Tests.Argument("-n", Keys.releaseOnlyTestTag.value),
+    testOptions in Test        += Tests.Argument("-l", keys.releaseOnlyTestTag.value),
+    testOptions in ReleaseTest -= Tests.Argument("-l", keys.releaseOnlyTestTag.value),
+    testOptions in ReleaseTest += Tests.Argument("-n", keys.releaseOnlyTestTag.value),
 
-    sourceGenerators in Test += generateTestTags.taskValue,
+    sourceGenerators in Test += tasks.generateTestTags.taskValue,
 
-    Keys.publishFatArtifact in ReleaseTest := false,
+    keys.publishFatArtifact in ReleaseTest := false,
 
     publish in ReleaseTest := Def.taskDyn {
       publish.value
 
-      if (Keys.publishFatArtifact.in(ReleaseTest).value)
+      if (keys.publishFatArtifact.in(ReleaseTest).value)
         Def.task { fatArtifactUpload.value }
       else
         Def.task { streams.value.log.info("Skipping fat-jar publishing.") }
     },
 
-    Keys.publishApiDocs := publishApiDocs.value,
+    keys.publishApiDocs := tasks.publishApiDocs.value,
 
-    Keys.snapshotDependencies := snapshotDependencies.value,
-    Keys.checkDependencies := checkDependencies.value,
+    keys.snapshotDependencies := tasks.snapshotDependencies.value,
+    keys.checkDependencies := tasks.checkDependencies.value,
 
-    Keys.checkGit          := inputTask(versionNumberArg)(checkGit).evaluated,
-    Keys.checkReleaseNotes := inputTask(versionNumberArg)(checkReleaseNotes).evaluated,
+    keys.checkGit          := inputTask(versionNumberArg)(tasks.checkGit).evaluated,
+    keys.checkReleaseNotes := inputTask(versionNumberArg)(tasks.checkReleaseNotes).evaluated,
 
-    Keys.prepareRelease    := inputTask(versionNumberArg)(prepareRelease).evaluated,
-    Keys.makeRelease       := inputTask(versionNumberArg)(makeRelease).evaluated,
+    keys.prepareRelease    := inputTask(versionNumberArg)(tasks.prepareRelease).evaluated,
+    keys.makeRelease       := inputTask(versionNumberArg)(tasks.makeRelease).evaluated,
 
-    commands += releaseCommand
+    sbt.Keys.commands += release.commands.releaseCommand
   )
 
 
   private def versionNumberArg = Def.setting {
-    Space ~> versionNumberParser
+    Space ~> parsers.versionNumberParser
   }
 
   private def inputTask[X, Y](parser: Def.Initialize[Parser[X]])
