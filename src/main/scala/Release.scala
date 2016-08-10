@@ -19,6 +19,7 @@ case object Release {
   case object Keys {
 
     lazy val releaseOnlyTestTag = settingKey[String]("Full name of the release-only tests tag")
+    lazy val publishFatArtifact = settingKey[Boolean]("Determines whether publish in release will also upload fat-jar")
 
     lazy val checkGit = inputKey[Unit]("Checks git repository and its remote")
     lazy val checkReleaseNotes = inputKey[Either[File, File]]("Checks precense of release notes and returns its file")
@@ -409,8 +410,7 @@ case object Release {
 
     Def.sequential(
       announce("Publishing release artifacts..."),
-      publish,
-      publishFatArtifact,
+      publish.in(ReleaseTest),
 
       announce("Running release tests..."),
       test.in(ReleaseTest),

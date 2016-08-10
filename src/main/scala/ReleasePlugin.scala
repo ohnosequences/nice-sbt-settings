@@ -6,6 +6,7 @@ package ohnosequences.sbt.nice
 import sbt._, Keys._, complete._, DefaultParsers._
 import ohnosequences.sbt.SbtGithubReleasePlugin.autoImport._
 import VersionSettings.autoImport._
+import AssemblySettings.autoImport._
 import com.markatta.sbttaglist.TagListPlugin._
 
 case object ReleasePlugin extends sbt.AutoPlugin {
@@ -14,6 +15,7 @@ case object ReleasePlugin extends sbt.AutoPlugin {
   // TODO: almost all other plugins:
   override def requires =
     plugins.JvmPlugin &&
+    AssemblySettings &&
     com.timushev.sbt.updates.UpdatesPlugin &&
     ohnosequences.sbt.nice.WartRemoverSettings &&
     laughedelic.literator.plugin.LiteratorPlugin &&
@@ -41,11 +43,18 @@ case object ReleasePlugin extends sbt.AutoPlugin {
     testOptions in ReleaseTest -= Tests.Argument("-l", Keys.releaseOnlyTestTag.value),
     testOptions in ReleaseTest += Tests.Argument("-n", Keys.releaseOnlyTestTag.value),
 
-    publishArtifact in (ReleaseTest, packageBin) := false,
-    publishArtifact in (ReleaseTest, packageDoc) := false,
-    publishArtifact in (ReleaseTest, packageSrc) := false,
-
     sourceGenerators in Test += generateTestTags.taskValue,
+
+    Keys.publishFatArtifact in ReleaseTest := false,
+
+    publish in ReleaseTest := Def.taskDyn {
+      publish.value
+
+      if (Keys.publishFatArtifact.in(ReleaseTest).value)
+        Def.task { fatArtifactUpload.value }
+      else
+        Def.task { streams.value.log.info("Skipping fat-jar publishing.") }
+    },
 
     Keys.publishApiDocs := publishApiDocs.value,
 
