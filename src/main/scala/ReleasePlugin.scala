@@ -18,6 +18,7 @@ case object ReleasePlugin extends sbt.AutoPlugin {
   override def requires =
     plugins.JvmPlugin &&
     AssemblySettings &&
+    VersionSettings &&
     com.timushev.sbt.updates.UpdatesPlugin &&
     ohnosequences.sbt.nice.WartRemoverSettings &&
     laughedelic.literator.plugin.LiteratorPlugin &&
@@ -45,14 +46,7 @@ case object ReleasePlugin extends sbt.AutoPlugin {
 
     keys.publishFatArtifact in Release := false,
 
-    publish in Release := Def.taskDyn {
-      publish.value
-
-      if (keys.publishFatArtifact.in(Release).value)
-        Def.task { fatArtifactUpload.value }
-      else
-        Def.task { streams.value.log.info("Skipping fat-jar publishing.") }
-    },
+    publish in Release := tasks.publishRelease.value,
 
     keys.publishApiDocs := tasks.publishApiDocs.value,
 
@@ -67,7 +61,6 @@ case object ReleasePlugin extends sbt.AutoPlugin {
 
     sbt.Keys.commands += release.commands.releaseCommand
   )
-
 
   // Just a shortcut to define all input tasks that take version as an argument
   private def versionInputTask[Y](taskDef: Version => Def.Initialize[Task[Y]]):

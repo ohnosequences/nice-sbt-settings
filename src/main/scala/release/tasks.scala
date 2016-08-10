@@ -292,6 +292,15 @@ case object tasks {
     git.push(remoteName)(HEAD, tagName).output.get
   }
 
+  def publishRelease: DefTask[Unit] = Def.taskDyn {
+    publishCarefully.value
+
+    if (keys.publishFatArtifact.in(keys.Release).value)
+      Def.task { fatArtifactUpload.value }
+    else
+      Def.task { streams.value.log.info("Skipping fat-jar publishing.") }
+  }
+
   /* Cleans previously generated docs and re-generates them again */
   def generateLiteratorDocs: DefTask[Unit] = Def.taskDyn {
 
