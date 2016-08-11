@@ -225,7 +225,7 @@ case object tasks {
 
           confirmContinue("Do you want to proceed with these release notes?")
 
-          if (notesFile.base == releaseVersion) Right(notesFile)
+          if (notesFile.base == releaseVersion.toString) Right(notesFile)
           else Left(notesFile)
         }
       }
