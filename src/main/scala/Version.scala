@@ -29,8 +29,8 @@ case class Version(
   // Milestone suffix:
   def M(num: Int): Version = base.apply(s"M${num}")
 
-  lazy val milestone: Option[Int] = suffixes match {
-    case v.regex.milestone(num) :: _ => Some(num.toInt)
+  lazy val milestone: Option[Int] = suffixes.headOption.flatMap {
+    case v.regex.milestone(num) => Some(num.toInt)
     case _ => None
   }
   lazy val isMilestone: Boolean = milestone.nonEmpty
@@ -38,8 +38,8 @@ case class Version(
   // Release Candidate suffix:
   def RC(num: Int): Version = base.apply(s"RC${num}")
 
-  lazy val candidate: Option[Int] = suffixes match {
-    case v.regex.candidate(num) :: _ => Some(num.toInt)
+  lazy val candidate: Option[Int] = suffixes.headOption.flatMap {
+    case v.regex.candidate(num) => Some(num.toInt)
     case _ => None
   }
   lazy val isCandidate: Boolean = candidate.nonEmpty
