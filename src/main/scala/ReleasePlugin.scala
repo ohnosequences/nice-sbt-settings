@@ -48,6 +48,7 @@ case object ReleasePlugin extends sbt.AutoPlugin {
 
     publish in Release := tasks.publishRelease.value,
 
+    keys.publishLiteratorDocs := tasks.publishLiteratorDocs.value,
     keys.publishApiDocs := Def.inputTaskDyn {
       val arg = boolParser.parsed
       tasks.publishApiDocs(arg)
