@@ -17,20 +17,21 @@ import Git._
 case object tasks {
 
   /* Asks user for the confirmation to continue */
-  private def confirmContinue(msg: String): Unit = {
+  private def confirmContinue(msg: String)(noWay: () => Unit): Unit = {
 
     SimpleReader.readLine(s"\n${msg} (y/n) ").map(_.toLowerCase) match {
       case Some("y") => {} // go on
-      case Some("n") => sys.error("User chose to abort release process")
+      case Some("n") => noWay.apply()
       case _ => {
         println("Didn't understand your answer. Try again.")
-        confirmContinue(msg)
+        confirmContinue(msg)(noWay)
       }
     }
   }
 
-  private def withConfirmation[T](msg: String)(taskDef: DefTask[T]): DefTask[T] = Def.taskDyn {
-    confirmContinue(msg)
+  private def confirmOptional[T](msg: String)(taskDef: DefTask[T]): DefTask[T] = Def.taskDyn {
+    def doNothing(): Unit = ()
+    confirmContinue(msg)(doNothing)
     taskDef
   }
 
@@ -117,7 +118,9 @@ case object tasks {
     // NOTE: this task outputs the list
     val list = TagListKeys.tagList.value
     if (list.flatMap{ _._2 }.nonEmpty) {
-      confirmContinue("Are you sure you want to continue without fixing it?")
+      confirmContinue("Are you sure you want to continue without fixing it?")(
+        sys.error("Aborted due to unfixed code notes.")
+      )
     }
   }
 
@@ -151,7 +154,9 @@ case object tasks {
 
       if (updatesData.nonEmpty) {
         log.warn( Reporter.dependencyUpdatesReport(projectID.value, updatesData) )
-        confirmContinue("Are you sure you want to continue with outdated dependencies?")
+        confirmContinue("Are you sure you want to continue with outdated dependencies?")(
+          sys.error("Aborted due to outdated dependencies.")
+        )
 
       } else log.info("All dependencies seem to be up to date.")
     }
@@ -223,7 +228,9 @@ case object tasks {
           log.info(s"Taking release notes from the [${notesPath}] file:")
           println(notes)
 
-          confirmContinue("Do you want to proceed with these release notes?")
+          confirmContinue("Do you want to proceed with these release notes?")(
+            sys.error("Aborted by user.")
+          )
 
           if (notesFile.base == releaseVersion.toString) Right(notesFile)
           else Left(notesFile)
@@ -284,11 +291,11 @@ case object tasks {
 
       announce("Release has successfully finished!"),
 
-      withConfirmation(
+      confirmOptional(
         "Do you want to generate and publish Literator source docs?"
       )(publishLiteratorDocs),
 
-      withConfirmation(
+      confirmOptional(
         "Do you want to generate and publish API docs to gh-pages?"
       )(publishApiDocs(latest = true))
     )
@@ -357,7 +364,9 @@ case object tasks {
 
       log.warn("Couldn't clone gh-pages branch, probably this repo doesn't have it yet.")
 
-      confirmContinue("Do you want to create gh-pages branch automatically?")
+      confirmContinue("Do you want to create gh-pages branch automatically?")(
+        sys.error("Aborted by user.")
+      )
 
       log.debug(s"Cloning this repo to the temporary directory ${ghpagesDir}")
       git.silent.clone(git.workingDir.getPath, ghpagesDir.getPath).critical
