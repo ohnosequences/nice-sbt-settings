@@ -250,8 +250,8 @@ case object tasks {
       case Right(file) => file
       case Left(changelogFile) => {
         val versionFile = baseDirectory.value / "notes" / s"${releaseVersion}.markdown"
-        git.mv(changelogFile, versionFile)
-        git.stageAndCommit(s"Release notes for v${releaseVersion}")(changelogFile, versionFile)
+        git.mv(changelogFile, versionFile).critical
+        git.commit(s"Release notes for v${releaseVersion}")().critical
         versionFile
       }
     }

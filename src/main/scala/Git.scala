@@ -89,7 +89,6 @@ case object Git {
     def clone     = git.cmd("clone")
     def reset     = git.cmd("reset")
     def add       = git.cmd("add")
-    def commit    = git.cmd("commit")
 
     /* These are several more commands that have some restricted interface */
     def configGet(path: String*): Try[String] = git.cmd("config")(path.mkString(".")).output
@@ -97,7 +96,11 @@ case object Git {
     def configSet(path: String*)(value: String): Int = git.cmd("config")(path.mkString("."), value).exitCode
 
     def mv(from: File, to: File) =
-      git.cmd("mv")("-k", git.path(from), git.path(to))
+      git.cmd("mv")(
+        "-k", // skip invalid renamings
+        "--verbose",
+        "--", git.path(from), git.path(to)
+      )
 
     def push(remote: String)(refs: String*) =
       git.cmd("push")("--porcelain" +: remote +: refs : _*)
@@ -183,16 +186,18 @@ case object Git {
     def unstage(files: File*) = reset(HEAD +: "--" +: files.map(git.path) : _*)
     def   stage(files: File*) =           add("--" +: files.map(git.path) : _*)
 
+    def commit(msg: String)(files: File*) =
+      git.cmd("commit")(
+        "--no-verify" +: // bypasses pre- and post-commit hooks
+        s"--message=${msg}" +:
+        "--" +: files.map(git.path) : _*
+      )
+
     /* This is more than just commit, it unstages everything that is staged now, stages only the given files and commits them (this way even files that are not in the index yet will be commited) */
     def stageAndCommit(msg: String)(files: File*) = {
-      unstage().critical
-      stage(files: _*).critical
-
-      commit(
-        "--no-verify", // bypasses pre- and post-commit hooks
-        s"--message=${msg}",
-        "--"
-      )
+      unstage()
+      stage(files: _*)
+      commit(msg)(files: _*)
     }
   }
 }
