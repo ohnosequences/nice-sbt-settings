@@ -97,14 +97,14 @@ case object Git {
     // See git help config for the meaning of different exit codes:
     def configSet(path: String*)(value: String): Int = git.cmd("config")(path.mkString("."), value).exitCode
 
-    def mv(from: File, to: File) =
+    def mv(from: File, to: File): GitCommand =
       git.cmd("mv")(
         "-k", // skip invalid renamings
         "--verbose",
         "--", git.path(from), git.path(to)
       )
 
-    def push(remote: String)(refs: String*) =
+    def push(remote: String)(refs: String*): GitCommand =
       git.cmd("push")("--porcelain" +: remote +: refs : _*)
 
 
@@ -185,10 +185,11 @@ case object Git {
     // ): Boolean =
     //   ls_remote(remote, ref).exitCode == 0
 
-    def unstage(files: File*) = reset(HEAD +: "--" +: files.map(git.path) : _*)
-    def   stage(files: File*) =           add("--" +: files.map(git.path) : _*)
+    def unstage(files: File*): GitCommand = reset(HEAD +: "--" +: files.map(git.path) : _*)
+    def   stage(files: File*): GitCommand =           add("--" +: files.map(git.path) : _*)
 
-    def commit(msg: String)(files: File*) =
+    // NOTE: you can pass only files that are already in the index (or use stageAndCommit)
+    def commit(msg: String)(files: File*): GitCommand =
       git.cmd("commit")(
         "--no-verify" +: // bypasses pre- and post-commit hooks
         s"--message=${msg}" +:
@@ -196,10 +197,10 @@ case object Git {
       )
 
     /* This is more than just commit, it unstages everything that is staged now, stages only the given files and commits them (this way even files that are not in the index yet will be commited) */
-    def stageAndCommit(msg: String)(files: File*) = {
-      unstage()
-      stage(files: _*)
-      commit(msg)(files: _*)
+    def stageAndCommit(msg: String)(files: File*): String = {
+      unstage().critical
+      stage(files: _*).critical
+      commit(msg)().critical
     }
   }
 }
