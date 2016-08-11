@@ -1,0 +1,3 @@
+This is the second release candidate for the version 0.8.0. It contains a lot of fixes since RC1.
+
+For the list of changes since 0.7.0 see [the notes](0.8.0.markdown) for the final release.
