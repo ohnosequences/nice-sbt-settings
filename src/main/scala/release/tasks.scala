@@ -358,10 +358,10 @@ case object tasks {
       confirmContinue("Do you want to create gh-pages branch automatically?")
 
       log.debug(s"Cloning this repo to the temporary directory ${ghpagesDir}")
-      git.clone(git.workingDir.getPath, ghpagesDir.getPath).critical
+      git.silent.clone(git.workingDir.getPath, ghpagesDir.getPath).critical
 
       log.debug(s"Creating an orphan branch")
-      ghpagesGit.checkout("--orphan", gh_pages).critical
+      ghpagesGit.silent.checkout("--orphan", gh_pages).critical
       ghpagesGit.rm("-rf", ".").critical
 
       log.info(s"Successfully created gh-pages branch")
@@ -378,6 +378,7 @@ case object tasks {
       IO.copyDirectory(docTarget, destVer, overwrite = true)
 
       ghpagesGit.stageAndCommit(s"API docs v${git.version}")(destVer).critical
+      log.debug(s"Committed ${destVer}")
 
       if (latest) {
         // NOTE: .nojekyll file is needed for symlinks (see https://github.com/isaacs/github/issues/553)
