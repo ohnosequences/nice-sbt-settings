@@ -44,9 +44,6 @@ case object tasks {
 
   /* We try to check as much as possible _before_ making any release-related changes. If these checks are not passed, it doesn't make sense to start release process at all */
   def prepareRelease(releaseVersion: Version): DefTask[Unit] = Def.sequential(
-    announce("Cleaning..."),
-    clean,
-
     announce("Checking git repository..."),
     checkGit(releaseVersion),
     checkGithubCredentials,
@@ -56,6 +53,7 @@ case object tasks {
 
     announce("Checking project dependencies..."),
     checkDependencies,
+    clean,
     update,
 
     announce("Running non-release tests..."),
