@@ -89,6 +89,8 @@ case object Git {
     def clone     = git.cmd("clone")
     def reset     = git.cmd("reset")
     def add       = git.cmd("add")
+    def rm        = git.cmd("rm")
+    def checkout  = git.cmd("checkout")
 
     /* These are several more commands that have some restricted interface */
     def configGet(path: String*): Try[String] = git.cmd("config")(path.mkString(".")).output

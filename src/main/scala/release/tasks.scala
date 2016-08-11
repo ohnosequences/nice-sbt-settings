@@ -332,7 +332,7 @@ case object tasks {
   }
 
   /* This task
-     - clones `gh-pages` branch in a temporary directory
+     - clones `gh-pages` branch in a temporary directory (or offers to create it)
      - generates api docs with the standard sbt task `docs`
      - copies it to `docs/api/<version>`
      - symlinks `docs/api/latest` to it
@@ -349,17 +349,27 @@ case object tasks {
     }
 
     val ghpagesDir = IO.createTemporaryDirectory
+    val ghpagesGit = Git(ghpagesDir, streams.value.log)
     val gh_pages = "gh-pages"
 
-    log.info(s"Cloning gh-pages branch in a temporary directory ${ghpagesDir}")
+    log.info(s"Cloning gh-pages branch to the temporary directory ${ghpagesDir}")
     if (git.silent.clone("--branch", gh_pages, "--single-branch", url, ghpagesDir.getPath).exitCode != 0) {
-      log.error("Couldn't clone gh-pages branch, probably this repo doesn't have it yet.")
-      log.error(s"Check it and rerun the [${keys.publishApiDocs.key.label}] command.")
-      sys.error("gh-pages branch doesn't exist")
-      // TODO: create it if it doesn't exist (don't forget --orphan)
-      // add .nojekyll in the root for symlinks to work (see https://github.com/isaacs/github/issues/553)
 
-    } else Def.task {
+      log.warn("Couldn't clone gh-pages branch, probably this repo doesn't have it yet.")
+
+      confirmContinue("Do you want to create gh-pages branch automatically?")
+
+      log.debug(s"Cloning this repo to the temporary directory ${ghpagesDir}")
+      git.clone(git.workingDir.getPath, ghpagesDir.getPath).critical
+
+      log.debug(s"Creating an orphan branch")
+      ghpagesGit.checkout("--orphan", gh_pages).critical
+      ghpagesGit.rm("-rf", ".").critical
+
+      log.info(s"Successfully created gh-pages branch")
+    }
+
+    Def.task {
       val docTarget = doc.in(Compile).value
 
       val destBase   = ghpagesDir / "docs" / "api"
@@ -369,20 +379,28 @@ case object tasks {
       if (destVer.exists) IO.delete(destVer)
       IO.copyDirectory(docTarget, destVer, overwrite = true)
 
-      val destLatestOpt: Option[File] = if (latest) Some(destBase / "latest") else None
+      ghpagesGit.stageAndCommit(s"API docs v${git.version}")(destVer).critical
 
-      destLatestOpt.foreach { destLatest =>
-        log.debug(s"Symlinking ${destLatest} to ${destVer}")
+      if (latest) {
+        // NOTE: .nojekyll file is needed for symlinks (see https://github.com/isaacs/github/issues/553)
+        val _nojekyll = ghpagesDir / ".nojekyll"
+        if (! _nojekyll.exists) {
+          log.debug(s"Adding .nojekyll file")
+          IO.write(_nojekyll, "")
+
+          ghpagesGit.stageAndCommit("Added .nojekyll file for symlinks")(_nojekyll).critical
+        }
+
+        val destLatest = destBase / "latest"
+        log.info(s"Symlinking ${destLatest} to ${destVer}")
         Files.deleteIfExists(destLatest.absPath)
         Files.createSymbolicLink(destLatest.absPath, destVer.relPath(destLatest.getParentFile))
+
+        ghpagesGit.stageAndCommit(s"Symlinked ${git.version} as latest")(destLatest).critical
       }
 
       log.info("Publishing API docs...")
-      val ghpagesGit = Git(ghpagesDir, streams.value.log)
-
-      val files = destVer +: destLatestOpt.toSeq
-      ghpagesGit.stageAndCommit(s"API docs v${git.version}")(files: _*).critical
-      ghpagesGit.push(remoteName)(gh_pages).critical
+      ghpagesGit.push(url)(gh_pages).critical
     }
   }
 
