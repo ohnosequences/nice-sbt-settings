@@ -48,7 +48,10 @@ case object ReleasePlugin extends sbt.AutoPlugin {
 
     publish in Release := tasks.publishRelease.value,
 
-    keys.publishApiDocs := tasks.publishApiDocs.value,
+    keys.publishApiDocs := Def.inputTaskDyn {
+      val arg = boolParser.parsed
+      tasks.publishApiDocs(arg)
+    }.evaluated,
 
     keys.snapshotDependencies := tasks.snapshotDependencies.value,
     keys.checkDependencies    := tasks.checkDependencies.value,
@@ -61,6 +64,10 @@ case object ReleasePlugin extends sbt.AutoPlugin {
 
     sbt.Keys.commands += release.commands.releaseCommand
   )
+
+  private def boolParser: Parser[Boolean] = {
+    token(Space ~> "latest" ^^^ true) ?? false
+  }
 
   // Just a shortcut to define all input tasks that take version as an argument
   private def versionInputTask[Y](taskDef: Version => Def.Initialize[Task[Y]]):

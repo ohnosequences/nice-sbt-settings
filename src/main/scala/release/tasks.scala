@@ -285,11 +285,11 @@ case object tasks {
 
       withConfirmation(
         "Do you want to generate and publish Literator source docs?"
-      )(publishLiteratorDocs)
+      )(publishLiteratorDocs),
 
-      // withConfirmation(
-      //   "Do you want to generate and publish API docs to gh-pages?"
-      // )(publishApiDocs)
+      withConfirmation(
+        "Do you want to generate and publish API docs to gh-pages?"
+      )(publishApiDocs(latest = true))
     )
   }
 
@@ -337,7 +337,7 @@ case object tasks {
      - commits and pushes `gh-pages` branch
   */
   // TODO: destination (gh-pages) could be configurable, probably with a help of sbt-site
-  def publishApiDocs: DefTask[Unit] = Def.taskDyn {
+  def publishApiDocs(latest: Boolean): DefTask[Unit] = Def.taskDyn {
     val log = streams.value.log
     val git = Git.task.value
 
@@ -355,6 +355,7 @@ case object tasks {
       log.error(s"Check it and rerun the [${keys.publishApiDocs.key.label}] command.")
       sys.error("gh-pages branch doesn't exist")
       // TODO: create it if it doesn't exist (don't forget --orphan)
+      // add .nojekyll in the root for symlinks to work (see https://github.com/isaacs/github/issues/553)
 
     } else Def.task {
       val docTarget = doc.in(Compile).value
@@ -366,14 +367,19 @@ case object tasks {
       if (destVer.exists) IO.delete(destVer)
       IO.copyDirectory(docTarget, destVer, overwrite = true)
 
-      val destLatest = destBase / "latest"
-      log.debug(s"Symlinking ${destLatest} to ${destVer}")
-      Files.deleteIfExists(destLatest.absPath)
-      Files.createSymbolicLink(destLatest.absPath, destVer.relPath(destLatest))
+      val destLatestOpt: Option[File] = if (latest) Some(destBase / "latest") else None
+
+      destLatestOpt.foreach { destLatest =>
+        log.debug(s"Symlinking ${destLatest} to ${destVer}")
+        Files.deleteIfExists(destLatest.absPath)
+        Files.createSymbolicLink(destLatest.absPath, destVer.relPath(destLatest.getParentFile))
+      }
 
       log.info("Publishing API docs...")
       val ghpagesGit = Git(ghpagesDir, streams.value.log)
-      ghpagesGit.stageAndCommit(s"API docs v${git.version}")(destVer, destLatest).critical
+
+      val files = destVer +: destLatestOpt.toSeq
+      ghpagesGit.stageAndCommit(s"API docs v${git.version}")(files: _*).critical
       ghpagesGit.push(remoteName)(gh_pages).critical
     }
   }
