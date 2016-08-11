@@ -304,7 +304,7 @@ case object tasks {
   }
 
   def publishRelease: DefTask[Unit] = Def.taskDyn {
-    publishCarefully.value
+    publish.value
 
     if (keys.publishFatArtifact.in(keys.Release).value)
       Def.task { fatArtifactUpload.value }

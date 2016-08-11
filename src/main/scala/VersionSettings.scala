@@ -19,7 +19,7 @@ case object VersionSettings extends sbt.AutoPlugin {
        while the task will be rerun on each call (and will have better logging) */
     lazy val gitVersion  = settingKey[Version]("Version based on git describe")
     lazy val gitVersionT = taskKey[Version]("Version based on git describe (as a task)")
-    lazy val publishCarefully = taskKey[Unit]("")
+    lazy val publishCarefully = taskKey[Unit]("Checks versions before publishing")
   }
   import autoImport._
 
@@ -51,8 +51,7 @@ case object VersionSettings extends sbt.AutoPlugin {
       log.error(s"Current version ${loaded} is outdated (should be ${actual}). Try to reload.")
       sys.error("Outdated version setting.")
 
-    } else Def.task {
-      publish.value
-    }
+    } else Classpaths.publishTask(Keys.publishConfiguration, Keys.deliver)
+    // Def.task { publish.value }
   }
 }
