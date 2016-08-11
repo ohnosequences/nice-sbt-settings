@@ -31,3 +31,5 @@ dependencyOverrides ++= Set(
   "com.jcraft"                 % "jsch"             % "0.1.50",
   "joda-time"                  % "joda-time"        % "2.8"
 )
+
+logLevel in publishApiDocs := Level.Debug

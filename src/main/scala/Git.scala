@@ -10,6 +10,8 @@ case class Git(
   val logger: (String, Seq[String]) => ProcessLogger
 ) {
 
+  def path(file: File): String = file.relPath(workingDir).toString
+
   def silent: Git =
     Git(workingDir, (_, _) => ProcessLogger({ _ => () }, { _ => () }))
 
@@ -26,6 +28,9 @@ case class GitCommand(git: Git)(subcmd: String)(args: Seq[String]) {
 
   // NOTE: process.!! throws an exception on failure, so we wrap it with Try
   def output: Try[String] = Try { process.!!(git.logger(subcmd, args)).trim }
+
+  // For the cases when you don't want to miss a failure in an intermediate command
+  def critical: String = output.get
 }
 
 
@@ -53,10 +58,12 @@ case object Git {
         msg => {
           log.debug(context)
           log.debug(msg)
+          log.debug("")
         },
         msg => {
           log.debug(context)
           log.warn(s"${msg} (from [git ${cmd}])")
+          log.warn("")
         }
       )
     }
@@ -90,7 +97,7 @@ case object Git {
     def configSet(path: String*)(value: String): Int = git.cmd("config")(path.mkString("."), value).exitCode
 
     def mv(from: File, to: File) =
-      git.cmd("mv")("-k", from.getPath, to.getPath)
+      git.cmd("mv")("-k", git.path(from), git.path(to))
 
     def push(remote: String)(refs: String*) =
       git.cmd("push")("--porcelain" +: remote +: refs : _*)
@@ -113,7 +120,7 @@ case object Git {
 
     /* Creates an annotated tag object with notes from the given file */
     def createTag(annot: File, ver: Version): Try[String] =
-      tag("--annotate", s"--file=${annot.getPath}", s"v${ver}").output
+      tag("--annotate", s"--file=${git.path(annot)}", s"v${ver}").output
 
     /* Number of commits in the given range (or since the beginning) */
     def commitsNumber(range: String = HEAD): Option[Int] =
@@ -173,16 +180,18 @@ case object Git {
     // ): Boolean =
     //   ls_remote(remote, ref).exitCode == 0
 
-    def unstage(files: File*) = reset(HEAD +: "--" +: files.map(_.getPath) : _*)
-    def   stage(files: File*) =           add("--" +: files.map(_.getPath) : _*)
+    def unstage(files: File*) = reset(HEAD +: "--" +: files.map(git.path) : _*)
+    def   stage(files: File*) =           add("--" +: files.map(git.path) : _*)
 
     /* This is more than just commit, it unstages everything that is staged now, stages only the given files and commits them (this way even files that are not in the index yet will be commited) */
     def stageAndCommit(msg: String)(files: File*) = {
-      stage(files: _*)
-      git.cmd("commit")(
-        "--no-verify" +: // bypasses pre- and post-commit hooks
-        s"--message=${msg}" +:
-        "--" +: files.map(_.getPath) : _*
+      unstage().critical
+      stage(files: _*).critical
+
+      commit(
+        "--no-verify", // bypasses pre- and post-commit hooks
+        s"--message=${msg}",
+        "--"
       )
     }
   }
