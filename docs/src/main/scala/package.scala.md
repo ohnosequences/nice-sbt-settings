@@ -1,29 +1,19 @@
-## Linting settings
-
-This module adds settings to use the [wartremover](https://github.com/typelevel/wartremover)
-linting plugin, which warns you about different "warts" in your code.
-
 
 ```scala
-package ohnosequences.sbt.nice
+package ohnosequences.sbt
 
-import sbt._, Keys._
-import wartremover._
+import sbt._
+import java.nio.file.Path
 
-case object WartRemoverSettings extends sbt.AutoPlugin {
+package object nice {
 
-  override def trigger = allRequirements
-  override def requires = WartRemover
-```
+  type DefTask[X] = Def.Initialize[Task[X]]
 
-### Settings
+  implicit class FileOps(val file: File) extends AnyVal {
 
-```scala
-  override def projectSettings: Seq[Setting[_]] = Seq(
-    wartremoverErrors in (Compile, compile) := Warts.unsafe,
-    wartremoverErrors in (Test,    compile) := Warts.unsafe
-  )
-
+    def absPath: Path = file.toPath.toAbsolutePath.normalize
+    def relPath(base: File): Path = base.absPath relativize file.absPath
+  }
 }
 
 ```
