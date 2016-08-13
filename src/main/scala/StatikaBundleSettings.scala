@@ -23,7 +23,7 @@ case object StatikaBundleSettings extends sbt.AutoPlugin {
   def generateStatikaMetadataTask(conf: Configuration): DefTask[Seq[File]] = Def.task {
     val file = sourceManaged.in(conf).value / "statikaMetadata.scala"
 
-    lazy val parts = organization.value.split('.') ++ normalizedName.value.split('.')
+    lazy val parts = organization.value.split('.') ++ name.value.split('.')
     lazy val pkg = (parts.init ++ Seq("generated", "metadata")).mkString(".")
     lazy val obj = parts.last.replaceAll("-", "_")
 
@@ -32,7 +32,7 @@ case object StatikaBundleSettings extends sbt.AutoPlugin {
       |
       |case object ${obj} extends ohnosequences.statika.AnyArtifactMetadata {
       |  val organization: String = "${organization.value}"
-      |  val artifact: String     = "${normalizedName.value}"
+      |  val artifact: String     = "${moduleName.value}"
       |  val version: String      = "${version.value}"
       |  val artifactUrl: String  = "${fatArtifactUrl.value}"
       |}
