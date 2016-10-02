@@ -279,11 +279,12 @@ case object tasks {
     }
 
     Def.sequential(
-      announce("Publishing release artifacts..."),
-      publish.in(keys.Release),
-
       announce("Running release tests..."),
+      publishFatArtifactIfNeeded,
       test.in(keys.Release),
+
+      announce("Publishing release artifacts..."),
+      publish,
 
       announce("Publishing release on Github..."),
       pushHeadAndTag,
@@ -311,9 +312,7 @@ case object tasks {
     git.push(remoteName)(HEAD, tagName).critical
   }
 
-  def publishRelease: DefTask[Unit] = Def.taskDyn {
-    publish.value
-
+  def publishFatArtifactIfNeeded: DefTask[Unit] = Def.taskDyn {
     if (keys.publishFatArtifact.in(keys.Release).value)
       Def.task { fatArtifactUpload.value }
     else
