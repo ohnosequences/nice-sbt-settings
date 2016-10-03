@@ -5,11 +5,10 @@ package ohnosequences.sbt.nice.release
 import ohnosequences.sbt.nice._
 
 import sbt._, Keys._, complete._, DefaultParsers._
-import ohnosequences.sbt.SbtGithubReleasePlugin.autoImport._
+import ohnosequences.sbt.GithubRelease
 import VersionSettings.autoImport._
 import com.markatta.sbttaglist.TagListPlugin._
 import scala.collection.immutable.SortedSet
-import org.kohsuke.github.GHRelease
 import laughedelic.literator.plugin.LiteratorPlugin.autoImport._
 import java.nio.file.Files
 import AssemblySettings.autoImport._
@@ -62,7 +61,7 @@ We try to check as much as possible _before_ making any release-related changes.
 
     announce("Checking git repository..."),
     checkGit(releaseVersion),
-    checkGithubCredentials,
+    GithubRelease.defs.ghreleaseGetCredentials,
 
     announce("Checking code notes..."),
     checkCodeNotes,
@@ -297,15 +296,16 @@ After release is prepared this sequence is going to actually make the release (p
     }
 
     Def.sequential(
-      announce("Publishing release artifacts..."),
-      publish.in(keys.Release),
-
       announce("Running release tests..."),
+      publishFatArtifactIfNeeded,
       test.in(keys.Release),
+
+      announce("Publishing release artifacts..."),
+      publish,
 
       announce("Publishing release on Github..."),
       pushHeadAndTag,
-      releaseOnGithub,
+      GithubRelease.defs.githubRelease(s"v${releaseVersion}"),
 
       announce("Release has successfully finished!"),
 
@@ -331,9 +331,7 @@ This task pushes current branch and tag to the remote
     git.push(remoteName)(HEAD, tagName).critical
   }
 
-  def publishRelease: DefTask[Unit] = Def.taskDyn {
-    publish.value
-
+  def publishFatArtifactIfNeeded: DefTask[Unit] = Def.taskDyn {
     if (keys.publishFatArtifact.in(keys.Release).value)
       Def.task { fatArtifactUpload.value }
     else
@@ -405,33 +403,39 @@ This task
     val destBase   = ghpagesDir / "docs" / "api"
     val destVer    = destBase / version.value
 
-    log.info(s"Copying ${generatedDocs} to ${destVer}")
+    log.info(s"Copying ${generatedDocs.relPath(git.workingDir)} to <gh-pages>/${destVer.relPath(ghpagesDir)}")
     if (destVer.exists) IO.delete(destVer)
     IO.copyDirectory(generatedDocs, destVer, overwrite = true)
 
-    ghpagesGit.stageAndCommit(s"API docs v${git.version}")(destVer)
-    log.info(s"Committed ${destVer}")
+    if (! ghpagesGit.isDirty) {
+      // If there are no changes we don't do anything else
+      log.warn("No changes to commit and publish")
 
-    if (latest) {
-      // NOTE: .nojekyll file is needed for symlinks (see https://github.com/isaacs/github/issues/553)
-      val _nojekyll = ghpagesDir / ".nojekyll"
-      if (! _nojekyll.exists) {
-        log.info(s"Adding .nojekyll file")
-        IO.write(_nojekyll, "")
+    } else {
+      ghpagesGit.stageAndCommit(s"API docs v${git.version}")(destVer)
+      log.debug(s"Committed ${destVer}")
 
-        ghpagesGit.stageAndCommit("Added .nojekyll file for symlinks")(_nojekyll)
+      if (latest) {
+        // NOTE: .nojekyll file is needed for symlinks (see https://github.com/isaacs/github/issues/553)
+        val _nojekyll = ghpagesDir / ".nojekyll"
+        if (! _nojekyll.exists) {
+          log.info(s"Adding .nojekyll file")
+          IO.write(_nojekyll, "")
+
+          ghpagesGit.stageAndCommit("Added .nojekyll file for symlinks")(_nojekyll)
+        }
+
+        val destLatest = destBase / "latest"
+        log.info(s"Symlinking ${destLatest.relPath(ghpagesDir)} to ${destVer.relPath(ghpagesDir)}")
+        Files.deleteIfExists(destLatest.absPath)
+        Files.createSymbolicLink(destLatest.absPath, destVer.relPath(destLatest.getParentFile))
+
+        ghpagesGit.stageAndCommit(s"Symlinked ${git.version} as latest")(destLatest)
       }
 
-      val destLatest = destBase / "latest"
-      log.info(s"Symlinking ${destLatest} to ${destVer}")
-      Files.deleteIfExists(destLatest.absPath)
-      Files.createSymbolicLink(destLatest.absPath, destVer.relPath(destLatest.getParentFile))
-
-      ghpagesGit.stageAndCommit(s"Symlinked ${git.version} as latest")(destLatest)
+      log.info("Publishing API docs...")
+      ghpagesGit.push(url)(gh_pages).critical
     }
-
-    log.info("Publishing API docs...")
-    ghpagesGit.push(url)(gh_pages).critical
   }
 
 }

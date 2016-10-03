@@ -51,8 +51,6 @@ case object ReleasePlugin extends sbt.AutoPlugin {
 
     keys.publishFatArtifact in Release := false,
 
-    publish in Release := tasks.publishRelease.value,
-
     keys.publishLiteratorDocs := tasks.publishLiteratorDocs.value,
     keys.publishApiDocs := Def.inputTaskDyn {
       val arg = boolParser.parsed

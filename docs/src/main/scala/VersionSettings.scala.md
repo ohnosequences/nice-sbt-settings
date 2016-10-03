@@ -33,10 +33,15 @@ while the task will be rerun on each call (and will have better logging)
 
 ```scala
   override def projectSettings: Seq[Setting[_]] = Seq(
-    // gitVersionT := Git.task.value.version,
     gitVersionT := Git(baseDirectory.value, streams.value.log).version,
-    gitVersion  := Git(baseDirectory.value, sLog.value).version,
-    version     := gitVersion.value.toString,
+    gitVersion  := {
+      // NOTE: we can't place it in version setting because it will be overriden by the one defined in version.sbt
+      if ((baseDirectory.value / "version.sbt").exists)
+        sLog.value.warn("You should remove [version.sbt] file to use Git-based version management")
+
+      Git(baseDirectory.value, sLog.value).version
+    },
+    version := gitVersion.value.toString,
 
     publishCarefully := publishCarefullyDef.value,
     publish          := publishCarefullyDef.value
@@ -62,8 +67,10 @@ This is a replacement for publish, that warns you if the git repo is dirty or th
       log.error(s"Current version ${loaded} is outdated (should be ${actual}). Try to reload.")
       sys.error("Outdated version setting.")
 
-    } else Classpaths.publishTask(Keys.publishConfiguration, Keys.deliver)
-    // Def.task { publish.value }
+    } else
+      // NOTE: we avoid refferring to publish directly, so this is how it's defined in sbt:
+      Classpaths.publishTask(Keys.publishConfiguration, Keys.deliver)
+      // Def.task { publish.value }
   }
 }
 

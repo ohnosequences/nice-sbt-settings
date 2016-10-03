@@ -185,7 +185,7 @@ git describe with version pattern tag and a snapshot suffix
         "--always"
       ).output.toOption.flatMap { str =>
         Version.parse(str).orElse {
-          git.logger("git", Seq("describeVersion")).err(s"Failed to parse a version from '${str}'")
+          git.logger("describeVersion", Seq()).err(s"Failed to parse a version from '${str}'")
           None
         }
       }
@@ -210,7 +210,7 @@ This will be used for setting sbt version setting: either git describe or the fa
 ```scala
     def version: Version = describeVersion.getOrElse {
       val ver = withDescribeSuffix(v(0,0,0))
-      git.logger("git", Seq("version")).out(s"Using fallback version: ${ver}")
+      git.logger("version", Seq()).err(s"Using fallback version: ${ver}")
       ver
     }
 ```
