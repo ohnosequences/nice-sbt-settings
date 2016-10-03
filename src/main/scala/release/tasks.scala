@@ -3,11 +3,10 @@ package ohnosequences.sbt.nice.release
 import ohnosequences.sbt.nice._
 
 import sbt._, Keys._, complete._, DefaultParsers._
-import ohnosequences.sbt.SbtGithubReleasePlugin.autoImport._
+import ohnosequences.sbt.GithubRelease
 import VersionSettings.autoImport._
 import com.markatta.sbttaglist.TagListPlugin._
 import scala.collection.immutable.SortedSet
-import org.kohsuke.github.GHRelease
 import laughedelic.literator.plugin.LiteratorPlugin.autoImport._
 import java.nio.file.Files
 import AssemblySettings.autoImport._
@@ -55,7 +54,7 @@ case object tasks {
 
     announce("Checking git repository..."),
     checkGit(releaseVersion),
-    checkGithubCredentials,
+    GithubRelease.defs.ghreleaseGetCredentials,
 
     announce("Checking code notes..."),
     checkCodeNotes,
@@ -288,7 +287,7 @@ case object tasks {
 
       announce("Publishing release on Github..."),
       pushHeadAndTag,
-      releaseOnGithub,
+      GithubRelease.defs.githubRelease(s"v${releaseVersion}"),
 
       announce("Release has successfully finished!"),
 
