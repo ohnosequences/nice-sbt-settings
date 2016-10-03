@@ -75,7 +75,7 @@ case object tasks {
     val log = streams.value.log
     val git = Git.task.value
 
-    if (git.isDirty) {
+    if (git.isDirty()) {
       log.error("You have uncommited changes. Commit or stash them first.")
       sys.error("Git repository is not clean.")
     }
@@ -381,7 +381,7 @@ case object tasks {
     if (destVer.exists) IO.delete(destVer)
     IO.copyDirectory(generatedDocs, destVer, overwrite = true)
 
-    if (! ghpagesGit.isDirty) {
+    if (! ghpagesGit.isDirty(withUntracked = true)) {
       // If there are no changes we don't do anything else
       log.warn("No changes to commit and publish")
 

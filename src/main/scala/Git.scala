@@ -111,10 +111,10 @@ case object Git {
     /* And the rest of the commands are derived from the basic ones with certain parameters */
 
     /* Tells if there are any uncommitted changes */
-    def isDirty: Boolean =
+    def isDirty(withUntracked: Boolean = false): Boolean =
       status(
         "--porcelain",
-        "--untracked-files=no"
+        s"""--untracked-files=${if(withUntracked) "normal" else "no"}"""
       ).output.map(_.nonEmpty).getOrElse(true)
 
     /* Returns a set of tags matching the given (glob) pattern */
@@ -156,7 +156,7 @@ case object Git {
 
       val number = commitsNumber().map(_.toString)
       val hash   = log("--format=g%h", "-1").output.toOption
-      val snapsh = if (isDirty) Some("SNAPSHOT") else None
+      val snapsh = if (isDirty()) Some("SNAPSHOT") else None
 
       ver( Seq(number, hash, snapsh).flatten: _* )
     }
