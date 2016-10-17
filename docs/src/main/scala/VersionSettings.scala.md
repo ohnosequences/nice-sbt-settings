@@ -58,7 +58,7 @@ This is a replacement for publish, that warns you if the git repo is dirty or th
     val loaded = gitVersion.value
     val actual = git.version
 
-    if (git.isDirty) Def.task {
+    if (git.isDirty()) Def.task {
       log.error("You have uncommited changes. Commit or stash them and reload.")
       log.error("If you want to publish a snapshot, use publishLocal. But then don't forget to clean ivy cache.")
       sys.error("Git repository is not clean.")

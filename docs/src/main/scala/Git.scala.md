@@ -135,10 +135,10 @@ And the rest of the commands are derived from the basic ones with certain parame
 Tells if there are any uncommitted changes
 
 ```scala
-    def isDirty: Boolean =
+    def isDirty(withUntracked: Boolean = false): Boolean =
       status(
         "--porcelain",
-        "--untracked-files=no"
+        s"""--untracked-files=${if(withUntracked) "normal" else "no"}"""
       ).output.map(_.nonEmpty).getOrElse(true)
 ```
 
@@ -199,7 +199,7 @@ This is a fallback version of git describe for when there are no any tags yet
 
       val number = commitsNumber().map(_.toString)
       val hash   = log("--format=g%h", "-1").output.toOption
-      val snapsh = if (isDirty) Some("SNAPSHOT") else None
+      val snapsh = if (isDirty()) Some("SNAPSHOT") else None
 
       ver( Seq(number, hash, snapsh).flatten: _* )
     }
