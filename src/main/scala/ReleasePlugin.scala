@@ -34,7 +34,7 @@ case object ReleasePlugin extends sbt.AutoPlugin {
     inConfig(Release)(Defaults.testTasks) ++
     tagListSettings ++ Seq(
 
-    libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6" % Test,
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % Test,
 
     keys.releaseOnlyTestTag := s"${organization.value}.test.ReleaseOnlyTest",
 
