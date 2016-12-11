@@ -192,9 +192,11 @@ case object tasks {
     Defaults.doClean(outputs, Seq())
 
     Def.task {
+      val log = streams.value.log
+      val git = Git.task.value
+
       generateDocs.value
 
-      val git = Git.task.value
       if (! git.isDirty(withUntracked = true)) {
         // If there are no changes we don't do anything else
         log.warn("No changes in the generated literator docs")
