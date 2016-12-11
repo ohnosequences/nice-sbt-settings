@@ -42,7 +42,7 @@ tab-completion together with the next (bumped) version.
       (candidate(current) | fin(current)) ?? current.base
 
     } else if (current.isMilestone) {
-      (milestone(current) | fin(current)) ?? current.base
+      (milestone(current) | candidate(current) | fin(current)) ?? current.base
 
     } else {
       bugfix(current) |
