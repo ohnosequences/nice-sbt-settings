@@ -16,3 +16,5 @@
   - [sbt-wartremover](https://github.com/puffnfresh/wartremover): `0.14 -> 1.2.1`. Default list of warts now is [`Warts.unsafe`](https://github.com/puffnfresh/wartremover#unsafe)
 
 See the full list of the merged pull-requests for this version: [v0.8.0 milestone](https://github.com/ohnosequences/nice-sbt-settings/issues?q=milestone%3Av0.8.0).
+
+**Note:** This release is identical to 0.8.0-RC5, it has some [known issues](https://github.com/ohnosequences/nice-sbt-settings/pull/49#issuecomment-277011924) but is overall stable (it has been used over 5 months without any major problems).
