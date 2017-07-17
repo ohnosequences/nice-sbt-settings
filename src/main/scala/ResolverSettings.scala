@@ -8,10 +8,12 @@ import sbt._, Keys._
 
 import ohnosequences.sbt.SbtS3Resolver.autoImport._
 
-object ResolverSettings extends sbt.AutoPlugin {
+case object ResolverSettings extends sbt.AutoPlugin {
 
-  override def requires = ohnosequences.sbt.SbtS3Resolver
   override def trigger = allRequirements
+  override def requires =
+    plugins.JvmPlugin &&
+    ohnosequences.sbt.SbtS3Resolver
 
   case object autoImport {
 
@@ -52,33 +54,8 @@ object ResolverSettings extends sbt.AutoPlugin {
       s3resolver.value(address+" S3 publishing bucket", s3(address)).
         withPatterns(if(publishMavenStyle.value) mvn else ivy)
     },
-    publishTo := {
-      /* This prevents from publishing snapshots: */
-      if (isSnapshot.value) None else Some(publishS3Resolver.value)
-    },
-
-    // Just a command for the publish task with a custom error message in case of a snapshot version
-    commands += Command.command("publishReloaded") { state =>
-      state.log.info(s"Current version: ${Project.extract(state).get(Keys.version)}")
-
-      if ( Project.extract(state).get(Keys.isSnapshot) ) {
-
-        state.log.error("You shouldn't share snapshots. Commit the changes and try again. Or use publishLocal.")
-        state.fail
-      } else {
-
-        Project.runTask(publish, state) match {
-          case None => state.log.warn("Key wasn't defined"); state.fail
-          case Some((newState, Inc(_))) => newState // incomplete
-          case Some((newState, Value(_))) => newState // success
-        }
-      }
-    },
-
-    // Shadowing publish task with this command to do reload before actually publishing
-    commands += Command.command("publish") { state =>
-      "reload" :: "publishReloaded" :: state
-    }
+    
+    publishTo := Some(publishS3Resolver.value)
   )
 
 }

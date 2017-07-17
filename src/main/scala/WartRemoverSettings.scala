@@ -8,14 +8,15 @@ package ohnosequences.sbt.nice
 import sbt._, Keys._
 import wartremover._
 
-object WartRemoverSettings extends sbt.AutoPlugin {
+case object WartRemoverSettings extends sbt.AutoPlugin {
 
-  override def requires = WartRemover
   override def trigger = allRequirements
+  override def requires = WartRemover
 
   /* ### Settings */
-  override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    wartremoverErrors in (Compile, compile) ++= Warts.unsafe
+  override def projectSettings: Seq[Setting[_]] = Seq(
+    wartremoverErrors in (Compile, compile) := Warts.unsafe,
+    wartremoverErrors in (Test,    compile) := Warts.unsafe
   )
 
 }

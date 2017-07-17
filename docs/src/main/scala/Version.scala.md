@@ -1,6 +1,11 @@
-package ohnosequences.sbt.nice
 
-/* Simple generic code for working with (semantic) versions */
+```scala
+package ohnosequences.sbt.nice
+```
+
+Simple generic code for working with (semantic) versions
+
+```scala
 case class Version(
   val major: Int,
   val minor: Int,
@@ -83,3 +88,25 @@ case object Version {
   }
 
 }
+
+```
+
+
+
+
+[main/scala/AssemblySettings.scala]: AssemblySettings.scala.md
+[main/scala/Git.scala]: Git.scala.md
+[main/scala/JavaOnlySettings.scala]: JavaOnlySettings.scala.md
+[main/scala/MetadataSettings.scala]: MetadataSettings.scala.md
+[main/scala/package.scala]: package.scala.md
+[main/scala/release/commands.scala]: release/commands.scala.md
+[main/scala/release/keys.scala]: release/keys.scala.md
+[main/scala/release/parsers.scala]: release/parsers.scala.md
+[main/scala/release/tasks.scala]: release/tasks.scala.md
+[main/scala/ReleasePlugin.scala]: ReleasePlugin.scala.md
+[main/scala/ResolverSettings.scala]: ResolverSettings.scala.md
+[main/scala/ScalaSettings.scala]: ScalaSettings.scala.md
+[main/scala/StatikaBundleSettings.scala]: StatikaBundleSettings.scala.md
+[main/scala/Version.scala]: Version.scala.md
+[main/scala/VersionSettings.scala]: VersionSettings.scala.md
+[main/scala/WartRemoverSettings.scala]: WartRemoverSettings.scala.md
