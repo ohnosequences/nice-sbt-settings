@@ -19,9 +19,6 @@ addSbtPlugin("com.timushev.sbt"  % "sbt-updates"        % "0.3.1")   // https://
 addSbtPlugin("com.markatta"      % "sbt-taglist"        % "1.4.0")   // https://github.com/johanandren/sbt-taglist
 addSbtPlugin("org.wartremover"   % "sbt-wartremover"    % "2.2.1")   // https://github.com/puffnfresh/wartremover
 
-// libraryDependencies ++= Seq(
-//   "com.amazonaws" % "aws-java-sdk-s3" % "1.11.27"
-// )
 dependencyOverrides ++= Set(
   "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
   "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.5"

@@ -12,7 +12,7 @@ import sbtassembly._, AssemblyKeys._
 import ResolverSettings.autoImport._
 import ohnosequences.sbt.SbtS3Resolver.autoImport._
 
-import com.amazonaws.services.s3.AmazonS3Client
+import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import java.net.URI
 
 case object AssemblySettings extends sbt.AutoPlugin {
@@ -72,7 +72,12 @@ case object AssemblySettings extends sbt.AutoPlugin {
     lazy val key    = uri.getPath.stripPrefix("/")
 
     streams.value.log.info(s"Publishing assembled artifact to [${uri.toString}]...")
-    new AmazonS3Client(s3credentials.value).putObject(bucket, key, fatJar)
+    val s3 = AmazonS3ClientBuilder.standard
+      .withCredentials(s3credentials.value)
+      .withRegion(s3region.value.getName)
+      .build()
+
+    s3.putObject(bucket, key, fatJar)
 
     // NOTE: This is just another way to upload an object
     // TODO: Would be nice to have some progress reporting, but the default one doesn't do anything "/

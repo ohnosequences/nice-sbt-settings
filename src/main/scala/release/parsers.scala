@@ -1,6 +1,6 @@
 package ohnosequences.sbt.nice.release
 
-import sbt._, Keys._, complete._, DefaultParsers._
+import sbt._, complete._, DefaultParsers._
 import ohnosequences.sbt.nice._
 
 case object parsers {

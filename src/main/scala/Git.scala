@@ -1,6 +1,6 @@
 package ohnosequences.sbt.nice
 
-import sbt.{ ProcessLogger => _, ProcessBuilder => _, _ }, Keys._
+import sbt._, Keys._
 import scala.sys.process._
 import scala.util._
 

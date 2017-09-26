@@ -5,8 +5,6 @@
 package ohnosequences.sbt.nice
 
 import sbt._, Keys._
-import scala.sys.process._
-import scala.util._
 
 case object VersionSettings extends sbt.AutoPlugin {
 
