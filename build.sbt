@@ -1,21 +1,30 @@
+sbtPlugin := true
+
 name := "nice-sbt-settings"
 organization := "ohnosequences"
 description := "sbt plugin accumulating some useful and nice sbt settings"
 
-sbtPlugin := true
-scalaVersion := "2.10.6"
+scalaVersion := "2.12.3"
+sbtVersion in Global := "1.0.2"
+
 bucketSuffix := "era7.com"
 
-addSbtPlugin("ohnosequences"     % "sbt-s3-resolver"    % "0.15.0")  // https://github.com/ohnosequences/sbt-s3-resolver
-addSbtPlugin("ohnosequences"     % "sbt-github-release" % "0.4.0")   // https://github.com/ohnosequences/sbt-github-release
-addSbtPlugin("com.eed3si9n"      % "sbt-assembly"       % "0.14.5")  // https://github.com/sbt/sbt-assembly
-addSbtPlugin("com.timushev.sbt"  % "sbt-updates"        % "0.3.0")   // https://github.com/rtimush/sbt-updates
-addSbtPlugin("laughedelic"       % "literator"          % "0.7.1")   // https://github.com/laughedelic/literator
-addSbtPlugin("com.markatta"      % "taglist-plugin"     % "1.3.1")   // https://github.com/johanandren/sbt-taglist
-addSbtPlugin("org.wartremover"   % "sbt-wartremover"    % "1.2.1")   // https://github.com/puffnfresh/wartremover
+resolvers += Resolver.jcenterRepo
+resolvers += "Github-API" at "http://repo.jenkins-ci.org/public/"
 
-libraryDependencies ++= Seq(
-  "com.amazonaws" % "aws-java-sdk-s3" % "1.11.27"
+addSbtPlugin("ohnosequences"     % "sbt-s3-resolver"    % "0.18.0")  // https://github.com/ohnosequences/sbt-s3-resolver
+addSbtPlugin("ohnosequences"     % "sbt-github-release" % "0.5.0")   // https://github.com/ohnosequences/sbt-github-release
+addSbtPlugin("com.eed3si9n"      % "sbt-assembly"       % "0.14.5")  // https://github.com/sbt/sbt-assembly
+addSbtPlugin("com.timushev.sbt"  % "sbt-updates"        % "0.3.1")   // https://github.com/rtimush/sbt-updates
+addSbtPlugin("com.markatta"      % "sbt-taglist"        % "1.4.0")   // https://github.com/johanandren/sbt-taglist
+addSbtPlugin("org.wartremover"   % "sbt-wartremover"    % "2.2.1")   // https://github.com/puffnfresh/wartremover
+
+// libraryDependencies ++= Seq(
+//   "com.amazonaws" % "aws-java-sdk-s3" % "1.11.27"
+// )
+dependencyOverrides ++= Set(
+  "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
+  "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.5"
 )
 
 wartremoverErrors in (Compile, compile) := Seq()
