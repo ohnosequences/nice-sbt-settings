@@ -19,8 +19,15 @@ addSbtPlugin("com.timushev.sbt"  % "sbt-updates"        % "0.3.1")   // https://
 addSbtPlugin("com.markatta"      % "sbt-taglist"        % "1.4.0")   // https://github.com/johanandren/sbt-taglist
 addSbtPlugin("org.wartremover"   % "sbt-wartremover"    % "2.2.1")   // https://github.com/puffnfresh/wartremover
 
-wartremoverErrors in (Compile, compile) := Seq()
-// wartremoverWarnings ++= Warts.allBut(Wart.NoNeedForMonad)
+wartremoverWarnings in (Compile, compile) := Seq(
+  Wart.Throw,
+  Wart.DefaultArguments
+)
+
+wartremoverErrors in (Compile, compile) := Warts.unsafe diff Seq(
+  Wart.Any,
+  Wart.NonUnitStatements
+) diff wartremoverWarnings.in(Compile, compile).value
 
 dependencyOverrides ++= Seq(
   "commons-codec"              % "commons-codec"    % "1.9",

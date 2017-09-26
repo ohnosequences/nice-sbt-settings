@@ -74,7 +74,7 @@ case object tasks {
     val log = streams.value.log
     val git = Git.task.value
 
-    if (git.isDirty()) {
+    if (git.hasChanges) {
       log.error("You have uncommited changes. Commit or stash them first.")
       sys.error("Git repository is not clean.")
     }
@@ -96,7 +96,7 @@ case object tasks {
       sys.error("Remote repository is not accessible.")
     }
 
-    val tagName = "v" + releaseVersion
+    val tagName = s"v${releaseVersion}"
     if (git.silent.tagList(tagName) contains tagName) {
       log.error(s"Git tag ${tagName} already exists. You cannot release this version.")
       sys.error("Git tag already exists.")
@@ -298,7 +298,7 @@ case object tasks {
   /* This task pushes current branch and tag to the remote */
   def pushHeadAndTag: DefTask[Unit] = Def.task {
     val git = Git.task.value
-    val tagName = "v" + git.version
+    val tagName = s"v${git.version}"
     val remoteName = git.currentRemote.getOrElse(origin)
     // We call .get on Try to fail the task if push was unsuccessful
     git.push(remoteName)(HEAD, tagName).critical
@@ -358,7 +358,7 @@ case object tasks {
     if (destVer.exists) IO.delete(destVer)
     IO.copyDirectory(generatedDocs, destVer, overwrite = true)
 
-    if (! ghpagesGit.isDirty(withUntracked = true)) {
+    if (! ghpagesGit.hasChangesOrUntracked) {
       // If there are no changes we don't do anything else
       log.warn("No changes to commit and publish")
 

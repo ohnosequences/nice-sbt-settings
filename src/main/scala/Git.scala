@@ -30,6 +30,7 @@ case class GitCommand(git: Git)(subcmd: String)(args: Seq[String]) {
   def output: Try[String] = Try { process.!!(git.logger(subcmd, args)).trim }
 
   // For the cases when you don't want to miss a failure in an intermediate command
+  @SuppressWarnings(Array("org.wartremover.warts.TryPartial"))
   def critical: String = output.get
 }
 
@@ -111,11 +112,14 @@ case object Git {
     /* And the rest of the commands are derived from the basic ones with certain parameters */
 
     /* Tells if there are any uncommitted changes */
-    def isDirty(withUntracked: Boolean = false): Boolean =
+    def statusNonEmpty(withUntracked: Boolean): Boolean =
       status(
         "--porcelain",
         s"""--untracked-files=${if(withUntracked) "normal" else "no"}"""
       ).output.map(_.nonEmpty).getOrElse(true)
+
+    def hasChanges:            Boolean = statusNonEmpty(withUntracked = false)
+    def hasChangesOrUntracked: Boolean = statusNonEmpty(withUntracked = true)
 
     /* Returns a set of tags matching the given (glob) pattern */
     def tagList(pattern: String): Set[String] =
@@ -128,7 +132,7 @@ case object Git {
       tag("--annotate", s"--file=${git.path(annot)}", s"v${ver}").output
 
     /* Number of commits in the given range (or since the beginning) */
-    def commitsNumber(range: String = HEAD): Option[Int] =
+    def commitsNumber(range: String): Option[Int] =
       rev_list("--count", range, "--").output.toOption.map(_.toInt)
 
     /* This is not used, but let it could be, see the note at `withDescribeSuffix` */
@@ -154,9 +158,9 @@ case object Git {
     // NOTE: we could use just this together with lastVersionTag for all versions (for consistency)
     private def withDescribeSuffix(ver: Version): Version = {
 
-      val number = commitsNumber().map(_.toString)
+      val number = commitsNumber(HEAD).map(_.toString)
       val hash   = log("--format=g%h", "-1").output.toOption
-      val snapsh = if (isDirty()) Some("SNAPSHOT") else None
+      val snapsh = if (hasChanges) Some("SNAPSHOT") else None
 
       ver( Seq(number, hash, snapsh).flatten: _* )
     }
