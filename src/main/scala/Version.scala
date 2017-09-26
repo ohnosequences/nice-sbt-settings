@@ -5,7 +5,7 @@ case class Version(
   val major: Int,
   val minor: Int,
   val bugfix: Int,
-  val suffixes: Seq[String] = Seq()
+  val suffixes: Seq[String]
 ) {
 
   val suffix: String = suffixes.mkString("-")
@@ -55,7 +55,7 @@ case class Version(
 
 case object v {
   // just an alias for writing v(2,1,13)("foo", "bar") or v(0,1,0).snapshot
-  def apply(x: Int, y: Int, z: Int): Version = Version(x,y,z)
+  def apply(x: Int, y: Int, z: Int): Version = Version(x,y,z, Seq())
 
   // NOTE: this is a glob-pattern for git, not a regex
   val globPattern = "v[0-9]*.[0-9]*.[0-9]*"

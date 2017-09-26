@@ -78,6 +78,7 @@ case object AssemblySettings extends sbt.AutoPlugin {
       .build()
 
     s3.putObject(bucket, key, fatJar)
+    ()
 
     // NOTE: This is just another way to upload an object
     // TODO: Would be nice to have some progress reporting, but the default one doesn't do anything "/

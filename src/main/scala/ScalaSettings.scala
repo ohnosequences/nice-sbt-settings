@@ -4,8 +4,7 @@
 */
 package ohnosequences.sbt.nice
 
-import sbt._
-import Keys._
+import sbt._, Keys._
 
 case object ScalaSettings extends sbt.AutoPlugin {
 
@@ -19,12 +18,6 @@ case object ScalaSettings extends sbt.AutoPlugin {
 
     /* Circular dependencies are prohibited */
     updateOptions := updateOptions.value.withCircularDependencyLevel(CircularDependencyLevel.Error),
-
-    scalaVersion := "2.11.8",
-    // we don't want these versions to conflict:
-    dependencyOverrides += "org.scala-lang" % "scala-library"  % scalaVersion.value,
-    dependencyOverrides += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-    dependencyOverrides += "org.scala-lang" % "scala-reflect"  % scalaVersion.value,
 
     scalacOptions ++= Seq(
       "-feature",

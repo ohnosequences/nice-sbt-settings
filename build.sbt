@@ -19,18 +19,7 @@ addSbtPlugin("com.timushev.sbt"  % "sbt-updates"        % "0.3.1")   // https://
 addSbtPlugin("com.markatta"      % "sbt-taglist"        % "1.4.0")   // https://github.com/johanandren/sbt-taglist
 addSbtPlugin("org.wartremover"   % "sbt-wartremover"    % "2.2.1")   // https://github.com/puffnfresh/wartremover
 
-dependencyOverrides ++= Set(
-  "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
-  "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.5"
-)
-
-wartremoverErrors in (Compile, compile) := Seq()
-// wartremoverWarnings ++= Warts.allBut(Wart.NoNeedForMonad)
-
-dependencyOverrides ++= Set(
-  "commons-codec"              % "commons-codec"    % "1.10",
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.5.4",
-  "org.apache.httpcomponents"  % "httpclient"       % "4.3.6",
-  "com.jcraft"                 % "jsch"             % "0.1.50",
-  "joda-time"                  % "joda-time"        % "2.8"
+dependencyOverrides ++= Seq(
+  "commons-codec"              % "commons-codec"    % "1.9",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.7.1"
 )
