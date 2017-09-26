@@ -19,7 +19,6 @@ case object ResolverSettings extends sbt.AutoPlugin {
 
     lazy val isPrivate = settingKey[Boolean]("If true, publish to private S3 bucket, else to public")
     lazy val bucketSuffix = settingKey[String]("Amazon S3 bucket suffix for resolvers")
-    lazy val bucketRegion = settingKey[String]("Amazon S3 bucket region")
     lazy val publishBucketSuffix = settingKey[String]("Amazon S3 bucket suffix for publish-to resolver")
     lazy val publishS3Resolver = settingKey[S3Resolver]("S3Resolver which will be used in publishTo")
   }
@@ -34,13 +33,13 @@ case object ResolverSettings extends sbt.AutoPlugin {
   override def projectSettings: Seq[Setting[_]] = Seq(
     /* Adding default maven/ivy resolvers with the default `bucketSuffix` */
     bucketSuffix := organization.value + ".com",
-    bucketRegion := "eu-west-1",
+    s3region := com.amazonaws.regions.Regions.EU_WEST_1,
 
     resolvers := Seq[Resolver](
-      organization.value + " public maven releases"  at s3("releases."  + bucketSuffix.value).toHttps(bucketRegion.value),
-      organization.value + " public maven snapshots" at s3("snapshots." + bucketSuffix.value).toHttps(bucketRegion.value),
-      Resolver.url(organization.value + " public ivy releases",  url(s3("releases."  + bucketSuffix.value).toHttps(bucketRegion.value)))(ivy),
-      Resolver.url(organization.value + " public ivy snapshots", url(s3("snapshots." + bucketSuffix.value).toHttps(bucketRegion.value)))(ivy)
+      organization.value + " public maven releases"  at s3("releases."  + bucketSuffix.value).toHttps(s3region.value),
+      organization.value + " public maven snapshots" at s3("snapshots." + bucketSuffix.value).toHttps(s3region.value),
+      Resolver.url(organization.value + " public ivy releases",  url(s3("releases."  + bucketSuffix.value).toHttps(s3region.value)))(ivy),
+      Resolver.url(organization.value + " public ivy snapshots", url(s3("snapshots." + bucketSuffix.value).toHttps(s3region.value)))(ivy)
     ) ++ resolvers.value,
 
     /* Publishing by default is public, maven-style and with the same `bucketSuffix` as for resolving */
@@ -54,7 +53,7 @@ case object ResolverSettings extends sbt.AutoPlugin {
       s3resolver.value(address+" S3 publishing bucket", s3(address)).
         withPatterns(if(publishMavenStyle.value) mvn else ivy)
     },
-    
+
     publishTo := Some(publishS3Resolver.value)
   )
 
