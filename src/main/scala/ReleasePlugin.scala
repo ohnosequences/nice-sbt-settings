@@ -28,15 +28,23 @@ case object ReleasePlugin extends sbt.AutoPlugin {
   override def projectSettings: Seq[Setting[_]] =
     inConfig(Release)(Defaults.testTasks) ++ Seq(
 
-    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % Test,
-
     keys.releaseOnlyTestTag := s"${organization.value}.test.ReleaseOnlyTest",
 
     testOptions in Test    += Tests.Argument("-l", keys.releaseOnlyTestTag.value),
     testOptions in Release -= Tests.Argument("-l", keys.releaseOnlyTestTag.value),
     testOptions in Release += Tests.Argument("-n", keys.releaseOnlyTestTag.value),
 
-    sourceGenerators in Test += tasks.generateTestTags.taskValue,
+    sourceGenerators in Test := Def.settingDyn {
+      val current = sourceGenerators.in(Test).value
+      val dependsOnScalatest =
+        libraryDependencies.value.exists { _.name == "scalatest" }
+
+      if (dependsOnScalatest) Def.setting {
+        current :+ tasks.generateTestTags.taskValue
+      } else Def.setting {
+        current
+      }
+    }.value,
 
     keys.publishFatArtifact in Release := false,
 
@@ -48,7 +56,7 @@ case object ReleasePlugin extends sbt.AutoPlugin {
     keys.snapshotDependencies := tasks.snapshotDependencies.value,
     keys.checkDependencies    := tasks.checkDependencies.value,
 
-    keys.checkGit          := versionInputTask(tasks.checkGit).evaluated,
+    keys.checkGit            := versionInputTask(tasks.checkGit).evaluated,
     keys.prepareReleaseNotes := versionInputTask(tasks.prepareReleaseNotes).evaluated,
 
     keys.prepareRelease    := versionInputTask(tasks.prepareRelease).evaluated,
