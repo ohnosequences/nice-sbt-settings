@@ -18,7 +18,7 @@ This SBT plugin aims to standardize and simplify configuration of all Scala and 
   + custom artifacts publishing (to Amazon S3)
   + release-only tests
   + Github release publishing
-  + source/API documentation publishing
+  + API documentation publishing
 
 This plugin is based on the following ones:
 
@@ -26,7 +26,6 @@ This plugin is based on the following ones:
 - [sbt-github-release](https://github.com/ohnosequences/sbt-github-release)
 - [sbt-assembly](https://github.com/sbt/sbt-assembly)
 - [sbt-updates](https://github.com/rtimush/sbt-updates)
-- [literator](https://github.com/laughedelic/literator)
 - [sbt-taglist](https://github.com/johanandren/sbt-taglist)
 - [wartremover](https://github.com/puffnfresh/wartremover)
 - plus add a couple of new ones: for git-versioning and releases
@@ -37,9 +36,11 @@ This plugin is based on the following ones:
 In `project/plugins.sbt`:
 
 ```scala
+resolvers += Resolver.jcenterRepo
+resolvers += "Github-API" at "http://repo.jenkins-ci.org/public/"
 resolvers += "Era7 maven releases" at "https://s3-eu-west-1.amazonaws.com/releases.era7.com"
 
 addSbtPlugin("ohnosequences" % "nice-sbt-settings" % "<version>")
 ```
 
-> **Note**: you should use sbt `v0.13.5+`.
+> **Note**: Since v0.9.0 this plugin is published only for sbt 1.+
