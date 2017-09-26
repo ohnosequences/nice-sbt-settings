@@ -5,8 +5,6 @@
 package ohnosequences.sbt.nice
 
 import sbt._, Keys._
-import scala.sys.process._
-import scala.util._
 
 case object VersionSettings extends sbt.AutoPlugin {
 
@@ -47,7 +45,7 @@ case object VersionSettings extends sbt.AutoPlugin {
     val loaded = gitVersion.value
     val actual = git.version
 
-    if (git.isDirty()) Def.task {
+    if (git.hasChanges) Def.task {
       log.error("You have uncommited changes. Commit or stash them and reload.")
       log.error("If you want to publish a snapshot, use publishLocal. But then don't forget to clean ivy cache.")
       sys.error("Git repository is not clean.")

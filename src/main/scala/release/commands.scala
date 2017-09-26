@@ -1,7 +1,7 @@
 package ohnosequences.sbt.nice.release
 
 import ohnosequences.sbt.nice._
-import sbt._, Keys._, complete._, DefaultParsers._, CommandStrings._
+import sbt._, Keys._, complete._, DefaultParsers._, internal.CommandStrings._
 
 
 case object commands {
