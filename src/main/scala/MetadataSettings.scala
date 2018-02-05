@@ -9,7 +9,7 @@ import sbt._, Keys._
 
 case object MetadataSettings extends sbt.AutoPlugin {
 
-  override def requires = empty
+  override def requires = plugins.CorePlugin
   override def trigger = allRequirements
 
   /* ### Settings */
