@@ -13,7 +13,7 @@ resolvers += Resolver.jcenterRepo
 resolvers += "Github-API" at "http://repo.jenkins-ci.org/public/"
 
 addSbtPlugin("ohnosequences"     % "sbt-s3-resolver"    % "0.18.0")  // https://github.com/ohnosequences/sbt-s3-resolver
-addSbtPlugin("ohnosequences"     % "sbt-github-release" % "0.5.0")   // https://github.com/ohnosequences/sbt-github-release
+addSbtPlugin("ohnosequences"     % "sbt-github-release" % "0.6.0-16-ge8e5ec5") // https://github.com/ohnosequences/sbt-github-release
 addSbtPlugin("com.eed3si9n"      % "sbt-assembly"       % "0.14.5")  // https://github.com/sbt/sbt-assembly
 addSbtPlugin("com.timushev.sbt"  % "sbt-updates"        % "0.3.1")   // https://github.com/rtimush/sbt-updates
 addSbtPlugin("com.markatta"      % "sbt-taglist"        % "1.4.0")   // https://github.com/johanandren/sbt-taglist
