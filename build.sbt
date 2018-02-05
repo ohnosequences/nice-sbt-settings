@@ -4,8 +4,8 @@ name := "nice-sbt-settings"
 organization := "ohnosequences"
 description := "sbt plugin accumulating some useful and nice sbt settings"
 
-scalaVersion := "2.12.3"
-sbtVersion in Global := "1.0.2"
+scalaVersion := "2.12.4"
+sbtVersion in Global := "1.0.4"
 
 bucketSuffix := "era7.com"
 
