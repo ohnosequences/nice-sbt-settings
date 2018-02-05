@@ -53,7 +53,7 @@ case object tasks {
 
     announce("Checking git repository..."),
     checkGit(releaseVersion),
-    GithubRelease.defs.ghreleaseGetCredentials,
+    GithubRelease.defs.ghreleaseGetRepo,
 
     announce("Checking code notes..."),
     checkCodeNotes,
