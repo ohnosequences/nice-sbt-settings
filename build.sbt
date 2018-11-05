@@ -11,12 +11,12 @@ bucketSuffix := "era7.com"
 
 resolvers += "Github-API" at "http://repo.jenkins-ci.org/public/"
 
+addSbtPlugin("org.wartremover"   % "sbt-wartremover"    % "2.2.1")   // https://github.com/puffnfresh/wartremover
 addSbtPlugin("ohnosequences"     % "sbt-s3-resolver"    % "0.19.0")  // https://github.com/ohnosequences/sbt-s3-resolver
 addSbtPlugin("ohnosequences"     % "sbt-github-release" % "0.7.1")   // https://github.com/ohnosequences/sbt-github-release
-addSbtPlugin("com.eed3si9n"      % "sbt-assembly"       % "0.14.6")  // https://github.com/sbt/sbt-assembly
+addSbtPlugin("com.eed3si9n"      % "sbt-assembly"       % "0.14.9")  // https://github.com/sbt/sbt-assembly
 addSbtPlugin("com.timushev.sbt"  % "sbt-updates"        % "0.3.4")   // https://github.com/rtimush/sbt-updates
 addSbtPlugin("com.markatta"      % "sbt-taglist"        % "1.4.0")   // https://github.com/johanandren/sbt-taglist
-addSbtPlugin("org.wartremover"   % "sbt-wartremover"    % "2.2.1")   // https://github.com/puffnfresh/wartremover
 
 dependencyOverrides ++= Seq(
   "commons-codec"              % "commons-codec"    % "1.9",
